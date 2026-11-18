@@ -54,14 +54,17 @@ Pelo mesmo motivo (licença comercial) **não usamos AutoMapper** — mapeamento
 
 ## Frontend
 
-- Angular workspace com `core` (lib sem UI: modelos e serviços HTTP) e `web` (app).
-  O futuro app Ionic (`projects/mobile`) reaproveita `@vitta/core`.
+- Angular workspace em `src/Vitta.Client` com três projetos:
+  - `core` (lib sem UI: modelos, serviços HTTP, config) — alias `@vitta/core` aponta direto para o fonte, sem build.
+  - `web` — app web responsivo (sem lib de UI).
+  - `mobile` — Ionic 9 (componentes standalone de `@ionic/angular`) + Capacitor, com abas.
+- Regra: tudo que não é visual (modelos, chamadas à API, regras de tela reaproveitáveis) vai para `core`.
 - Componentes standalone, signals, control flow (`@if`/`@for`), lazy loading por rota.
 - Layout responsivo sem lib de UI: menu lateral no desktop, drawer no mobile, tabelas que viram cards.
 
 ## IA
 
-Serviço Python (FastAPI) separado, chamado pela API via `IAiService` (HTTP). Assim o .NET não depende
+Serviço Python (FastAPI) em `src/Vitta.AI`, chamado pela API via `IAiService` (HTTP). Assim o .NET não depende
 de bibliotecas de IA e o Python pode evoluir sozinho (leitura inteligente de planilhas com layouts
 diferentes, resumo mensal da carteira, sugestões de prospecção). Sem chave configurada responde em modo offline.
 

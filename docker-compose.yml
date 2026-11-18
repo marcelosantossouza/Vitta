@@ -17,11 +17,11 @@ services:
       retries: 10
 
   ai:
-    build: ./ai
+    build: ./src/Vitta.AI
     container_name: vitta-ai
     profiles: ["ai"] # sobe apenas com: docker compose --profile ai up -d
     env_file:
-      - path: ./ai/.env
+      - path: ./src/Vitta.AI/.env
         required: false
     ports:
       - "8000:8000"

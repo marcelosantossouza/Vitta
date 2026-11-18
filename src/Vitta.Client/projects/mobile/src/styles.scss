@@ -1,0 +1,18 @@
+/* Ionic: CSS essencial + utilitarios */
+@import '@ionic/angular/css/core.css';
+@import '@ionic/angular/css/normalize.css';
+@import '@ionic/angular/css/structure.css';
+@import '@ionic/angular/css/typography.css';
+@import '@ionic/angular/css/padding.css';
+@import '@ionic/angular/css/flex-utils.css';
+@import '@ionic/angular/css/text-alignment.css';
+@import '@ionic/angular/css/display.css';
+
+:root {
+  --ion-color-primary: #0f6e5c;
+  --ion-color-primary-rgb: 15, 110, 92;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #0d6151;
+  --ion-color-primary-tint: #277d6c;
+}
