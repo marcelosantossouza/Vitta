@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Vitta.API/Vitta.API.csproj" />
+    <Project Path="src/Vitta.Application/Vitta.Application.csproj" />
+    <Project Path="src/Vitta.Domain/Vitta.Domain.csproj" />
+    <Project Path="src/Vitta.Infrastructure/Vitta.Infrastructure.csproj" />
+    <Project Path="src/Vitta.Persistence/Vitta.Persistence.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Vitta.Application.UnitTests/Vitta.Application.UnitTests.csproj" />
+    <Project Path="tests/Vitta.ArchitectureTests/Vitta.ArchitectureTests.csproj" />
+    <Project Path="tests/Vitta.Domain.UnitTests/Vitta.Domain.UnitTests.csproj" />
+  </Folder>
+</Solution>

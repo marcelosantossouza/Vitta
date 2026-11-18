@@ -1,0 +1,30 @@
+# Infra local de desenvolvimento: `docker compose up -d`
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: vitta-postgres
+    environment:
+      POSTGRES_DB: vitta
+      POSTGRES_USER: vitta
+      POSTGRES_PASSWORD: vitta
+    ports:
+      - "5433:5432"
+    volumes:
+      - vitta-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vitta"]
+      interval: 5s
+      retries: 10
+
+  ai:
+    build: ./ai
+    container_name: vitta-ai
+    profiles: ["ai"] # sobe apenas com: docker compose --profile ai up -d
+    env_file:
+      - path: ./ai/.env
+        required: false
+    ports:
+      - "8000:8000"
+
+volumes:
+  vitta-pgdata:

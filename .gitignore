@@ -1,0 +1,30 @@
+# OS / IDE
+.DS_Store
+.idea/
+.vs/
+*.swp
+
+# .NET
+bin/
+obj/
+*.user
+TestResults/
+appsettings.*.local.json
+
+# Node / Angular
+node_modules/
+dist/
+.angular/
+coverage/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Segredos
+.env
+*.pfx

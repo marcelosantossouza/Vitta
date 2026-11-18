@@ -1,0 +1,23 @@
+<header class="topbar">
+  <button class="menu-btn" type="button" (click)="toggleMenu()" aria-label="Abrir menu">☰</button>
+  <span class="brand">Vitta</span>
+</header>
+
+<aside class="sidebar" [class.open]="menuOpen()">
+  <div class="brand brand--side">Vitta <small>Corretora</small></div>
+  <nav>
+    @for (item of nav; track item.path) {
+      <a [routerLink]="item.path" routerLinkActive="active" (click)="closeMenu()">
+        <span class="icon" aria-hidden="true">{{ item.icon }}</span>{{ item.label }}
+      </a>
+    }
+  </nav>
+</aside>
+
+@if (menuOpen()) {
+  <div class="backdrop" (click)="closeMenu()"></div>
+}
+
+<main class="content">
+  <router-outlet />
+</main>

@@ -1,0 +1,103 @@
+:root {
+  --vt-primary: #0f6e5c;
+  --vt-primary-contrast: #fff;
+  --vt-surface: #ffffff;
+  --vt-surface-dark: #12302a;
+  --vt-bg: #f4f6f5;
+  --vt-text: #1c2421;
+  --vt-muted: #6b7a75;
+  --vt-border: #dfe5e2;
+  --vt-danger: #b42318;
+  --vt-radius: 10px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background: var(--vt-bg);
+  color: var(--vt-text);
+}
+
+h1 { font-size: 1.5rem; margin: 0 0 1rem; }
+
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+
+  h1 { margin: 0; }
+}
+
+.card {
+  background: var(--vt-surface);
+  border: 1px solid var(--vt-border);
+  border-radius: var(--vt-radius);
+  padding: 1rem;
+}
+
+.grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--vt-border);
+  background: var(--vt-surface);
+  color: var(--vt-text);
+  cursor: pointer;
+  text-decoration: none;
+  font: inherit;
+
+  &--primary { background: var(--vt-primary); border-color: var(--vt-primary); color: var(--vt-primary-contrast); }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+}
+
+input, select, textarea {
+  font: inherit;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--vt-border);
+  border-radius: 8px;
+  width: 100%;
+  background: var(--vt-surface);
+}
+
+label { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.875rem; color: var(--vt-muted); }
+
+.form-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.error { color: var(--vt-danger); font-size: 0.875rem; }
+.muted { color: var(--vt-muted); }
+
+/* Tabela responsiva: vira "cards" no mobile usando data-label. */
+table.responsive {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--vt-surface);
+  border-radius: var(--vt-radius);
+  overflow: hidden;
+
+  th, td { text-align: left; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--vt-border); }
+  th { font-size: 0.8rem; text-transform: uppercase; color: var(--vt-muted); background: #fafbfa; }
+
+  @media (max-width: 640px) {
+    thead { display: none; }
+    tr { display: block; border-bottom: 1px solid var(--vt-border); padding: 0.5rem 0; }
+    td { display: flex; justify-content: space-between; gap: 1rem; border: 0; padding: 0.3rem 0.9rem; }
+    td::before { content: attr(data-label); color: var(--vt-muted); font-size: 0.8rem; }
+  }
+}

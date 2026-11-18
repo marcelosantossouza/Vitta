@@ -1,0 +1,31 @@
+<div class="page-header">
+  <h1>Clientes</h1>
+  <a class="btn btn--primary" routerLink="/clientes/novo">+ Novo cliente</a>
+</div>
+
+<input type="search" placeholder="Buscar por nome ou CPF" (input)="onSearch($any($event.target).value)" />
+
+@if (error(); as message) {
+  <p class="error">{{ message }}</p>
+} @else if (loading()) {
+  <p class="muted">Carregando…</p>
+} @else if (clients().length === 0) {
+  <p class="muted">Nenhum cliente encontrado.</p>
+} @else {
+  <p class="muted">{{ total() }} cliente(s)</p>
+  <table class="responsive">
+    <thead>
+      <tr><th>Nome</th><th>CPF</th><th>Telefone</th><th>E-mail</th></tr>
+    </thead>
+    <tbody>
+      @for (client of clients(); track client.id) {
+        <tr>
+          <td data-label="Nome">{{ client.fullName }}</td>
+          <td data-label="CPF">{{ client.cpf }}</td>
+          <td data-label="Telefone">{{ client.phone ?? '—' }}</td>
+          <td data-label="E-mail">{{ client.email ?? '—' }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}

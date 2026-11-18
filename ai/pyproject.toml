@@ -1,0 +1,20 @@
+[project]
+name = "vitta-ai"
+version = "0.1.0"
+description = "Camada de IA do Vitta (FastAPI). Chamada pela Vitta.API via HTTP."
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic-settings>=2.6",
+    "anthropic>=0.40",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "httpx>=0.27", "ruff>=0.8"]
+
+[tool.ruff]
+line-length = 110
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
