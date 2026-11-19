@@ -11,7 +11,7 @@ Vitta/
 ├── Vitta.slnx                    solução .NET (só os projetos .NET)
 ├── Directory.Build.props / Directory.Packages.props   config e versões NuGet centralizadas
 ├── package.json                  scripts para subir tudo (npm run dev)
-├── docker-compose.yml            PostgreSQL (porta 5433) + IA opcional
+├── docker-compose.yml            PostgreSQL opcional (porta 5433) + IA opcional
 ├── src/
 │   ├── Vitta.Domain              entidades, value objects, regras (sem dependências)
 │   ├── Vitta.Application         casos de uso (commands/queries via Mediator), portas
@@ -30,7 +30,7 @@ Vitta/
 
 ## Primeira vez
 
-Pré-requisitos: .NET SDK 10, Node 24, Python 3.12, Docker.
+Pré-requisitos: .NET SDK 10, Node 24, Python 3.12. Docker só se quiser rodar com Postgres.
 
 ```bash
 npm install          # instala o concurrently na raiz
@@ -41,16 +41,17 @@ cd src/Vitta.AI && python3 -m venv .venv && .venv/bin/pip install -e ".[dev]" &&
 ## Rodando
 
 ```bash
-npm run dev          # Postgres + API + web (abre o navegador)
-npm run dev:all      # Postgres + API + web + mobile + IA
+npm run dev          # API (SQLite) + web, abre o navegador
+npm run dev:all      # API (SQLite) + web + mobile + IA
+npm run dev:pg       # API (Postgres no Docker) + web, igual a produção
 ```
 
 Ou cada parte separada:
 
 | Comando | O que sobe | URL |
 |---|---|---|
-| `npm run db` | PostgreSQL (Docker) | localhost:5433 |
-| `npm run api` | Vitta.API com hot reload (migrations automáticas em Development) | http://localhost:5080/scalar |
+| `npm run api` | Vitta.API com SQLite (`src/Vitta.API/vitta.db`), hot reload, migrations automáticas | http://localhost:5080/scalar |
+| `npm run api:pg` | Vitta.API com PostgreSQL (sobe o Docker antes) | http://localhost:5080/scalar |
 | `npm run web` | app web | http://localhost:4200 |
 | `npm run mobile` | app Ionic no navegador | http://localhost:8100 |
 | `npm run ai` | serviço de IA | http://localhost:8000/docs |
@@ -65,10 +66,26 @@ Para IA com LLM: `cp src/Vitta.AI/.env.example src/Vitta.AI/.env` e preencha a c
 npm test             # .NET + Angular + Python
 ```
 
+## Banco de dados
+
+| Ambiente | Banco | Configuração |
+|---|---|---|
+| Development | SQLite (`vitta.db`) | `appsettings.Development.json` |
+| Produção | PostgreSQL | `appsettings.json` + variáveis de ambiente |
+
+O banco é escolhido por `Database:Provider` (`Sqlite` ou `Postgres`) e a conexão por
+`ConnectionStrings:Vitta`. Em produção, passe por variáveis de ambiente:
+`Database__Provider=Postgres` e `ConnectionStrings__Vitta=Host=...;Password=...`.
+
+Para zerar o banco local, apague `src/Vitta.API/vitta.db`; ele é recriado ao subir a API.
+
 ## Migrations
 
+Cada banco tem suas migrations (`Migrations/Sqlite` e `Migrations/Postgres`).
+Gere sempre para os dois de uma vez:
+
 ```bash
-dotnet ef migrations add <Nome> -p src/Vitta.Persistence -s src/Vitta.API -o Migrations
+npm run migrations:add -- NomeDaMigration
 ```
 
 ## App mobile no celular (quando chegar a hora)

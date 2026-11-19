@@ -6,9 +6,14 @@ using Vitta.Domain.Policies;
 using Vitta.Domain.Portfolio;
 using Vitta.Domain.Prospects;
 
-namespace Vitta.Persistence;
+namespace Vitta.Persistence.Context;
 
-public sealed class VittaDbContext(DbContextOptions<VittaDbContext> options) : DbContext(options), IUnitOfWork
+/// <summary>
+/// Contexto base, independente de banco. Repositorios e o resto do sistema dependem SO deste tipo.
+/// Cada banco tem uma subclasse (<see cref="SqliteVittaDbContext"/>, <see cref="PostgresVittaDbContext"/>)
+/// apenas para que as migrations de cada provedor fiquem separadas (Migrations/Sqlite, Migrations/Postgres).
+/// </summary>
+public abstract class VittaDbContext(DbContextOptions options) : DbContext(options), IUnitOfWork
 {
     public DbSet<Client> Clients => Set<Client>();
     public DbSet<Insurer> Insurers => Set<Insurer>();
@@ -16,11 +21,8 @@ public sealed class VittaDbContext(DbContextOptions<VittaDbContext> options) : D
     public DbSet<Prospect> Prospects => Set<Prospect>();
     public DbSet<PortfolioImport> PortfolioImports => Set<PortfolioImport>();
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        modelBuilder.HasDefaultSchema("vitta");
+    protected override void OnModelCreating(ModelBuilder modelBuilder) =>
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(VittaDbContext).Assembly);
-    }
 
     // Futuro: despachar DomainEvents dos AggregateRoots apos o SaveChanges (outbox ou in-process).
 }

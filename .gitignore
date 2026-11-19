@@ -28,3 +28,8 @@ __pycache__/
 # Segredos
 .env
 *.pfx
+
+# SQLite local
+*.db
+*.db-shm
+*.db-wal

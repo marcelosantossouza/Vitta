@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Vitta.Persistence.Context;
 using Vitta.Application.Abstractions.Persistence;
 using Vitta.Domain.Clients;
 using Vitta.Domain.Common;
@@ -19,8 +20,13 @@ internal sealed class ClientRepository(VittaDbContext db) : IClientRepository
 
         if (!string.IsNullOrWhiteSpace(term))
         {
-            var pattern = $"%{term.Trim()}%";
-            query = query.Where(c => EF.Functions.ILike(c.FullName, pattern) || EF.Functions.ILike((string)(object)c.Cpf, pattern));
+            // Consulta portavel (SQLite e Postgres): compara com o SearchName ja normalizado
+            // no dominio, entao acentos e maiusculas nao importam em nenhum banco.
+            var name = TextNormalizer.ForSearch(term);
+            var digits = new string(term.Where(char.IsDigit).ToArray());
+            query = digits.Length > 0
+                ? query.Where(c => c.SearchName.Contains(name) || ((string)(object)c.Cpf).Contains(digits))
+                : query.Where(c => c.SearchName.Contains(name));
         }
 
         var total = await query.CountAsync(cancellationToken);

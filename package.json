@@ -4,14 +4,17 @@
   "description": "Scripts de conveniencia do monorepo Vitta (orquestra API .NET, Angular e IA).",
   "scripts": {
     "setup": "npm --prefix src/Vitta.Client install && dotnet tool restore && dotnet restore Vitta.slnx",
-    "db": "docker compose up -d postgres",
+    "db:pg": "docker compose up -d postgres",
     "api": "dotnet watch run --project src/Vitta.API --launch-profile http --non-interactive",
+    "api:pg": "npm run db:pg && dotnet watch run --project src/Vitta.API --launch-profile http-postgres --non-interactive",
     "web": "npm --prefix src/Vitta.Client run start:web",
     "mobile": "npm --prefix src/Vitta.Client run start:mobile",
     "ai": "cd src/Vitta.AI && .venv/bin/uvicorn app.main:app --reload --port 8000",
-    "dev": "npm run db && concurrently -k -n api,web -c blue,green \"npm:api\" \"npm:web\"",
-    "dev:all": "npm run db && concurrently -k -n api,web,mobile,ai -c blue,green,magenta,yellow \"npm:api\" \"npm:web\" \"npm:mobile\" \"npm:ai\"",
-    "test": "dotnet test Vitta.slnx && npm --prefix src/Vitta.Client test && cd src/Vitta.AI && .venv/bin/pytest -q"
+    "dev": "concurrently -k -n api,web -c blue,green \"npm:api\" \"npm:web\"",
+    "dev:pg": "concurrently -k -n api,web -c blue,green \"npm:api:pg\" \"npm:web\"",
+    "dev:all": "concurrently -k -n api,web,mobile,ai -c blue,green,magenta,yellow \"npm:api\" \"npm:web\" \"npm:mobile\" \"npm:ai\"",
+    "test": "dotnet test Vitta.slnx && npm --prefix src/Vitta.Client test && cd src/Vitta.AI && .venv/bin/pytest -q",
+    "migrations:add": "node scripts/add-migration.mjs"
   },
   "devDependencies": {
     "concurrently": "^10.0.7"

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Vitta.Persistence.Context;
 using Vitta.Application.Abstractions.Persistence;
 using Vitta.Domain.Insurers;
 

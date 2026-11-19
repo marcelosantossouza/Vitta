@@ -1,5 +1,4 @@
 using Mediator;
-using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using Vitta.API.Endpoints;
 using Vitta.API.Infrastructure;
@@ -10,13 +9,10 @@ using Vitta.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("Vitta")
-    ?? throw new InvalidOperationException("ConnectionStrings:Vitta nao configurada.");
-
 builder.Services
     .AddApplication()
     .AddInfrastructure(builder.Configuration)
-    .AddPersistence(connectionString);
+    .AddPersistence(builder.Configuration, builder.Environment.ContentRootPath);
 
 // Mediator (martinothamar/Mediator, MIT) - dispatcher gerado em tempo de compilacao.
 builder.Services.AddMediator(options =>
@@ -45,11 +41,9 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     app.MapScalarApiReference(o => o.WithTitle("Vitta API")); // /scalar
-
-    // Em desenvolvimento aplica as migrations automaticamente.
-    using var scope = app.Services.CreateScope();
-    await scope.ServiceProvider.GetRequiredService<VittaDbContext>().Database.MigrateAsync();
 }
+
+await app.Services.MigrateIfConfiguredAsync();
 
 app.UseCors(ClientCorsPolicy);
 

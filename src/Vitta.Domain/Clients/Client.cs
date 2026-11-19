@@ -10,6 +10,7 @@ public sealed class Client : AggregateRoot
     private Client(string fullName, Cpf cpf, DateOnly? birthDate, string? email, string? phone)
     {
         FullName = fullName;
+        SearchName = TextNormalizer.ForSearch(fullName);
         Cpf = cpf;
         BirthDate = birthDate;
         Email = email;
@@ -17,6 +18,8 @@ public sealed class Client : AggregateRoot
     }
 
     public string FullName { get; private set; } = null!;
+    /// <summary>Nome normalizado (minusculo, sem acento) para busca portavel entre bancos.</summary>
+    public string SearchName { get; private set; } = null!;
     public Cpf Cpf { get; private set; } = null!;
     public DateOnly? BirthDate { get; private set; }
     public string? Email { get; private set; }
@@ -37,6 +40,19 @@ public sealed class Client : AggregateRoot
         }
 
         return new Client(fullName.Trim(), cpfResult.Value, birthDate, email?.Trim(), phone?.Trim());
+    }
+
+    public Result Rename(string fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName))
+        {
+            return ClientErrors.NameRequired;
+        }
+
+        FullName = fullName.Trim();
+        SearchName = TextNormalizer.ForSearch(FullName);
+        Touch();
+        return Result.Success();
     }
 
     public void UpdateContact(string? email, string? phone)

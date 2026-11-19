@@ -9,6 +9,18 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
+    },
+    "http-postgres": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "http://localhost:5080",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "Database__Provider": "Postgres",
+        "Database__MigrateOnStartup": "true",
+        "ConnectionStrings__Vitta": "Host=localhost;Port=5433;Database=vitta;Username=vitta;Password=vitta"
+      }
     }
   }
 }

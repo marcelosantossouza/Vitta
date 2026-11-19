@@ -9,7 +9,7 @@ public class LayerDependencyTests
     private static readonly Assembly Domain = typeof(Domain.Common.Entity).Assembly;
     private static readonly Assembly Application = typeof(Application.AssemblyReference).Assembly;
     private static readonly Assembly Infrastructure = typeof(Infrastructure.DependencyInjection).Assembly;
-    private static readonly Assembly Persistence = typeof(Persistence.VittaDbContext).Assembly;
+    private static readonly Assembly Persistence = typeof(Persistence.Context.VittaDbContext).Assembly;
 
     [Fact]
     public void Domain_DependsOnNothingElse() =>

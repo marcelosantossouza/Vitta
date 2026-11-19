@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
 
-namespace Vitta.Persistence.Migrations
+namespace Vitta.Persistence.Migrations.Postgres
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration
@@ -23,6 +23,7 @@ namespace Vitta.Persistence.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     FullName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    SearchName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     Cpf = table.Column<string>(type: "character varying(11)", maxLength: 11, nullable: false),
                     BirthDate = table.Column<DateOnly>(type: "date", nullable: true),
                     Email = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
@@ -183,6 +184,12 @@ namespace Vitta.Persistence.Migrations
                 table: "clients",
                 column: "Cpf",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_clients_SearchName",
+                schema: "vitta",
+                table: "clients",
+                column: "SearchName");
 
             migrationBuilder.CreateIndex(
                 name: "IX_insurers_Code",

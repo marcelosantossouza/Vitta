@@ -1,4 +1,4 @@
-# Infra local de desenvolvimento: `docker compose up -d`
+# Opcional: em dev o padrao e SQLite. Use este Postgres para testar como em producao (npm run dev:pg).
 services:
   postgres:
     image: postgres:17-alpine

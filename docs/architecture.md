@@ -46,6 +46,28 @@ o registro (`AddMediator`) fica no projeto host (Vitta.API), onde o source gener
 Pelo mesmo motivo (licença comercial) **não usamos AutoMapper** — mapeamento manual
 (`ClientDto.From(client)`), que é explícito e simples para o tamanho do projeto.
 
+## Banco de dados: SQLite (dev) e PostgreSQL (prod)
+
+- `Context/VittaDbContext` é **abstrato e independente de banco**. Repositórios dependem só dele.
+- `SqliteVittaDbContext` e `PostgresVittaDbContext` são subclasses finas. Elas existem para que cada
+  provedor tenha **suas próprias migrations** (o SQL gerado é diferente) e seus ajustes:
+  - SQLite: `DateTimeOffset` gravado como long e `decimal` como double, porque o SQLite não ordena
+    nem soma esses tipos no SQL. Para um banco de desenvolvimento a precisão de double é suficiente.
+  - Postgres: schema `vitta` e tipos nativos (`timestamptz`, `numeric`).
+- `Database:Provider` escolhe qual contexto é registrado. `IDesignTimeDbContextFactory` permite gerar
+  migrations dos dois independentemente da configuração atual.
+- **Consultas devem ser portáveis.** Nada de `EF.Functions.ILike` (só Postgres). Para busca por nome,
+  o domínio mantém `Client.SearchName` normalizado (minúsculo, sem acento), que funciona igual nos dois bancos.
+- **Atenção:** SQLite é mais permissivo que o Postgres (tipos, tamanho de colunas). Antes de publicar,
+  rode `npm run dev:pg` para testar contra o banco de produção.
+
+### Por que não MariaDB (por enquanto)
+
+O provedor Pomelo (padrão para MySQL/MariaDB) ainda não tem versão para EF Core 10. O provedor da
+Oracle (`MySql.EntityFrameworkCore`) suporta EF 10, mas é feito para MySQL e não garante MariaDB.
+Se um dia for necessário: criar `MariaDbVittaDbContext` + `Migrations/MariaDb` + um `case` no
+`DependencyInjection`. O resto do sistema não muda.
+
 ## Erros
 
 - Regras de negócio retornam `Result`/`Error` (sem exceptions) → a API converte em ProblemDetails

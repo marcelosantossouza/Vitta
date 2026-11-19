@@ -12,6 +12,8 @@ internal sealed class ClientConfiguration : IEntityTypeConfiguration<Client>
         b.ToTable("clients");
         b.HasKey(x => x.Id);
         b.Property(x => x.FullName).HasMaxLength(200).IsRequired();
+        b.Property(x => x.SearchName).HasMaxLength(200).IsRequired();
+        b.HasIndex(x => x.SearchName);
         b.Property(x => x.Cpf)
             .HasConversion(cpf => cpf.Value, value => Cpf.Create(value).Value)
             .HasMaxLength(11)

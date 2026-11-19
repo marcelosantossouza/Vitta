@@ -4,14 +4,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using Vitta.Persistence;
+using Vitta.Persistence.Context;
 
 #nullable disable
 
-namespace Vitta.Persistence.Migrations
+namespace Vitta.Persistence.Migrations.Postgres
 {
-    [DbContext(typeof(VittaDbContext))]
-    partial class VittaDbContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(PostgresVittaDbContext))]
+    partial class PostgresVittaDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
@@ -56,6 +56,11 @@ namespace Vitta.Persistence.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
 
+                    b.Property<string>("SearchName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -63,6 +68,8 @@ namespace Vitta.Persistence.Migrations
 
                     b.HasIndex("Cpf")
                         .IsUnique();
+
+                    b.HasIndex("SearchName");
 
                     b.ToTable("clients", "vitta");
                 });
