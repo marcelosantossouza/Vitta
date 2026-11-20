@@ -13,3 +13,7 @@ export interface ProblemDetails {
   status?: number;
   errors?: Record<string, string[]>;
 }
+
+export interface IdResponse {
+  id: string;
+}

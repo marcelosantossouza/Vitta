@@ -6,6 +6,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Infrastructure;
 using Vitta.Application.Abstractions.Persistence;
 using Vitta.Persistence.Context;
+using Vitta.Application.Abstractions.Queries;
+using Vitta.Persistence.Queries;
 using Vitta.Persistence.Repositories;
 
 namespace Vitta.Persistence;
@@ -39,8 +41,24 @@ public static class DependencyInjection
         }
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<VittaDbContext>());
+
+        // Escrita
         services.AddScoped<IClientRepository, ClientRepository>();
+        services.AddScoped<IPolicyRepository, PolicyRepository>();
+        services.AddScoped<IProspectRepository, ProspectRepository>();
         services.AddScoped<IInsurerRepository, InsurerRepository>();
+        services.AddScoped<IPortfolioImportRepository, PortfolioImportRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IImportTemplateRepository, ImportTemplateRepository>();
+
+        // Leitura
+        services.AddScoped<IClientQueries, ClientQueries>();
+        services.AddScoped<IPolicyQueries, PolicyQueries>();
+        services.AddScoped<IProspectQueries, ProspectQueries>();
+        services.AddScoped<PortfolioQueries>();
+        services.AddScoped<IPortfolioQueries>(sp => sp.GetRequiredService<PortfolioQueries>());
+        services.AddScoped<IDashboardQueries, DashboardQueries>();
+        services.AddScoped<IImportTemplateQueries, ImportTemplateQueries>();
         return services;
     }
 

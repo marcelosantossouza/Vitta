@@ -1,17 +1,36 @@
-export interface Client {
-  id: string;
+import { PolicyDto } from './policy';
+
+export interface ClientInput {
   fullName: string;
-  cpf: string;
   birthDate?: string | null;
   email?: string | null;
   phone?: string | null;
   notes?: string | null;
 }
 
-export interface CreateClientRequest {
+export interface CreateClientRequest extends ClientInput {
+  cpf: string;
+}
+
+export interface ClientListItemDto {
+  id: string;
+  fullName: string;
+  /** Formatado 000.000.000-00 */
+  cpf: string;
+  phone: string | null;
+  email: string | null;
+  activePolicyCount: number;
+  monthlyPremium: number;
+}
+
+export interface ClientDetailDto {
+  id: string;
   fullName: string;
   cpf: string;
-  birthDate?: string | null;
-  email?: string | null;
-  phone?: string | null;
+  birthDate: string | null;
+  email: string | null;
+  phone: string | null;
+  notes: string | null;
+  createdAt: string;
+  policies: PolicyDto[];
 }

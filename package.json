@@ -14,7 +14,9 @@
     "dev:pg": "concurrently -k -n api,web -c blue,green \"npm:api:pg\" \"npm:web\"",
     "dev:all": "concurrently -k -n api,web,mobile,ai -c blue,green,magenta,yellow \"npm:api\" \"npm:web\" \"npm:mobile\" \"npm:ai\"",
     "test": "dotnet test Vitta.slnx && npm --prefix src/Vitta.Client test && cd src/Vitta.AI && .venv/bin/pytest -q",
-    "migrations:add": "node scripts/add-migration.mjs"
+    "migrations:add": "node scripts/add-migration.mjs",
+    "smoke": "python3 scripts/smoke_test.py",
+    "seed:demo": "python3 scripts/seed_demo.py"
   },
   "devDependencies": {
     "concurrently": "^10.0.7"

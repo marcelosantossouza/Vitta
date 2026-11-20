@@ -1,0 +1,208 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Prospecção</h1>
+      <p class="subtitle">
+        Arraste os cartões entre as colunas para avançar no funil.
+        @if (overdueCount() > 0) { <span class="badge badge--warning">{{ overdueCount() }} follow-up(s) para hoje ou atrasados</span> }
+      </p>
+    </div>
+    <div class="actions">
+      <button class="btn" type="button" (click)="openImport()"><vt-icon name="upload" [size]="18" /> Importar planilha</button>
+      <button class="btn btn--primary" type="button" (click)="openNew()"><vt-icon name="plus" [size]="18" /> Novo prospect</button>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <label class="search">
+      <vt-icon name="search" [size]="18" />
+      <input type="search" placeholder="Buscar por nome, telefone ou origem" (input)="search.set($any($event.target).value)" />
+    </label>
+    <label class="toggle">
+      <input type="checkbox" [checked]="showClosed()" (change)="showClosed.set($any($event.target).checked)" />
+      Mostrar ganhos e perdidos
+    </label>
+  </div>
+
+  @if (loading()) {
+    <div class="board">
+      @for (s of stages; track s) { <div class="column"><div class="skeleton" style="height: 6rem"></div></div> }
+    </div>
+  } @else {
+    <div class="board" cdkDropListGroup>
+      @for (col of columns(); track col.stage) {
+        <section class="column" [class]="'column stage-' + col.stage" cdkDropList [cdkDropListData]="col" (cdkDropListDropped)="drop($event)">
+          <header class="column__header">
+            <span class="dot"></span>
+            <h3>{{ col.label }}</h3>
+            <span class="count">{{ col.items.length }}</span>
+          </header>
+
+          @for (p of col.items; track p.id) {
+            <article class="prospect" cdkDrag [cdkDragData]="p" (click)="openEdit(p)" tabindex="0" (keydown.enter)="openEdit(p)">
+              <strong>{{ p.name }}</strong>
+              @if (p.phone || p.source) {
+                <span class="muted small">{{ p.phone }}{{ p.phone && p.source ? ' · ' : '' }}{{ p.source }}</span>
+              }
+              @switch (followUpState(p)) {
+                @case ('overdue') { <span class="badge badge--danger"><vt-icon name="calendar" [size]="12" /> Atrasado · {{ p.nextFollowUpOn | isoDate }}</span> }
+                @case ('today') { <span class="badge badge--warning"><vt-icon name="calendar" [size]="12" /> Hoje</span> }
+                @case ('future') { <span class="badge"><vt-icon name="calendar" [size]="12" /> {{ p.nextFollowUpOn | isoDate }}</span> }
+              }
+              @if (p.convertedClientId) {
+                <a class="badge badge--success" [routerLink]="['/clientes', p.convertedClientId]" (click)="$event.stopPropagation()">Ver cliente</a>
+              }
+              <select class="move" aria-label="Mover para" (click)="$event.stopPropagation()" (change)="moveTo(p, $any($event.target).value)">
+                @for (s of stages; track s) { <option [value]="s" [selected]="s === p.stage">{{ stageLabels[s] }}</option> }
+              </select>
+            </article>
+          } @empty {
+            <p class="column__empty">Arraste cartões para cá</p>
+          }
+        </section>
+      }
+    </div>
+  }
+</div>
+
+@if (dialog() === 'edit') {
+  <div class="dialog-backdrop" (click)="closeDialog()">
+    <form class="dialog" [formGroup]="form" (ngSubmit)="save()" (click)="$event.stopPropagation()" novalidate>
+      <div class="dialog__header">
+        <h2>{{ editing() ? 'Editar prospect' : 'Novo prospect' }}</h2>
+        <button class="btn btn--ghost btn--icon" type="button" (click)="closeDialog()" aria-label="Fechar"><vt-icon name="x" /></button>
+      </div>
+      @if (editing(); as p) {
+        <p class="muted small" style="margin-top: -0.5rem">Etapa atual: <span class="badge badge--primary">{{ stageLabels[p.stage] }}</span></p>
+      }
+      <div class="form-grid">
+        <label class="field span-all">
+          Nome *
+          <input formControlName="name" />
+          @if (form.controls.name.touched && form.controls.name.invalid) { <span class="field-error">Informe o nome.</span> }
+        </label>
+        <label class="field">Telefone / WhatsApp<input type="tel" formControlName="phone" /></label>
+        <label class="field">E-mail<input type="email" formControlName="email" /></label>
+        <label class="field">Origem<input formControlName="source" placeholder="Indicação, Instagram, evento…" /></label>
+        <label class="field">Próximo contato<input type="date" formControlName="nextFollowUpOn" /></label>
+        <label class="field span-all">Anotações<textarea formControlName="notes" rows="3"></textarea></label>
+      </div>
+      @if (dialogError(); as message) {
+        <div class="alert alert--danger" style="margin-top: 1rem"><vt-icon name="alert" [size]="18" /><span>{{ message }}</span></div>
+      }
+      <div class="form-actions">
+        @if (editing(); as p) {
+          <button class="btn btn--danger" type="button" (click)="remove()" style="margin-right: auto"><vt-icon name="trash" [size]="16" /> Excluir</button>
+          @if (!p.convertedClientId) {
+            <button class="btn" type="button" (click)="openConvert()"><vt-icon name="user-plus" [size]="16" /> Converter em cliente</button>
+          }
+        }
+        <button class="btn btn--primary" type="submit" [disabled]="busy()">{{ busy() ? 'Salvando…' : 'Salvar' }}</button>
+      </div>
+    </form>
+  </div>
+}
+
+@if (dialog() === 'convert' && editing(); as p) {
+  <div class="dialog-backdrop" (click)="closeDialog()">
+    <form class="dialog" [formGroup]="convertForm" (ngSubmit)="convert()" (click)="$event.stopPropagation()" novalidate>
+      <div class="dialog__header">
+        <h2>Converter {{ p.name }} em cliente</h2>
+        <button class="btn btn--ghost btn--icon" type="button" (click)="closeDialog()" aria-label="Fechar"><vt-icon name="x" /></button>
+      </div>
+      <p class="muted">Nome, telefone, e-mail e anotações serão copiados. Informe o CPF para criar o cliente.</p>
+      <div class="form-grid">
+        <label class="field">
+          CPF *
+          <input formControlName="cpf" inputmode="numeric" placeholder="000.000.000-00" maxlength="14" (input)="onCpfInput($event)" />
+          @if (convertForm.controls.cpf.touched && convertForm.controls.cpf.invalid) { <span class="field-error">Informe um CPF completo.</span> }
+        </label>
+        <label class="field">Data de nascimento<input type="date" formControlName="birthDate" /></label>
+      </div>
+      @if (dialogError(); as message) {
+        <div class="alert alert--danger" style="margin-top: 1rem"><vt-icon name="alert" [size]="18" /><span>{{ message }}</span></div>
+      }
+      <div class="form-actions">
+        <button class="btn" type="button" (click)="dialog.set('edit')">Voltar</button>
+        <button class="btn btn--primary" type="submit" [disabled]="busy()"><vt-icon name="check" [size]="16" /> {{ busy() ? 'Convertendo…' : 'Criar cliente' }}</button>
+      </div>
+    </form>
+  </div>
+}
+
+@if (dialog() === 'import') {
+  <div class="dialog-backdrop" (click)="closeDialog()">
+    <form class="dialog import" (submit)="$event.preventDefault(); runImport()" (click)="$event.stopPropagation()" novalidate>
+      <div class="dialog__header">
+        <h2>Importar planilha de prospects</h2>
+        <button class="btn btn--ghost btn--icon" type="button" (click)="closeDialog()" aria-label="Fechar"><vt-icon name="x" /></button>
+      </div>
+
+      @if (importResult(); as r) {
+        <div class="alert alert--success">
+          <vt-icon name="check" [size]="18" />
+          <span>Importação concluída: <strong>{{ r.created }}</strong> criado(s) na etapa Novo de {{ r.totalRows }} linha(s).</span>
+        </div>
+        <div class="result">
+          <span class="badge badge--success">{{ r.created }} criados</span>
+          <span class="badge" [class.badge--warning]="r.skipped > 0">{{ r.skipped }} ignorados</span>
+          <span class="badge">{{ r.totalRows }} linhas</span>
+        </div>
+        @if (r.messages.length) {
+          <ul class="messages">@for (m of r.messages; track $index) { <li>{{ m }}</li> }</ul>
+        }
+        <div class="form-actions">
+          <button class="btn" type="button" (click)="openImport(importTemplateId())">Importar outra</button>
+          <button class="btn btn--primary" type="button" (click)="closeDialog()"><vt-icon name="check" [size]="16" /> Concluir</button>
+        </div>
+      } @else {
+        <p class="muted small" style="margin-top: -0.5rem">Os contatos entram na etapa <strong>Novo</strong>. Duplicados (mesmo e-mail,
+          telefone, ou mesmo nome sem contato) são ignorados.</p>
+
+        @if (importTemplates() === null) {
+          <div class="skeleton" style="height: 2.6rem"></div>
+        } @else if (importTemplates()!.length === 0) {
+          <div class="alert">
+            <vt-icon name="sparkles" [size]="18" />
+            <div>
+              <strong>Você ainda não tem um modelo de prospecção.</strong>
+              <p>Envie uma planilha de exemplo e a IA descobre qual coluna é o nome, o telefone, o e-mail…</p>
+              <a class="btn btn--primary btn--sm" style="margin-top: 0.6rem" routerLink="/modelos/novo" [queryParams]="wizardParams">
+                <vt-icon name="sparkles" [size]="16" /> Criar modelo com IA</a>
+            </div>
+          </div>
+        } @else {
+          <div class="form-grid">
+            <div class="field span-all">
+              <label for="prospect-template">Modelo da planilha *</label>
+              <select id="prospect-template" (change)="importTemplateId.set($any($event.target).value)">
+                @for (t of importTemplates(); track t.id) { <option [value]="t.id" [selected]="t.id === importTemplateId()">{{ t.name }}</option> }
+              </select>
+              <span class="hint">Layout diferente? <a routerLink="/modelos/novo" [queryParams]="wizardParams"><vt-icon name="sparkles" [size]="12" /> Criar modelo com IA</a></span>
+            </div>
+            <div class="field span-all">
+              <span>Planilha (.xlsx, .csv ou .txt) ou texto copiado do site *</span>
+              <vt-file-or-paste label="Arraste a planilha aqui" [disabled]="busy()" (fileChange)="onImportFile($event)" />
+            </div>
+          </div>
+        }
+
+        @if (dialogError(); as message) {
+          <div class="alert alert--danger" style="margin-top: 1rem">
+            <vt-icon name="alert" [size]="18" />
+            <span>{{ message }}
+              @if (importTemplateId()) { <a [routerLink]="['/modelos', importTemplateId()]" [queryParams]="{ returnUrl: '/prospeccao' }">Ajustar o modelo</a> }
+            </span>
+          </div>
+        }
+
+        <div class="form-actions">
+          <button class="btn" type="button" (click)="closeDialog()">Cancelar</button>
+          <button class="btn btn--primary" type="submit" [disabled]="busy() || !importFile() || !importTemplateId()">
+            <vt-icon name="upload" [size]="16" /> {{ busy() ? 'Importando…' : 'Importar' }}
+          </button>
+        </div>
+      }
+    </form>
+  </div>
+}

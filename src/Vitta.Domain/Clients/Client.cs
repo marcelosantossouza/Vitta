@@ -39,10 +39,22 @@ public sealed class Client : AggregateRoot
             return cpfResult.Error;
         }
 
-        return new Client(fullName.Trim(), cpfResult.Value, birthDate, email?.Trim(), phone?.Trim());
+        return new Client(fullName.Trim(), cpfResult.Value, birthDate, Clean(email), Clean(phone));
     }
 
-    public Result Rename(string fullName)
+    public static Result<Client> Create(string fullName, string cpf, DateOnly? birthDate, string? email, string? phone, string? notes)
+    {
+        var result = Create(fullName, cpf, birthDate, email, phone);
+        if (result.IsSuccess)
+        {
+            result.Value.Notes = Clean(notes);
+        }
+
+        return result;
+    }
+
+    /// <summary>Atualiza os dados cadastrais. O CPF nao muda (identifica o cliente nas seguradoras).</summary>
+    public Result Update(string fullName, DateOnly? birthDate, string? email, string? phone, string? notes)
     {
         if (string.IsNullOrWhiteSpace(fullName))
         {
@@ -51,27 +63,21 @@ public sealed class Client : AggregateRoot
 
         FullName = fullName.Trim();
         SearchName = TextNormalizer.ForSearch(FullName);
+        BirthDate = birthDate;
+        Email = Clean(email);
+        Phone = Clean(phone);
+        Notes = Clean(notes);
         Touch();
         return Result.Success();
     }
 
-    public void UpdateContact(string? email, string? phone)
-    {
-        Email = email?.Trim();
-        Phone = phone?.Trim();
-        Touch();
-    }
-
-    public void SetNotes(string? notes)
-    {
-        Notes = notes;
-        Touch();
-    }
+    private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }
 
 public static class ClientErrors
 {
-    public static readonly Error NameRequired = Error.Validation("Client.NameRequired", "Nome e obrigatorio.");
-    public static readonly Error CpfAlreadyExists = Error.Conflict("Client.CpfAlreadyExists", "Ja existe um cliente com este CPF.");
-    public static Error NotFound(Guid id) => Error.NotFound("Client.NotFound", $"Cliente {id} nao encontrado.");
+    public static readonly Error NameRequired = Error.Validation("Client.NameRequired", "Nome é obrigatório.");
+    public static readonly Error CpfAlreadyExists = Error.Conflict("Client.CpfAlreadyExists", "Já existe um cliente com este CPF.");
+    public static readonly Error HasPolicies = Error.Conflict("Client.HasPolicies", "Este cliente possui apólices e não pode ser excluído.");
+    public static Error NotFound(Guid id) => Error.NotFound("Client.NotFound", "Cliente não encontrado.");
 }

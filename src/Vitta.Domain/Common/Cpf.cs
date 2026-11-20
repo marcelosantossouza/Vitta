@@ -15,7 +15,7 @@ public sealed record Cpf
 
         if (!IsValid(digits))
         {
-            return Error.Validation("Cpf.Invalid", "CPF invalido.");
+            return Error.Validation("Cpf.Invalid", "CPF inválido.");
         }
 
         return new Cpf(digits);

@@ -1,0 +1,53 @@
+.kpis { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
+
+.kpi {
+  display: flex; gap: 0.9rem; align-items: flex-start;
+  > div { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+}
+.kpi__icon {
+  display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+  background: var(--vt-primary-soft); color: var(--vt-primary);
+}
+.kpi__label { font-size: 0.8rem; color: var(--vt-muted); font-weight: 550; }
+.kpi__value { font-size: 1.65rem; font-weight: 750; letter-spacing: -0.02em; line-height: 1.15; overflow-wrap: anywhere; }
+.kpi__hint { font-size: 0.8rem; color: var(--vt-muted); text-decoration: none; }
+a.kpi__hint { color: var(--vt-primary); font-weight: 550; }
+
+.kpi--highlight {
+  background: linear-gradient(135deg, #0f6e5c, #0b4f42); color: #fff; border-color: transparent;
+  .kpi__icon { background: rgba(255, 255, 255, 0.15); color: #fff; }
+  .kpi__label, .kpi__hint { color: rgba(255, 255, 255, 0.75); }
+}
+
+h2 { display: flex; align-items: center; gap: 0.45rem; }
+
+.list {
+  list-style: none; margin: 0; padding: 0;
+  li {
+    display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+    padding: 0.7rem 0; border-bottom: 1px solid var(--vt-border);
+    &:last-child { border-bottom: 0; padding-bottom: 0; }
+    &:first-child { padding-top: 0; }
+  }
+  a { color: inherit; text-decoration: none; }
+  a:hover strong { color: var(--vt-primary); }
+}
+.list__main { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.list .badge { text-decoration: none; }
+
+.exits h2 vt-icon { color: var(--vt-danger); }
+
+.bars { display: flex; flex-direction: column; gap: 0.7rem; }
+.bar {
+  display: grid; grid-template-columns: 90px 1fr auto; gap: 0.75rem; align-items: center; font-size: 0.875rem;
+  &--wide { grid-template-columns: minmax(90px, 160px) 1fr auto; }
+}
+.bar__label { color: var(--vt-muted); font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar__track { height: 10px; border-radius: 999px; background: var(--vt-surface-2); overflow: hidden; border: 1px solid var(--vt-border); }
+.bar__fill {
+  height: 100%; border-radius: 999px; background: linear-gradient(90deg, #1fa386, #0f6e5c);
+  transition: width 0.6s cubic-bezier(0.2, 0.7, 0.2, 1); min-width: 2px;
+  &.stage-Won { background: var(--vt-success); }
+  &.stage-Lost { background: #b9c4c0; }
+}
+.bar__value { font-weight: 650; font-variant-numeric: tabular-nums; text-align: right; }

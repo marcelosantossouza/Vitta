@@ -1,0 +1,83 @@
+<div class="page">
+  <div>
+    <a class="back-link" routerLink="/carteira"><vt-icon name="chevron-left" [size]="16" /> Carteira</a>
+  </div>
+
+  @if (data(); as d) {
+    <div class="page-header">
+      <div>
+        <h1>{{ d.insurerName }} · {{ d.referenceMonth | month }}</h1>
+        <p class="subtitle">Arquivo {{ d.fileName }} · importado em {{ d.createdAt | isoDate }}</p>
+      </div>
+    </div>
+
+    @if (d.isFirstImport) {
+      <div class="alert">
+        <vt-icon name="info" [size]="18" />
+        <div>
+          <strong>Esta é a carteira base de {{ d.insurerName }}.</strong>
+          <p>Registramos {{ d.totalRows }} apólices. Na próxima importação o Vitta vai comparar com este mês e mostrar quem entrou, saiu ou mudou.</p>
+        </div>
+      </div>
+    } @else if (d.left > 0) {
+      <div class="alert alert--warning">
+        <vt-icon name="alert" [size]="18" />
+        <div>
+          <strong>{{ d.left }} apólice(s) saíram da carteira neste mês.</strong>
+          <p>Pode ser cancelamento, falta de pagamento ou troca de corretor. Vale entrar em contato com esses clientes.</p>
+        </div>
+      </div>
+    }
+
+    <div class="summary">
+      <div class="card stat"><strong>{{ d.totalRows }}</strong><span>apólices na planilha</span></div>
+      <div class="card stat stat--success"><strong>+{{ d.entered }}</strong><span>entraram</span></div>
+      <div class="card stat stat--danger"><strong>−{{ d.left }}</strong><span>saíram</span></div>
+      <div class="card stat stat--warning"><strong>{{ d.changed }}</strong><span>mudaram</span></div>
+    </div>
+
+    @if (!d.isFirstImport) {
+      <section class="card card--flush">
+        <div class="card__header">
+          <div class="tabs" role="tablist">
+            @for (t of tabs(); track t.value) {
+              <button type="button" role="tab" [class.active]="tab() === t.value" (click)="tab.set(t.value)">{{ t.label }} ({{ t.count }})</button>
+            }
+          </div>
+        </div>
+
+        @if (visible().length === 0) {
+          <vt-empty-state icon="check" title="Nada por aqui" text="Nenhuma mudança deste tipo neste mês." />
+        } @else {
+          <div class="table-wrap" style="margin-top: 1rem">
+            <table class="responsive">
+              <thead>
+                <tr><th>Tipo</th><th>Segurado</th><th>CPF</th><th>Apólice</th><th>Detalhe</th><th></th></tr>
+              </thead>
+              <tbody>
+                @for (c of visible(); track c.id) {
+                  <tr [class.row--danger]="c.type === 'Left'">
+                    <td data-label="Tipo"><span [class]="'badge ' + badgeClass(c.type)">{{ c.type | changeType }}</span></td>
+                    <td data-label="Segurado"><strong>{{ c.holderName }}</strong></td>
+                    <td data-label="CPF" class="mono nowrap">{{ (c.holderCpf | cpf) || '—' }}</td>
+                    <td data-label="Apólice" class="mono">{{ c.policyNumber }}</td>
+                    <td data-label="Detalhe">{{ c.detail || '—' }}</td>
+                    <td class="actions">
+                      @if (c.clientId) {
+                        <a class="btn btn--sm" [routerLink]="['/clientes', c.clientId]">Ver cliente <vt-icon name="arrow-right" [size]="14" /></a>
+                      } @else {
+                        <span class="muted small">Sem cadastro</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+    }
+  } @else {
+    <div class="card"><div class="skeleton" style="height: 10rem"></div></div>
+  }
+</div>

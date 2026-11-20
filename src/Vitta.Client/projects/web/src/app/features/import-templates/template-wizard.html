@@ -1,0 +1,256 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <a class="back-link" href="" (click)="$event.preventDefault(); cancel()"><vt-icon name="chevron-left" [size]="16" /> Voltar</a>
+      <h1>{{ isEdit ? 'Editar modelo' : 'Novo modelo de planilha' }}</h1>
+      <p class="subtitle">
+        @if (isEdit) {
+          Ajuste o nome, a seguradora ou as colunas. Envie uma planilha de exemplo ou cole o texto copiado do site para escolher as colunas numa lista.
+        } @else {
+          Envie uma planilha de exemplo ou cole o texto copiado do site: a IA encontra o cabeçalho e sugere as colunas. Você só confere.
+        }
+      </p>
+    </div>
+  </div>
+
+  @if (!isEdit) {
+    <ol class="steps" aria-label="Etapas">
+      <li [class.active]="step() === 1" [class.done]="step() === 2"><span>1</span> Planilha de exemplo</li>
+      <li [class.active]="step() === 2"><span>2</span> Conferir colunas</li>
+    </ol>
+  }
+
+  @if (loadingTemplate()) {
+    <div class="card" style="display: grid; gap: 0.75rem">@for (i of [1, 2, 3, 4]; track i) { <div class="skeleton" style="height: 2.4rem"></div> }</div>
+  } @else if (step() === 1) {
+    <section class="card step1">
+      @if (kindFixed) {
+        <p class="muted small" style="margin: 0">Tipo: <span class="badge badge--primary">{{ kindLabels[kind()!] }}</span></p>
+      } @else {
+        <div class="kinds" role="radiogroup" aria-label="Tipo de planilha">
+          @for (k of kinds; track k) {
+            <button type="button" class="kind" role="radio" [attr.aria-checked]="kind() === k" [class.active]="kind() === k" (click)="setKind(k)">
+              <vt-icon [name]="k === 'Portfolio' ? 'folder' : 'target'" [size]="22" />
+              <strong>{{ kindLabels[k] }}</strong>
+              <span class="muted small">{{ k === 'Portfolio' ? 'Planilha mensal da seguradora com as apólices.' : 'Lista de contatos para o funil de prospecção.' }}</span>
+            </button>
+          }
+        </div>
+      }
+
+      @if (kind() === 'Portfolio') {
+        <label class="field">
+          Seguradora (opcional)
+          <select [value]="insurerId()" (change)="insurerId.set($any($event.target).value)">
+            <option value="" [selected]="!insurerId()">Qualquer seguradora</option>
+            @for (i of insurers(); track i.id) { <option [value]="i.id" [selected]="i.id === insurerId()">{{ i.name }}</option> }
+          </select>
+          <span class="hint">Com seguradora, o modelo já vem selecionado ao importar a carteira dela.</span>
+        </label>
+      }
+
+      @if (analyzing()) {
+        <ng-container [ngTemplateOutlet]="aiLoading" />
+      } @else {
+        <vt-file-or-paste label="Arraste a planilha de exemplo aqui" pasteAction="Analisar texto colado"
+          [(mode)]="inputMode" (fileChange)="setFile($event)" />
+      }
+
+      @if (error(); as message) {
+        <div class="alert alert--danger"><vt-icon name="alert" [size]="18" /><span>{{ message }}</span></div>
+      }
+
+      <p class="muted small" style="margin: 0">
+        <vt-icon name="sparkles" [size]="14" /> A IA lê só as primeiras linhas para entender o layout. Nada é importado nesta etapa.
+      </p>
+    </section>
+  } @else {
+    <div class="layout">
+      <section class="card preview">
+        @if (analysis(); as a) {
+          <div class="card__header">
+            <div class="file">
+              <vt-icon name="sheet" [size]="20" />
+              <strong>{{ isPasted(a.fileName) ? 'Texto colado' : a.fileName }}</strong>
+            </div>
+            <button class="btn btn--sm" type="button" (click)="restart()" [disabled]="analyzing()"><vt-icon name="refresh" [size]="14" /> {{ isPasted(a.fileName) ? 'Colar outro texto' : 'Trocar planilha' }}</button>
+          </div>
+
+          <div class="form-grid">
+            @if (a.sheets.length > 1) {
+              <label class="field">
+                Aba
+                <select (change)="changeSheet($any($event.target).value)" [disabled]="analyzing()">
+                  @for (s of a.sheets; track s) { <option [value]="s" [selected]="s === a.sheetName">{{ s }}</option> }
+                </select>
+              </label>
+            }
+            <label class="field">
+              Linha do cabeçalho
+              <select (change)="headerRow.set(+$any($event.target).value)" [disabled]="analyzing()">
+                @for (r of rowOptions(); track r.value) { <option [value]="r.value" [selected]="r.value === headerRow()">{{ r.label }}</option> }
+              </select>
+            </label>
+          </div>
+
+          @if (analyzing()) {
+            <ng-container [ngTemplateOutlet]="aiLoading" />
+          } @else {
+            <div class="sheet-wrap">
+              <table class="sheet">
+                <thead>
+                  <tr class="tags">
+                    <th></th>
+                    @for (i of columnIndexes(); track i) {
+                      <th>@for (label of columnFields()[i] ?? []; track label) { <span class="badge badge--primary">{{ label }}</span> }</th>
+                    }
+                  </tr>
+                  <tr class="header-row">
+                    <th class="n" [attr.title]="headerRow() === 0 ? 'Sem cabeçalho' : null">{{ headerRow() === 0 ? '—' : headerRow() }}</th>
+                    @for (i of columnIndexes(); track i) { <th [class.used]="(columnFields()[i] ?? []).length">{{ headers()[i] }}</th> }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of previewRows(); track row.number) {
+                    <tr>
+                      <td class="n">{{ row.number }}</td>
+                      @for (i of columnIndexes(); track i) { <td [class.used]="(columnFields()[i] ?? []).length">{{ row.cells[i] }}</td> }
+                    </tr>
+                  } @empty {
+                    <tr><td class="n"></td><td [attr.colspan]="columnCount() || 1" class="muted">Nenhuma linha depois do cabeçalho.</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <p class="muted small" style="margin: 0.5rem 0 0">
+              @if (headerRow() === 0) {
+                Sem cabeçalho: as colunas são identificadas pela posição (Coluna 1, Coluna 2…). Abaixo, as primeiras linhas de dados.
+              } @else {
+                A linha destacada é o cabeçalho; abaixo, as primeiras linhas de dados.
+              }
+            </p>
+          }
+        } @else {
+          <h2><vt-icon name="sparkles" [size]="18" /> Enviar planilha de exemplo</h2>
+          <p class="muted small">Envie uma planilha de exemplo ou cole o texto copiado do site, no layout atual, para escolher
+            as colunas numa lista. O que já está mapeado é mantido quando a coluna continuar existindo.</p>
+          @if (analyzing()) {
+            <ng-container [ngTemplateOutlet]="aiLoading" />
+          } @else {
+            <vt-file-or-paste label="Enviar planilha de exemplo" pasteAction="Analisar texto colado"
+              [(mode)]="inputMode" (fileChange)="setFile($event)" />
+          }
+        }
+      </section>
+
+      <form class="card mapping" (submit)="$event.preventDefault(); save()" novalidate>
+        <h2>Modelo</h2>
+
+        <label class="field">
+          Nome *
+          <input [value]="name()" (input)="name.set($any($event.target).value)" maxlength="120" placeholder="Ex.: Carteira MAG" />
+        </label>
+
+        <div class="form-grid">
+          <div class="field">
+            Tipo
+            <span><span class="badge badge--primary">{{ kindLabels[kind()!] }}</span></span>
+          </div>
+          @if (kind() === 'Portfolio') {
+            <label class="field">
+              Seguradora
+              <select [value]="insurerId()" (change)="insurerId.set($any($event.target).value)">
+                <option value="" [selected]="!insurerId()">Qualquer seguradora</option>
+                @for (i of insurers(); track i.id) { <option [value]="i.id" [selected]="i.id === insurerId()">{{ i.name }}</option> }
+              </select>
+            </label>
+          }
+        </div>
+
+        @if (analysis(); as a) {
+          @if (a.analyzedBy === 'heuristic') {
+            <div class="alert alert--warning">
+              <vt-icon name="alert" [size]="18" />
+              <span>IA indisponível — {{ a.headerRow === 0 ? 'colunas reconhecidas pelo conteúdo' : 'sugestão feita pelos nomes das colunas' }}; confira.</span>
+            </div>
+          } @else {
+            <div class="alert">
+              <vt-icon name="sparkles" [size]="18" />
+              <div>
+                <span class="badge" [class.badge--success]="a.confidence === 'high'" [class.badge--warning]="a.confidence === 'medium'"
+                  [class.badge--danger]="a.confidence === 'low'">{{ confidenceLabels[a.confidence] || a.confidence }}</span>
+                <p>{{ a.notes || 'A IA sugeriu as colunas abaixo. Confira antes de salvar.' }}</p>
+              </div>
+            </div>
+          }
+        } @else if (template(); as t) {
+          @if (t.aiNotes) {
+            <div class="alert"><vt-icon name="sparkles" [size]="18" /><span>{{ t.aiNotes }}</span></div>
+          }
+          <div class="form-grid">
+            <label class="field">
+              Aba
+              <input [value]="sheetText()" (input)="sheetText.set($any($event.target).value)" placeholder="Primeira aba" />
+            </label>
+            <label class="field">
+              Linha do cabeçalho
+              <input type="number" min="0" [value]="headerRow()" (input)="setHeaderRowText($any($event.target).value)" />
+              <span class="hint">0 = sem cabeçalho (texto colado)</span>
+            </label>
+          </div>
+        }
+
+        <h3 class="fields-title">Colunas da planilha</h3>
+        @if (fields().length === 0) {
+          @for (i of [1, 2, 3]; track i) { <div class="skeleton" style="height: 2.4rem"></div> }
+        }
+        @for (f of fields(); track f.field) {
+          <div class="field map" [class.missing]="isMissing(f)">
+            <span>{{ f.label }}@if (f.required) { <b class="req"> *</b> }</span>
+            @if (analysis()) {
+              @if (f.multiple) {
+                <div class="checks">
+                  @for (h of headerOptions(); track h) {
+                    <label><input type="checkbox" [checked]="selected(f.field).includes(h)" (change)="toggleMulti(f.field, h, $any($event.target).checked)" /> {{ h }}</label>
+                  } @empty {
+                    <span class="muted small">Nenhuma coluna nesta linha.</span>
+                  }
+                </div>
+              } @else {
+                <select (change)="setSingle(f.field, $any($event.target).value)">
+                  <option value="" [selected]="!selected(f.field).length">— Não usar —</option>
+                  @for (h of headerOptions(); track h) { <option [value]="h" [selected]="selected(f.field)[0] === h">{{ h }}</option> }
+                </select>
+              }
+            } @else if (f.multiple) {
+              <textarea rows="2" [value]="textValue(f.field)" (input)="setText(f.field, $any($event.target).value, true)" [placeholder]="headerRow() === 0 ? 'Uma coluna por linha (ex.: Coluna 2)' : 'Uma coluna por linha'"></textarea>
+            } @else {
+              <input [value]="textValue(f.field)" (input)="setText(f.field, $any($event.target).value, false)" [placeholder]="headerRow() === 0 ? 'Ex.: Coluna 2' : 'Texto do cabeçalho'" />
+            }
+            @if (f.description) { <span class="hint">{{ f.description }}</span> }
+            @if (isMissing(f)) { <span class="field-error">Obrigatório: escolha a coluna.</span> }
+          </div>
+        }
+
+        @if (error(); as message) {
+          <div class="alert alert--danger"><vt-icon name="alert" [size]="18" /><span>{{ message }}</span></div>
+        }
+
+        <div class="form-actions">
+          <button class="btn" type="button" (click)="cancel()">Cancelar</button>
+          <button class="btn btn--primary" type="submit" [disabled]="saving() || analyzing()">
+            <vt-icon name="check" [size]="16" /> {{ saving() ? 'Salvando…' : isEdit ? 'Salvar alterações' : 'Salvar modelo' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+</div>
+
+<ng-template #aiLoading>
+  <div class="ai-loading" role="status">
+    <span class="orb"><vt-icon name="sparkles" [size]="26" /></span>
+    <strong>A IA está lendo sua planilha…</strong>
+    <span class="muted small">Procurando o cabeçalho e a coluna de cada informação. Isso leva alguns segundos.</span>
+  </div>
+</ng-template>

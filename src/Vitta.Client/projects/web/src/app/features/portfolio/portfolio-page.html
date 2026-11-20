@@ -1,0 +1,124 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Carteira</h1>
+      <p class="subtitle">Importe a planilha mensal da seguradora e veja quem entrou, saiu ou mudou.</p>
+    </div>
+  </div>
+
+  <div class="layout">
+    <section class="card upload">
+      <h2><vt-icon name="upload" [size]="18" /> Nova importação</h2>
+
+      <div class="form-grid">
+        <label class="field">
+          Seguradora
+          <select [value]="insurerId()" (change)="selectInsurer($any($event.target).value)">
+            @for (i of insurers(); track i.id) { <option [value]="i.id" [selected]="i.id === insurerId()">{{ i.name }}</option> }
+          </select>
+        </label>
+        <label class="field">
+          Mês de referência
+          <input type="month" [value]="month()" (change)="month.set($any($event.target).value)" />
+        </label>
+      </div>
+
+      <div class="field">
+        <label for="portfolio-template">Modelo da planilha</label>
+        <select id="portfolio-template" (change)="selectTemplate($any($event.target).value)">
+          <option value="" [selected]="!templateId()">Detecção automática (sem modelo)</option>
+          @for (t of availableTemplates(); track t.id) {
+            <option [value]="t.id" [selected]="t.id === templateId()">{{ t.name }}{{ t.insurerId ? '' : ' (qualquer seguradora)' }}</option>
+          }
+        </select>
+        <span class="hint template-hint">
+          @if (templateId()) { Colunas lidas conforme o modelo. } @else { Reconhece as colunas pelos nomes mais comuns. }
+          <a [routerLink]="['/modelos/novo']" [queryParams]="wizardParams()"><vt-icon name="sparkles" [size]="14" /> Criar modelo com IA</a>
+        </span>
+      </div>
+
+      <vt-file-or-paste label="Arraste a planilha aqui" [disabled]="uploading()" (fileChange)="setFile($event)" />
+
+      @if (error(); as message) {
+        <div class="alert alert--danger">
+          <vt-icon name="alert" [size]="18" />
+          <span>{{ message }}
+            @if (lastErrorWithTemplate(); as tid) { <a [routerLink]="['/modelos', tid]" [queryParams]="{ returnUrl: '/carteira' }">Ajustar o modelo</a> }
+          </span>
+        </div>
+      }
+
+      <button class="btn btn--primary btn--block" type="button" (click)="upload()" [disabled]="uploading() || !file()">
+        @if (uploading()) { Processando planilha… } @else { <vt-icon name="check" [size]="18" /> Importar e comparar }
+      </button>
+
+      <details class="help">
+        <summary><vt-icon name="info" [size]="16" /> Como a planilha deve estar?</summary>
+        <p>Se a planilha da seguradora tem um layout próprio (abas, linhas antes do cabeçalho, nomes diferentes),
+          <a [routerLink]="['/modelos/novo']" [queryParams]="wizardParams()">crie um modelo com IA</a> uma vez e reutilize todo mês.</p>
+        <p>Não consegue baixar a planilha? Use <strong>Colar do site</strong>: no site da seguradora, selecione a tabela
+          (de preferência com a linha de títulos), copie (Ctrl+C) e cole (Ctrl+V). Se a tabela vier sem títulos,
+          <a [routerLink]="['/modelos/novo']" [queryParams]="wizardParams()">crie um modelo</a> colando o mesmo texto.</p>
+        <p>Sem modelo, a primeira linha deve ter os nomes das colunas. Reconhecemos (sem diferenciar maiúsculas ou acentos):</p>
+        <ul>
+          <li><strong>Apólice</strong> / Proposta / Certificado (ou, se não houver, <strong>CPF</strong>) — obrigatória</li>
+          <li><strong>Segurado</strong> / Nome — obrigatória</li>
+          <li>CPF, Produto / Plano, Prêmio / Valor, Status / Situação, Início da vigência</li>
+        </ul>
+        <p>A <strong>primeira importação</strong> de cada seguradora vira a carteira base. A partir da segunda,
+          o Vitta compara com o mês anterior e aponta as entradas, saídas e mudanças.</p>
+      </details>
+    </section>
+
+    <section class="card card--flush history">
+      <div class="card__header"><h2>Histórico de importações</h2></div>
+      @if (loading()) {
+        <div style="padding: 1rem; display: grid; gap: 0.75rem">@for (i of [1, 2, 3]; track i) { <div class="skeleton" style="height: 2.2rem"></div> }</div>
+      } @else if (imports().length === 0) {
+        <vt-empty-state icon="folder" title="Nenhuma importação ainda" text="Comece importando a planilha mais recente da MAG. Ela será a sua carteira base." />
+      } @else {
+        <div class="table-wrap" style="margin-top: 1rem">
+          <table class="responsive">
+            <thead>
+              <tr>
+                <th>Mês</th>
+                <th>Seguradora</th>
+                <th class="num">Apólices</th>
+                <th class="num">Entraram</th>
+                <th class="num">Saíram</th>
+                <th class="num">Mudaram</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of imports(); track item.id) {
+                <tr class="clickable" (click)="router.navigate(['/carteira', item.id])">
+                  <td data-label="Mês">
+                    <a class="primary-cell" [routerLink]="['/carteira', item.id]" (click)="$event.stopPropagation()">{{ item.referenceMonth | month }}</a>
+                    @if (item.isFirstImport) { <span class="badge badge--info" style="margin-left: 0.4rem">Base</span> }
+                  </td>
+                  <td data-label="Seguradora">{{ item.insurerName }}</td>
+                  <td data-label="Apólices" class="num">{{ item.totalRows }}</td>
+                  @if (item.isFirstImport) {
+                    <td data-label="Entraram" class="num muted">—</td>
+                    <td data-label="Saíram" class="num muted">—</td>
+                    <td data-label="Mudaram" class="num muted">—</td>
+                  } @else {
+                    <td data-label="Entraram" class="num"><span class="badge" [class.badge--success]="item.entered > 0">+{{ item.entered }}</span></td>
+                    <td data-label="Saíram" class="num"><span class="badge" [class.badge--danger]="item.left > 0">−{{ item.left }}</span></td>
+                    <td data-label="Mudaram" class="num"><span class="badge" [class.badge--warning]="item.changed > 0">{{ item.changed }}</span></td>
+                  }
+                  <td class="actions">
+                    <button class="btn btn--ghost btn--icon" type="button" title="Excluir" aria-label="Excluir importação" (click)="remove(item, $event)">
+                      <vt-icon name="trash" [size]="16" />
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  </div>
+</div>

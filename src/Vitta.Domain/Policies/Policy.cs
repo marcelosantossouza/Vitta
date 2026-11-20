@@ -43,22 +43,35 @@ public sealed class Policy : AggregateRoot
     {
         if (string.IsNullOrWhiteSpace(policyNumber))
         {
-            return Error.Validation("Policy.NumberRequired", "Numero da apolice e obrigatorio.");
+            return Error.Validation("Policy.NumberRequired", "Número da apólice é obrigatório.");
         }
 
         if (monthlyPremium < 0)
         {
-            return Error.Validation("Policy.InvalidPremium", "Premio nao pode ser negativo.");
+            return PolicyErrors.InvalidPremium;
         }
 
         return new Policy(clientId, insurerId, policyNumber.Trim(), productName.Trim(), monthlyPremium, issuedOn);
+    }
+
+    public Result Update(string productName, decimal monthlyPremium)
+    {
+        if (monthlyPremium < 0)
+        {
+            return PolicyErrors.InvalidPremium;
+        }
+
+        ProductName = productName.Trim();
+        MonthlyPremium = monthlyPremium;
+        Touch();
+        return Result.Success();
     }
 
     public Result End(PolicyStatus newStatus, DateOnly endedOn, string? reason)
     {
         if (Status != PolicyStatus.Active)
         {
-            return Error.Conflict("Policy.NotActive", "Apolice nao esta ativa.");
+            return PolicyErrors.NotActive;
         }
 
         if (newStatus == PolicyStatus.Active)
@@ -81,6 +94,14 @@ public sealed class Policy : AggregateRoot
         EndReason = null;
         Touch();
     }
+}
+
+public static class PolicyErrors
+{
+    public static readonly Error InvalidPremium = Error.Validation("Policy.InvalidPremium", "Prêmio não pode ser negativo.");
+    public static readonly Error NotActive = Error.Conflict("Policy.NotActive", "Esta apólice não está ativa.");
+    public static readonly Error NumberAlreadyExists = Error.Conflict("Policy.NumberAlreadyExists", "Já existe uma apólice com este número nesta seguradora.");
+    public static Error NotFound(Guid id) => Error.NotFound("Policy.NotFound", "Apólice não encontrada.");
 }
 
 public sealed record PolicyEndedEvent(Guid PolicyId, Guid ClientId, PolicyStatus Status, DateTimeOffset OccurredAt) : IDomainEvent;

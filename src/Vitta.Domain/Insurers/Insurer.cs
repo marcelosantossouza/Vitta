@@ -23,6 +23,9 @@ public sealed class Insurer : AggregateRoot
     public static Insurer Create(string code, string name, Guid? id = null) =>
         new(id ?? Guid.CreateVersion7(), code.Trim().ToUpperInvariant(), name.Trim());
 
+    public static Error NotFound(Guid id) => Error.NotFound("Insurer.NotFound", "Seguradora não encontrada.");
+    public static readonly Error CodeAlreadyExists = Error.Conflict("Insurer.CodeAlreadyExists", "Já existe uma seguradora com este código.");
+
     public void Deactivate()
     {
         IsActive = false;

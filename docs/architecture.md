@@ -68,6 +68,28 @@ Oracle (`MySql.EntityFrameworkCore`) suporta EF 10, mas é feito para MySQL e n�
 Se um dia for necessário: criar `MariaDbVittaDbContext` + `Migrations/MariaDb` + um `case` no
 `DependencyInjection`. O resto do sistema não muda.
 
+## Leitura x escrita (CQRS leve)
+
+- **Escrita:** handlers carregam agregados pelos *repositórios* (`Abstractions/Persistence/Repositories.cs`),
+  chamam métodos do domínio e salvam via `IUnitOfWork`.
+- **Leitura:** telas usam *queries* (`Abstractions/Queries`) implementadas na Persistence, que projetam
+  direto para DTO, sem tracking. Assim a Application continua sem depender do EF Core.
+
+## Autenticação
+
+- JWT (HMAC) gerado em `Infrastructure/Auth`; senha com o hasher do ASP.NET Core Identity (PBKDF2).
+- Todos os endpoints `/api/*` exigem token, exceto `POST /api/auth/login`.
+- O primeiro usuário é criado a partir de `Auth:SeedAdmin` se o banco não tiver nenhum.
+- Futuro: mais usuários (assistente), troca de senha, refresh token.
+
+## Importação de carteira
+
+1. `PortfolioFileReader` lê .xlsx/.csv e reconhece colunas pelo cabeçalho (sem acento/maiúscula).
+2. Cada importação guarda um **retrato** (`portfolio_rows`) das linhas daquele mês.
+3. A importação seguinte da mesma seguradora é comparada com o retrato anterior (`PortfolioReconciler`)
+   e gera as mudanças: **Entrou / Saiu / Mudou**. A primeira importação é a base e não gera mudanças.
+4. Mudanças são ligadas a clientes cadastrados pelo CPF.
+
 ## Erros
 
 - Regras de negócio retornam `Result`/`Error` (sem exceptions) → a API converte em ProblemDetails

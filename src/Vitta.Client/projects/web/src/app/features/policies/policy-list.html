@@ -1,0 +1,76 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Apólices</h1>
+      <p class="subtitle">Todas as apólices da carteira. Para cadastrar, abra o cliente.</p>
+    </div>
+    <a class="btn btn--primary" routerLink="/clientes"><vt-icon name="users" [size]="18" /> Ir para clientes</a>
+  </div>
+
+  <div class="toolbar">
+    <label class="search">
+      <vt-icon name="search" [size]="18" />
+      <input type="search" placeholder="Número, cliente ou produto" aria-label="Buscar apólices" (input)="setFilter('search', $any($event.target).value)" />
+    </label>
+    <select aria-label="Status" (change)="setFilter('status', $any($event.target).value)">
+      <option value="">Todos os status</option>
+      @for (s of statuses; track s[0]) {
+        <option [value]="s[0]" [selected]="s[0] === filter.status">{{ s[1] }}</option>
+      }
+    </select>
+    <select aria-label="Seguradora" (change)="setFilter('insurerId', $any($event.target).value)">
+      <option value="">Todas as seguradoras</option>
+      @for (i of insurers(); track i.id) { <option [value]="i.id">{{ i.name }}</option> }
+    </select>
+  </div>
+
+  <div class="card card--flush">
+    @if (loading() && !result()) {
+      <div style="padding: 1rem; display: grid; gap: 0.75rem">
+        @for (i of [1, 2, 3]; track i) { <div class="skeleton" style="height: 2.2rem"></div> }
+      </div>
+    } @else if (result(); as r) {
+      @if (r.items.length === 0) {
+        <vt-empty-state icon="policy" title="Nenhuma apólice encontrada" text="Ajuste os filtros ou cadastre apólices a partir da ficha do cliente." />
+      } @else {
+        <div class="table-wrap">
+          <table class="responsive">
+            <thead>
+              <tr>
+                <th>Apólice</th>
+                <th>Cliente</th>
+                <th>Seguradora</th>
+                <th>Produto</th>
+                <th class="num">Prêmio</th>
+                <th>Emissão</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (p of r.items; track p.id) {
+                <tr>
+                  <td data-label="Apólice" class="mono"><strong>{{ p.policyNumber }}</strong></td>
+                  <td data-label="Cliente"><a class="primary-cell" [routerLink]="['/clientes', p.clientId]">{{ p.clientName }}</a></td>
+                  <td data-label="Seguradora">{{ p.insurerName }}</td>
+                  <td data-label="Produto">{{ p.productName || '—' }}</td>
+                  <td data-label="Prêmio" class="num">{{ p.monthlyPremium | brl }}</td>
+                  <td data-label="Emissão" class="nowrap">{{ p.issuedOn | isoDate }}</td>
+                  <td data-label="Status"><span [class]="'badge ' + statusClass(p.status)">{{ p.status | policyStatus }}</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <span>{{ r.totalCount }} apólice(s){{ r.totalPages > 1 ? ' · página ' + r.page + ' de ' + r.totalPages : '' }}</span>
+          @if (r.totalPages > 1) {
+            <div class="pages">
+              <button class="btn btn--sm" type="button" [disabled]="r.page <= 1 || loading()" (click)="goTo(r.page - 1)"><vt-icon name="chevron-left" [size]="16" /> Anterior</button>
+              <button class="btn btn--sm" type="button" [disabled]="r.page >= r.totalPages || loading()" (click)="goTo(r.page + 1)">Próxima <vt-icon name="chevron-right" [size]="16" /></button>
+            </div>
+          }
+        </div>
+      }
+    }
+  </div>
+</div>

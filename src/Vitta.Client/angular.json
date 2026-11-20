@@ -70,7 +70,7 @@
           "defaultConfiguration": "development",
           "options": {
             "proxyConfig": "projects/web/proxy.conf.json",
-            "port": 4200
+            "port": 4300
           }
         },
         "test": {

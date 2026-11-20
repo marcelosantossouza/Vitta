@@ -1,0 +1,18 @@
+.layout { display: grid; gap: 1rem; grid-template-columns: 380px minmax(0, 1fr); align-items: start; }
+
+.upload { display: flex; flex-direction: column; gap: 1rem; h2 { display: flex; gap: 0.45rem; align-items: center; } }
+
+.help {
+  font-size: 0.875rem; color: var(--vt-muted); border-top: 1px solid var(--vt-border); padding-top: 0.9rem;
+  summary { cursor: pointer; display: flex; align-items: center; gap: 0.4rem; font-weight: 600; color: var(--vt-primary); }
+  ul { padding-left: 1.1rem; margin: 0.5rem 0; }
+  li { margin: 0.2rem 0; }
+  strong { color: var(--vt-text); }
+}
+
+@media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } }
+
+.template-hint {
+  display: flex; flex-wrap: wrap; gap: 0.25rem 0.6rem; justify-content: space-between;
+  a { display: inline-flex; align-items: center; gap: 0.25rem; font-weight: 600; text-decoration: none; }
+}

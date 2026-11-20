@@ -17,15 +17,6 @@ public sealed class Prospect : AggregateRoot
 {
     private Prospect() { } // EF
 
-    private Prospect(string name, string? phone, string? email, string? source)
-    {
-        Name = name;
-        Phone = phone;
-        Email = email;
-        Source = source;
-        Stage = ProspectStage.New;
-    }
-
     public string Name { get; private set; } = null!;
     public string? Phone { get; private set; }
     public string? Email { get; private set; }
@@ -37,21 +28,63 @@ public sealed class Prospect : AggregateRoot
     /// <summary>Preenchido quando o prospect vira cliente.</summary>
     public Guid? ConvertedClientId { get; private set; }
 
-    public static Result<Prospect> Create(string name, string? phone, string? email, string? source) =>
-        string.IsNullOrWhiteSpace(name)
-            ? Error.Validation("Prospect.NameRequired", "Nome e obrigatorio.")
-            : new Prospect(name.Trim(), phone, email, source);
+    public static Result<Prospect> Create(string name, string? phone, string? email, string? source, string? notes = null, DateOnly? nextFollowUpOn = null)
+    {
+        var prospect = new Prospect();
+        var result = prospect.Update(name, phone, email, source, notes, nextFollowUpOn);
+        if (result.IsFailure)
+        {
+            return result.Error;
+        }
+
+        prospect.Stage = ProspectStage.New;
+        return prospect;
+    }
+
+    public Result Update(string name, string? phone, string? email, string? source, string? notes, DateOnly? nextFollowUpOn)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return ProspectErrors.NameRequired;
+        }
+
+        Name = name.Trim();
+        Phone = Clean(phone);
+        Email = Clean(email);
+        Source = Clean(source);
+        Notes = Clean(notes);
+        NextFollowUpOn = nextFollowUpOn;
+        Touch();
+        return Result.Success();
+    }
+
+    public bool IsOpen => Stage is not (ProspectStage.Won or ProspectStage.Lost);
+
+    private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     public void MoveTo(ProspectStage stage, DateOnly? nextFollowUpOn = null)
     {
         Stage = stage;
-        NextFollowUpOn = nextFollowUpOn;
+        NextFollowUpOn = stage is ProspectStage.Won or ProspectStage.Lost ? null : nextFollowUpOn;
         Touch();
     }
 
-    public void MarkConverted(Guid clientId)
+    public Result MarkConverted(Guid clientId)
     {
+        if (ConvertedClientId is not null)
+        {
+            return ProspectErrors.AlreadyConverted;
+        }
+
         ConvertedClientId = clientId;
         MoveTo(ProspectStage.Won);
+        return Result.Success();
     }
+}
+
+public static class ProspectErrors
+{
+    public static readonly Error NameRequired = Error.Validation("Prospect.NameRequired", "Nome é obrigatório.");
+    public static readonly Error AlreadyConverted = Error.Conflict("Prospect.AlreadyConverted", "Este prospect ja foi convertido em cliente.");
+    public static Error NotFound(Guid id) => Error.NotFound("Prospect.NotFound", "Prospect não encontrado.");
 }

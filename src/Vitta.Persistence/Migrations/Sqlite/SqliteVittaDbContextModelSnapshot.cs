@@ -68,6 +68,63 @@ namespace Vitta.Persistence.Migrations.Sqlite
                     b.ToTable("clients", (string)null);
                 });
 
+            modelBuilder.Entity("Vitta.Domain.Imports.ImportTemplate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AiNotes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("CreatedByAi")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("HeaderRow")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid?>("InsurerId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("LastUsedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SheetName")
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("UpdatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("_columns")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("Columns");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InsurerId");
+
+                    b.HasIndex("Kind", "Name")
+                        .IsUnique();
+
+                    b.ToTable("import_templates", (string)null);
+                });
+
             modelBuilder.Entity("Vitta.Domain.Insurers.Insurer", b =>
                 {
                     b.Property<Guid>("Id")
@@ -209,6 +266,9 @@ namespace Vitta.Persistence.Migrations.Sqlite
                     b.Property<Guid>("InsurerId")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsFirstImport")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateOnly>("ReferenceMonth")
                         .HasColumnType("TEXT");
 
@@ -281,6 +341,52 @@ namespace Vitta.Persistence.Migrations.Sqlite
                     b.ToTable("prospects", (string)null);
                 });
 
+            modelBuilder.Entity("Vitta.Domain.Users.User", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("LastLoginAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("UpdatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.ToTable("users", (string)null);
+                });
+
+            modelBuilder.Entity("Vitta.Domain.Imports.ImportTemplate", b =>
+                {
+                    b.HasOne("Vitta.Domain.Insurers.Insurer", null)
+                        .WithMany()
+                        .HasForeignKey("InsurerId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
             modelBuilder.Entity("Vitta.Domain.Policies.Policy", b =>
                 {
                     b.HasOne("Vitta.Domain.Clients.Client", null)
@@ -346,13 +452,65 @@ namespace Vitta.Persistence.Migrations.Sqlite
 
                             b1.HasIndex("PortfolioImportId");
 
+                            b1.HasIndex("Type");
+
                             b1.ToTable("portfolio_changes", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("PortfolioImportId");
                         });
 
+                    b.OwnsMany("Vitta.Domain.Portfolio.PortfolioSnapshotRow", "Rows", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("TEXT");
+
+                            b1.Property<long>("CreatedAt")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<string>("HolderCpf")
+                                .HasMaxLength(11)
+                                .HasColumnType("TEXT");
+
+                            b1.Property<string>("HolderName")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("TEXT");
+
+                            b1.Property<double?>("MonthlyPremium")
+                                .HasPrecision(12, 2)
+                                .HasColumnType("REAL");
+
+                            b1.Property<string>("PolicyNumber")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("TEXT");
+
+                            b1.Property<Guid>("PortfolioImportId")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<string>("ProductName")
+                                .HasMaxLength(150)
+                                .HasColumnType("TEXT");
+
+                            b1.Property<string>("Status")
+                                .HasMaxLength(60)
+                                .HasColumnType("TEXT");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("PortfolioImportId");
+
+                            b1.ToTable("portfolio_rows", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("PortfolioImportId");
+                        });
+
                     b.Navigation("Changes");
+
+                    b.Navigation("Rows");
                 });
 #pragma warning restore 612, 618
         }

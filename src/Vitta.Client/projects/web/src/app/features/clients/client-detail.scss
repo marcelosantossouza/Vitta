@@ -1,0 +1,26 @@
+.profile { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.profile__head {
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  .actions { display: flex; gap: 0.5rem; margin-left: auto; flex-wrap: wrap; }
+}
+
+.profile__title { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+
+.profile__avatar {
+  display: grid; place-items: center; width: 56px; height: 56px; border-radius: 16px; flex-shrink: 0;
+  background: linear-gradient(135deg, #1fa386, #0b5a4b); color: #fff; font-size: 1.4rem; font-weight: 700;
+}
+
+.notes {
+  padding: 0.9rem 1rem; border-radius: var(--vt-radius-sm); background: var(--vt-surface-2); border: 1px solid var(--vt-border);
+  strong { font-size: 0.8rem; color: var(--vt-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  p { margin: 0.35rem 0 0; white-space: pre-wrap; }
+}
+
+@media (max-width: 560px) {
+  .profile__head .actions { margin-left: 0; width: 100%; .btn { flex: 1; } }
+}
+
+.status-cell { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 0.2rem; }
+@media (max-width: 720px) { .status-cell { align-items: flex-end; } }

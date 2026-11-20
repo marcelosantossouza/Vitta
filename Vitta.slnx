@@ -10,5 +10,6 @@
     <Project Path="tests/Vitta.Application.UnitTests/Vitta.Application.UnitTests.csproj" />
     <Project Path="tests/Vitta.ArchitectureTests/Vitta.ArchitectureTests.csproj" />
     <Project Path="tests/Vitta.Domain.UnitTests/Vitta.Domain.UnitTests.csproj" />
+    <Project Path="tests/Vitta.Infrastructure.UnitTests/Vitta.Infrastructure.UnitTests.csproj" />
   </Folder>
 </Solution>

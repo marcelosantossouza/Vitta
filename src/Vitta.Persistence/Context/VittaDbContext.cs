@@ -1,10 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Vitta.Application.Abstractions.Persistence;
 using Vitta.Domain.Clients;
+using Vitta.Domain.Imports;
 using Vitta.Domain.Insurers;
 using Vitta.Domain.Policies;
 using Vitta.Domain.Portfolio;
 using Vitta.Domain.Prospects;
+using Vitta.Domain.Users;
 
 namespace Vitta.Persistence.Context;
 
@@ -20,6 +22,8 @@ public abstract class VittaDbContext(DbContextOptions options) : DbContext(optio
     public DbSet<Policy> Policies => Set<Policy>();
     public DbSet<Prospect> Prospects => Set<Prospect>();
     public DbSet<PortfolioImport> PortfolioImports => Set<PortfolioImport>();
+    public DbSet<User> Users => Set<User>();
+    public DbSet<ImportTemplate> ImportTemplates => Set<ImportTemplate>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) =>
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(VittaDbContext).Assembly);

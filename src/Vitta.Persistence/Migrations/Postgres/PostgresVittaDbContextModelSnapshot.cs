@@ -74,6 +74,63 @@ namespace Vitta.Persistence.Migrations.Postgres
                     b.ToTable("clients", "vitta");
                 });
 
+            modelBuilder.Entity("Vitta.Domain.Imports.ImportTemplate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AiNotes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("CreatedByAi")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("HeaderRow")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("InsurerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<DateTimeOffset?>("LastUsedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("SheetName")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("_columns")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("Columns");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InsurerId");
+
+                    b.HasIndex("Kind", "Name")
+                        .IsUnique();
+
+                    b.ToTable("import_templates", "vitta");
+                });
+
             modelBuilder.Entity("Vitta.Domain.Insurers.Insurer", b =>
                 {
                     b.Property<Guid>("Id")
@@ -215,6 +272,9 @@ namespace Vitta.Persistence.Migrations.Postgres
                     b.Property<Guid>("InsurerId")
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("IsFirstImport")
+                        .HasColumnType("boolean");
+
                     b.Property<DateOnly>("ReferenceMonth")
                         .HasColumnType("date");
 
@@ -287,6 +347,52 @@ namespace Vitta.Persistence.Migrations.Postgres
                     b.ToTable("prospects", "vitta");
                 });
 
+            modelBuilder.Entity("Vitta.Domain.Users.User", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTimeOffset?>("LastLoginAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.ToTable("users", "vitta");
+                });
+
+            modelBuilder.Entity("Vitta.Domain.Imports.ImportTemplate", b =>
+                {
+                    b.HasOne("Vitta.Domain.Insurers.Insurer", null)
+                        .WithMany()
+                        .HasForeignKey("InsurerId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
             modelBuilder.Entity("Vitta.Domain.Policies.Policy", b =>
                 {
                     b.HasOne("Vitta.Domain.Clients.Client", null)
@@ -352,13 +458,65 @@ namespace Vitta.Persistence.Migrations.Postgres
 
                             b1.HasIndex("PortfolioImportId");
 
+                            b1.HasIndex("Type");
+
                             b1.ToTable("portfolio_changes", "vitta");
 
                             b1.WithOwner()
                                 .HasForeignKey("PortfolioImportId");
                         });
 
+                    b.OwnsMany("Vitta.Domain.Portfolio.PortfolioSnapshotRow", "Rows", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("uuid");
+
+                            b1.Property<DateTimeOffset>("CreatedAt")
+                                .HasColumnType("timestamp with time zone");
+
+                            b1.Property<string>("HolderCpf")
+                                .HasMaxLength(11)
+                                .HasColumnType("character varying(11)");
+
+                            b1.Property<string>("HolderName")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("character varying(200)");
+
+                            b1.Property<decimal?>("MonthlyPremium")
+                                .HasPrecision(12, 2)
+                                .HasColumnType("numeric(12,2)");
+
+                            b1.Property<string>("PolicyNumber")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)");
+
+                            b1.Property<Guid>("PortfolioImportId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("ProductName")
+                                .HasMaxLength(150)
+                                .HasColumnType("character varying(150)");
+
+                            b1.Property<string>("Status")
+                                .HasMaxLength(60)
+                                .HasColumnType("character varying(60)");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("PortfolioImportId");
+
+                            b1.ToTable("portfolio_rows", "vitta");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PortfolioImportId");
+                        });
+
                     b.Navigation("Changes");
+
+                    b.Navigation("Rows");
                 });
 #pragma warning restore 612, 618
         }

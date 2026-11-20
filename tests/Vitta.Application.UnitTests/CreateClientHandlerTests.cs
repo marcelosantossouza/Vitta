@@ -1,54 +1,44 @@
-using Vitta.Application.Abstractions.Persistence;
-using Vitta.Application.Features.Clients.CreateClient;
+using Vitta.Application.Features.Clients;
 using Vitta.Domain.Clients;
-using Vitta.Domain.Common;
 
 namespace Vitta.Application.UnitTests;
 
-public class CreateClientHandlerTests
+public class ClientHandlerTests
 {
     private readonly FakeClientRepository _repo = new();
+    private readonly FakeUnitOfWork _uow = new();
 
     [Fact]
-    public async Task Handle_NewClient_PersistsAndReturnsId()
+    public async Task Create_NewClient_PersistsAndReturnsId()
     {
-        var handler = new CreateClientHandler(_repo, _repo);
-
-        var result = await handler.Handle(new CreateClientCommand("Ana Silva", "529.982.247-25", null, null, null), default);
+        var result = await new CreateClientHandler(_repo, _uow).Handle(new CreateClientCommand("Ana Silva", "529.982.247-25", null, null, null), default);
 
         Assert.True(result.IsSuccess);
         Assert.Single(_repo.Clients);
-        Assert.Equal(1, _repo.SaveCount);
+        Assert.Equal(1, _uow.SaveCount);
     }
 
     [Fact]
-    public async Task Handle_DuplicateCpf_ReturnsConflict()
+    public async Task Create_DuplicateCpf_ReturnsConflict()
     {
-        var handler = new CreateClientHandler(_repo, _repo);
+        var handler = new CreateClientHandler(_repo, _uow);
         await handler.Handle(new CreateClientCommand("Ana", "52998224725", null, null, null), default);
 
         var result = await handler.Handle(new CreateClientCommand("Outra Ana", "529.982.247-25", null, null, null), default);
 
-        Assert.True(result.IsFailure);
         Assert.Equal(ClientErrors.CpfAlreadyExists, result.Error);
     }
 
-    private sealed class FakeClientRepository : IClientRepository, IUnitOfWork
+    [Fact]
+    public async Task Delete_ClientWithPolicies_ReturnsConflict()
     {
-        public List<Client> Clients { get; } = [];
-        public int SaveCount { get; private set; }
+        var client = Client.Create("Ana", "52998224725", null, null, null).Value;
+        _repo.Add(client);
+        _repo.WithPolicies.Add(client.Id);
 
-        public Task<Client?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
-            Task.FromResult(Clients.FirstOrDefault(c => c.Id == id));
+        var result = await new DeleteClientHandler(_repo, _uow).Handle(new DeleteClientCommand(client.Id), default);
 
-        public Task<bool> ExistsByCpfAsync(Cpf cpf, CancellationToken cancellationToken = default) =>
-            Task.FromResult(Clients.Any(c => c.Cpf == cpf));
-
-        public Task<PagedResult<Client>> SearchAsync(string? term, int page, int pageSize, CancellationToken cancellationToken = default) =>
-            Task.FromResult(new PagedResult<Client>(Clients, page, pageSize, Clients.Count));
-
-        public void Add(Client client) => Clients.Add(client);
-
-        public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) => Task.FromResult(++SaveCount);
+        Assert.Equal(ClientErrors.HasPolicies, result.Error);
+        Assert.Single(_repo.Clients);
     }
 }

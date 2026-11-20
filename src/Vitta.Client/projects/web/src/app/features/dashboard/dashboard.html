@@ -1,0 +1,147 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>{{ greeting }}{{ firstName() ? ', ' + firstName() : '' }}!</h1>
+      <p class="subtitle">Um resumo da sua corretora hoje.</p>
+    </div>
+    <div class="actions">
+      <a class="btn" routerLink="/carteira"><vt-icon name="upload" [size]="18" /> Importar carteira</a>
+      <a class="btn btn--primary" routerLink="/clientes/novo"><vt-icon name="user-plus" [size]="18" /> Novo cliente</a>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="kpis">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="card kpi"><div class="skeleton" style="height: 2.6rem"></div></div>
+      }
+    </div>
+  } @else if (failed()) {
+    <div class="card">
+      <vt-empty-state icon="alert" title="Não foi possível carregar o painel" text="Verifique se a API está rodando e tente novamente.">
+        <button class="btn" type="button" (click)="load()"><vt-icon name="refresh" [size]="16" /> Tentar de novo</button>
+      </vt-empty-state>
+    </div>
+  } @else if (data(); as d) {
+    <div class="kpis">
+      <div class="card kpi">
+        <span class="kpi__icon"><vt-icon name="users" /></span>
+        <div>
+          <span class="kpi__label">Clientes ativos</span>
+          <strong class="kpi__value">{{ d.activeClients }}</strong>
+          <span class="kpi__hint">de {{ d.totalClients }} cadastrados</span>
+        </div>
+      </div>
+      <div class="card kpi">
+        <span class="kpi__icon"><vt-icon name="policy" /></span>
+        <div>
+          <span class="kpi__label">Apólices ativas</span>
+          <strong class="kpi__value">{{ d.activePolicies }}</strong>
+          <a class="kpi__hint" routerLink="/apolices">ver apólices</a>
+        </div>
+      </div>
+      <div class="card kpi kpi--highlight">
+        <span class="kpi__icon"><vt-icon name="money" /></span>
+        <div>
+          <span class="kpi__label">Prêmio mensal ativo</span>
+          <strong class="kpi__value">{{ d.monthlyPremiumTotal | brl }}</strong>
+          <span class="kpi__hint">soma das apólices ativas</span>
+        </div>
+      </div>
+      <div class="card kpi">
+        <span class="kpi__icon"><vt-icon name="target" /></span>
+        <div>
+          <span class="kpi__label">Prospects em aberto</span>
+          <strong class="kpi__value">{{ d.openProspects }}</strong>
+          <a class="kpi__hint" routerLink="/prospeccao">abrir funil</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <section class="card">
+        <div class="card__header">
+          <h2>Follow-ups para hoje</h2>
+          <span class="badge" [class.badge--warning]="d.followUpsDue.length > 0">{{ d.followUpsDue.length }}</span>
+        </div>
+        @if (d.followUpsDue.length === 0) {
+          <vt-empty-state icon="check" title="Tudo em dia" text="Nenhum contato pendente para hoje." />
+        } @else {
+          <ul class="list">
+            @for (p of d.followUpsDue; track p.id) {
+              <li>
+                <a [routerLink]="['/prospeccao']" [queryParams]="{ abrir: p.id }" class="list__main">
+                  <strong>{{ p.name }}</strong>
+                  <span class="muted small">{{ p.stage | stage }}{{ p.phone ? ' · ' + p.phone : '' }}</span>
+                </a>
+                <span class="badge" [class.badge--danger]="isOverdue(p.nextFollowUpOn)" [class.badge--warning]="!isOverdue(p.nextFollowUpOn)">
+                  <vt-icon name="calendar" [size]="13" />
+                  {{ isOverdue(p.nextFollowUpOn) ? 'Atrasado ' + (p.nextFollowUpOn | isoDate) : 'Hoje' }}
+                </span>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+
+      <section class="card exits">
+        <div class="card__header">
+          <h2><vt-icon name="trending-down" [size]="18" /> Saídas recentes da carteira</h2>
+          <a class="btn btn--ghost btn--sm" routerLink="/carteira">Carteira</a>
+        </div>
+        @if (d.recentExits.length === 0) {
+          <vt-empty-state
+            icon="shield"
+            title="Nenhuma saída detectada"
+            [text]="d.lastImportAt ? 'As últimas importações não mostraram clientes saindo.' : 'Importe a planilha mensal da seguradora para acompanhar entradas e saídas.'" />
+        } @else {
+          <ul class="list">
+            @for (c of d.recentExits; track c.id) {
+              <li class="exit">
+                <div class="list__main">
+                  @if (c.clientId) {
+                    <a [routerLink]="['/clientes', c.clientId]"><strong>{{ c.holderName }}</strong></a>
+                  } @else {
+                    <strong>{{ c.holderName }}</strong>
+                  }
+                  <span class="muted small">{{ c.insurerName }} · apólice {{ c.policyNumber }}{{ c.detail ? ' · ' + c.detail : '' }}</span>
+                </div>
+                <a class="badge badge--danger" [routerLink]="['/carteira', c.importId]">{{ c.type | changeType }} · {{ c.referenceMonth | month }}</a>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+
+      <section class="card">
+        <div class="card__header"><h2>Funil de prospecção</h2></div>
+        <div class="bars">
+          @for (row of funnel(); track row.stage) {
+            <div class="bar">
+              <span class="bar__label">{{ row.stage | stage }}</span>
+              <div class="bar__track"><div class="bar__fill" [class]="'bar__fill stage-' + row.stage" [style.width.%]="row.pct"></div></div>
+              <span class="bar__value">{{ row.count }}</span>
+            </div>
+          }
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card__header"><h2>Carteira por seguradora</h2></div>
+        @if (insurers().length === 0) {
+          <vt-empty-state icon="building" title="Sem apólices ativas" text="Cadastre apólices nos clientes para ver a distribuição." />
+        } @else {
+          <div class="bars">
+            @for (i of insurers(); track i.insurerId) {
+              <div class="bar bar--wide">
+                <span class="bar__label">{{ i.insurerName }} <small class="muted">({{ i.count }})</small></span>
+                <div class="bar__track"><div class="bar__fill" [style.width.%]="i.pct"></div></div>
+                <span class="bar__value">{{ i.monthlyPremium | brl }}</span>
+              </div>
+            }
+          </div>
+        }
+      </section>
+    </div>
+  }
+</div>

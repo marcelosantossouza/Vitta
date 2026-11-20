@@ -1,42 +1,72 @@
-import { Component, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { Client, ClientsApi } from '@vitta/core';
-import { debounceTime, distinctUntilChanged, Subject, switchMap } from 'rxjs';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Router, RouterLink } from '@angular/router';
+import { ClientListItemDto, ClientsApi, PagedResult } from '@vitta/core';
+import { debounceTime, distinctUntilChanged, merge, Subject, switchMap, map } from 'rxjs';
+import { EmptyState } from '../../shared/empty-state';
+import { Icon } from '../../shared/icon';
+import { BrlPipe } from '../../shared/pipes';
+import { ToastService } from '../../shared/toast.service';
+
+const PAGE_SIZE = 20;
 
 @Component({
   selector: 'vt-client-list',
-  imports: [RouterLink],
+  imports: [RouterLink, Icon, EmptyState, BrlPipe],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './client-list.html',
 })
 export class ClientList {
   private readonly api = inject(ClientsApi);
-  private readonly search$ = new Subject<string>();
+  private readonly toast = inject(ToastService);
+  protected readonly router = inject(Router);
 
-  protected readonly clients = signal<Client[]>([]);
-  protected readonly total = signal(0);
+  private readonly search$ = new Subject<string>();
+  private readonly page$ = new Subject<number>();
+  private term = '';
+
+  protected readonly result = signal<PagedResult<ClientListItemDto> | null>(null);
   protected readonly loading = signal(true);
-  protected readonly error = signal<string | null>(null);
+  protected readonly searching = signal(false);
 
   constructor() {
-    this.search$
-      .pipe(debounceTime(300), distinctUntilChanged(), switchMap(term => this.api.list(term)), takeUntilDestroyed())
+    const searches = this.search$.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      map(term => {
+        this.term = term;
+        return 1;
+      }),
+    );
+
+    merge(searches, this.page$)
+      .pipe(
+        switchMap(page => {
+          this.loading.set(true);
+          return this.api.list(this.term, page, PAGE_SIZE);
+        }),
+        takeUntilDestroyed(),
+      )
       .subscribe({
-        next: result => {
-          this.clients.set(result.items);
-          this.total.set(result.totalCount);
+        next: r => {
+          this.result.set(r);
           this.loading.set(false);
-          this.error.set(null);
+          this.searching.set(this.term.length > 0);
         },
-        error: () => {
+        error: err => {
           this.loading.set(false);
-          this.error.set('Não foi possível carregar os clientes. A API está rodando?');
+          this.toast.error(err, 'Não foi possível carregar os clientes.');
         },
       });
-    this.search$.next('');
+
+    this.page$.next(1);
   }
 
   protected onSearch(term: string): void {
-    this.search$.next(term);
+    this.search$.next(term.trim());
+  }
+
+  protected goTo(page: number): void {
+    this.page$.next(page);
   }
 }

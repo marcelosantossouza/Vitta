@@ -1,34 +1,74 @@
-<div class="page-header">
-  <h1>Novo cliente</h1>
-  <a class="btn" routerLink="/clientes">Voltar</a>
-</div>
-
-<form class="card" [formGroup]="form" (ngSubmit)="submit()">
-  <div class="form-grid">
-    <label>Nome completo *
-      <input formControlName="fullName" autocomplete="name" />
-    </label>
-    <label>CPF *
-      <input formControlName="cpf" inputmode="numeric" placeholder="000.000.000-00" />
-    </label>
-    <label>Data de nascimento
-      <input type="date" formControlName="birthDate" />
-    </label>
-    <label>E-mail
-      <input type="email" formControlName="email" autocomplete="email" />
-    </label>
-    <label>Telefone / WhatsApp
-      <input type="tel" formControlName="phone" autocomplete="tel" />
-    </label>
+<div class="page">
+  <div>
+    <a class="back-link" [routerLink]="isEdit() ? ['/clientes', id()] : ['/clientes']"><vt-icon name="chevron-left" [size]="16" /> Voltar</a>
+    <div class="page-header">
+      <div>
+        <h1>{{ isEdit() ? 'Editar cliente' : 'Novo cliente' }}</h1>
+        <p class="subtitle">{{ isEdit() ? 'Atualize os dados de contato e observações.' : 'Cadastre um segurado na sua carteira.' }}</p>
+      </div>
+    </div>
   </div>
 
-  @if (error(); as message) {
-    <p class="error">{{ message }}</p>
-  }
+  @if (loading()) {
+    <div class="card"><div class="skeleton" style="height: 12rem"></div></div>
+  } @else {
+    <form class="card" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="form-grid">
+        <label class="field span-all">
+          Nome completo *
+          <input formControlName="fullName" autocomplete="name" />
+          @if (form.controls.fullName.touched && form.controls.fullName.invalid) {
+            <span class="field-error">Informe o nome.</span>
+          }
+        </label>
 
-  <p>
-    <button class="btn btn--primary" type="submit" [disabled]="saving()">
-      {{ saving() ? 'Salvando…' : 'Salvar' }}
-    </button>
-  </p>
-</form>
+        <label class="field">
+          CPF {{ isEdit() ? '' : '*' }}
+          @if (isEdit()) {
+            <input [value]="cpfDisplay()" disabled />
+            <span class="hint">O CPF não pode ser alterado.</span>
+          } @else {
+            <input formControlName="cpf" inputmode="numeric" placeholder="000.000.000-00" (input)="onCpfInput($event)" maxlength="14" />
+            @if (form.controls.cpf.touched && form.controls.cpf.invalid) {
+              <span class="field-error">Informe um CPF completo.</span>
+            }
+          }
+        </label>
+
+        <label class="field">
+          Data de nascimento
+          <input type="date" formControlName="birthDate" />
+        </label>
+
+        <label class="field">
+          Telefone / WhatsApp
+          <input type="tel" formControlName="phone" autocomplete="tel" placeholder="(21) 99999-0000" />
+        </label>
+
+        <label class="field">
+          E-mail
+          <input type="email" formControlName="email" autocomplete="email" />
+          @if (form.controls.email.touched && form.controls.email.invalid) {
+            <span class="field-error">E-mail inválido.</span>
+          }
+        </label>
+
+        <label class="field span-all">
+          Observações
+          <textarea formControlName="notes" rows="3" placeholder="Família, preferências de contato, histórico…"></textarea>
+        </label>
+      </div>
+
+      @if (error(); as message) {
+        <div class="alert alert--danger" style="margin-top: 1rem" role="alert"><vt-icon name="alert" [size]="18" /><span>{{ message }}</span></div>
+      }
+
+      <div class="form-actions">
+        <a class="btn" [routerLink]="isEdit() ? ['/clientes', id()] : ['/clientes']">Cancelar</a>
+        <button class="btn btn--primary" type="submit" [disabled]="saving()">
+          <vt-icon name="check" [size]="18" /> {{ saving() ? 'Salvando…' : 'Salvar' }}
+        </button>
+      </div>
+    </form>
+  }
+</div>
