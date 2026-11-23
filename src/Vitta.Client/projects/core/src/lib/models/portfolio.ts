@@ -32,3 +32,34 @@ export interface PortfolioChangeDto {
 export interface PortfolioImportDetailDto extends PortfolioImportDto {
   changes: PortfolioChangeDto[];
 }
+
+/** Linha da "tabela final" de uma importação: uma por apólice (coberturas da mesma proposta já unidas). */
+export interface PortfolioRowDto {
+  id: string;
+  /** Nº da apólice ou, sem ele, "CPF 999.999.999-99 · dd/mm/aaaa". */
+  displayId: string;
+  policyNumber: string | null;
+  holderName: string;
+  /** 11 dígitos */
+  holderCpf: string | null;
+  /** Pode juntar coberturas: "VIDA INTEIRA + SAF FUNERAL". */
+  productName: string | null;
+  monthlyPremium: number | null;
+  status: string | null;
+  /** yyyy-MM-dd */
+  startDate: string | null;
+  city: string | null;
+  /** yyyy-MM-01 */
+  competence: string | null;
+  /** Nº da parcela */
+  installment: number | null;
+  commissionAmount: number | null;
+  /** 12 = 12% */
+  commissionRate: number | null;
+  /** Quantas linhas da planilha foram unidas nesta apólice (>= 1). */
+  coverages: number;
+  /** Linhas "Coluna: valor" separadas por \n. */
+  extras: string | null;
+  /** Cliente cadastrado com esse CPF. */
+  clientId: string | null;
+}

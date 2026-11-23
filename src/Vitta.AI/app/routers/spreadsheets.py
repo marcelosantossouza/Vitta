@@ -65,7 +65,12 @@ KIND_CONTEXT = {
     "Portfolio": (
         "planilha mensal de CARTEIRA enviada por uma seguradora de vida (ex.: MAG/Mongeral, Prudential) "
         "ao corretor. Cada linha e uma apolice/proposta do corretor. Ela sera comparada com a do mes anterior "
-        "para descobrir quem entrou, quem saiu e o que mudou."
+        "para descobrir quem entrou, quem saiu e o que mudou. Formatos comuns: (a) lista da carteira copiada do site "
+        "(sem cabecalho; CPF, nome, cidade, inicio da vigencia, premio, situacao); (b) EXTRATO DE COMISSOES (ex.: MAG): "
+        "uma linha por cobertura/parcela, varias linhas com a mesma Proposta (o Vitta soma), colunas de comissao, "
+        "competencia e parcela. Colunas do 'Produtor'/corretor (CPF/CNPJ do Produtor, Codigo do produtor, Nome da "
+        "Verba) sao do proprio corretor e NUNCA sao dados do cliente. 'Valor base' e o premio; 'Valor Comissao' e a "
+        "comissao. Use 'extras' para colunas uteis sem campo proprio (ex.: Nº Inscricao, Codigo do produto)."
     ),
     "Prospects": (
         "lista de POSSIVEIS CLIENTES (prospeccao) de um corretor de seguros de vida. Cada linha e uma pessoa "

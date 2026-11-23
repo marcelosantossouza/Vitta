@@ -38,12 +38,16 @@ internal sealed class PortfolioImportConfiguration : IEntityTypeConfiguration<Po
             r.WithOwner().HasForeignKey("PortfolioImportId");
             r.HasKey(x => x.Id);
             r.Ignore(x => x.UpdatedAt);
-            r.Property(x => x.PolicyNumber).HasMaxLength(50).IsRequired();
+            r.Property(x => x.PolicyNumber).HasMaxLength(50);
             r.Property(x => x.HolderName).HasMaxLength(200).IsRequired();
             r.Property(x => x.HolderCpf).HasMaxLength(11);
-            r.Property(x => x.ProductName).HasMaxLength(150);
+            r.Property(x => x.ProductName).HasMaxLength(300);
             r.Property(x => x.MonthlyPremium).HasPrecision(12, 2);
             r.Property(x => x.Status).HasMaxLength(60);
+            r.Property(x => x.City).HasMaxLength(100);
+            r.Property(x => x.CommissionAmount).HasPrecision(12, 2);
+            r.Property(x => x.CommissionRate).HasPrecision(6, 2);
+            r.Property(x => x.Extras).HasMaxLength(2000);
         });
         b.Navigation(x => x.Rows).UsePropertyAccessMode(PropertyAccessMode.Field).AutoInclude(false);
     }

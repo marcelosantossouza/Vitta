@@ -286,6 +286,7 @@ public static class SpreadsheetMapper
             // 1) nome identico; 2) cabecalho comecando com um dos nomes ("cpf do titular", "premio liquido").
             var matches = Enumerable.Range(0, normalized.Length)
                 .Where(i => !used.Contains(i) && normalized[i].Length > 0)
+                .Where(i => !field.AvoidWords.Any(w => normalized[i].Split(' ', '/').Contains(w)))
                 .Select(i => (Index: i, Rank: field.Synonyms.Contains(normalized[i]) ? 0
                     : field.Synonyms.Any(s => normalized[i].StartsWith(s + " ", StringComparison.Ordinal)) ? 1 : 2))
                 .Where(m => m.Rank < 2)

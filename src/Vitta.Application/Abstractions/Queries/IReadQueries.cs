@@ -35,6 +35,8 @@ public interface IPortfolioQueries
 {
     Task<IReadOnlyList<PortfolioImportDto>> ListImportsAsync(CancellationToken ct = default);
     Task<PortfolioImportDetailDto?> GetImportAsync(Guid id, CancellationToken ct = default);
+    /// <summary>Linhas da carteira do mes; nulo quando a importacao nao existe.</summary>
+    Task<IReadOnlyList<PortfolioRowDto>?> ListRowsAsync(Guid importId, CancellationToken ct = default);
 }
 
 public interface IDashboardQueries

@@ -472,8 +472,30 @@ namespace Vitta.Persistence.Migrations.Postgres
                                 .ValueGeneratedOnAdd()
                                 .HasColumnType("uuid");
 
+                            b1.Property<string>("City")
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)");
+
+                            b1.Property<decimal?>("CommissionAmount")
+                                .HasPrecision(12, 2)
+                                .HasColumnType("numeric(12,2)");
+
+                            b1.Property<decimal?>("CommissionRate")
+                                .HasPrecision(6, 2)
+                                .HasColumnType("numeric(6,2)");
+
+                            b1.Property<DateOnly?>("Competence")
+                                .HasColumnType("date");
+
+                            b1.Property<int>("Coverages")
+                                .HasColumnType("integer");
+
                             b1.Property<DateTimeOffset>("CreatedAt")
                                 .HasColumnType("timestamp with time zone");
+
+                            b1.Property<string>("Extras")
+                                .HasMaxLength(2000)
+                                .HasColumnType("character varying(2000)");
 
                             b1.Property<string>("HolderCpf")
                                 .HasMaxLength(11)
@@ -484,12 +506,14 @@ namespace Vitta.Persistence.Migrations.Postgres
                                 .HasMaxLength(200)
                                 .HasColumnType("character varying(200)");
 
+                            b1.Property<int?>("Installment")
+                                .HasColumnType("integer");
+
                             b1.Property<decimal?>("MonthlyPremium")
                                 .HasPrecision(12, 2)
                                 .HasColumnType("numeric(12,2)");
 
                             b1.Property<string>("PolicyNumber")
-                                .IsRequired()
                                 .HasMaxLength(50)
                                 .HasColumnType("character varying(50)");
 
@@ -497,8 +521,11 @@ namespace Vitta.Persistence.Migrations.Postgres
                                 .HasColumnType("uuid");
 
                             b1.Property<string>("ProductName")
-                                .HasMaxLength(150)
-                                .HasColumnType("character varying(150)");
+                                .HasMaxLength(300)
+                                .HasColumnType("character varying(300)");
+
+                            b1.Property<DateOnly?>("StartDate")
+                                .HasColumnType("date");
 
                             b1.Property<string>("Status")
                                 .HasMaxLength(60)

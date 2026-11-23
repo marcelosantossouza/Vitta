@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { formatCpf, formatCurrency, formatDate, maskCpf, problemMessage } from './format';
+import { formatCpf, formatCurrency, formatDate, maskCpf, normalizeText, problemMessage } from './format';
 import { changeTypeLabel, policyStatusLabel, PROSPECT_STAGE_LABELS, prospectStageLabel } from './labels';
 import { PROSPECT_STAGES } from '../models/prospect';
 
@@ -46,5 +46,12 @@ describe('format', () => {
     expect(problemMessage(validation)).toBe('CPF invalido.');
     expect(problemMessage(conflict)).toBe('Ja existe.');
     expect(problemMessage(offline)).toContain('API');
+  });
+});
+
+describe('normalizeText', () => {
+  it('remove acentos e caixa para busca', () => {
+    expect(normalizeText('  José da CONCEIÇÃO ')).toBe('jose da conceicao');
+    expect(normalizeText(null)).toBe('');
   });
 });

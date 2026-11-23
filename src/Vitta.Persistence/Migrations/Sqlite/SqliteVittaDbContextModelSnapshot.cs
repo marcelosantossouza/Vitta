@@ -466,8 +466,30 @@ namespace Vitta.Persistence.Migrations.Sqlite
                                 .ValueGeneratedOnAdd()
                                 .HasColumnType("TEXT");
 
+                            b1.Property<string>("City")
+                                .HasMaxLength(100)
+                                .HasColumnType("TEXT");
+
+                            b1.Property<double?>("CommissionAmount")
+                                .HasPrecision(12, 2)
+                                .HasColumnType("REAL");
+
+                            b1.Property<double?>("CommissionRate")
+                                .HasPrecision(6, 2)
+                                .HasColumnType("REAL");
+
+                            b1.Property<DateOnly?>("Competence")
+                                .HasColumnType("TEXT");
+
+                            b1.Property<int>("Coverages")
+                                .HasColumnType("INTEGER");
+
                             b1.Property<long>("CreatedAt")
                                 .HasColumnType("INTEGER");
+
+                            b1.Property<string>("Extras")
+                                .HasMaxLength(2000)
+                                .HasColumnType("TEXT");
 
                             b1.Property<string>("HolderCpf")
                                 .HasMaxLength(11)
@@ -478,12 +500,14 @@ namespace Vitta.Persistence.Migrations.Sqlite
                                 .HasMaxLength(200)
                                 .HasColumnType("TEXT");
 
+                            b1.Property<int?>("Installment")
+                                .HasColumnType("INTEGER");
+
                             b1.Property<double?>("MonthlyPremium")
                                 .HasPrecision(12, 2)
                                 .HasColumnType("REAL");
 
                             b1.Property<string>("PolicyNumber")
-                                .IsRequired()
                                 .HasMaxLength(50)
                                 .HasColumnType("TEXT");
 
@@ -491,7 +515,10 @@ namespace Vitta.Persistence.Migrations.Sqlite
                                 .HasColumnType("TEXT");
 
                             b1.Property<string>("ProductName")
-                                .HasMaxLength(150)
+                                .HasMaxLength(300)
+                                .HasColumnType("TEXT");
+
+                            b1.Property<DateOnly?>("StartDate")
                                 .HasColumnType("TEXT");
 
                             b1.Property<string>("Status")

@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_BASE_URL } from '../config/api-config';
-import { PortfolioImportDetailDto, PortfolioImportDto } from '../models/portfolio';
+import { PortfolioImportDetailDto, PortfolioImportDto, PortfolioRowDto } from '../models/portfolio';
 
 export interface UploadPortfolioRequest {
   /** Opcional quando o modelo (templateId) ja tem seguradora. */
@@ -25,6 +25,11 @@ export class PortfolioApi {
 
   get(id: string): Observable<PortfolioImportDetailDto> {
     return this.http.get<PortfolioImportDetailDto>(`${this.baseUrl}/${id}`);
+  }
+
+  /** Apólices do mês (tabela final da importação), ordenadas pelo nome do segurado. */
+  rows(id: string): Observable<PortfolioRowDto[]> {
+    return this.http.get<PortfolioRowDto[]>(`${this.baseUrl}/${id}/rows`);
   }
 
   upload(request: UploadPortfolioRequest): Observable<PortfolioImportDetailDto> {

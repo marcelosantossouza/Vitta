@@ -182,7 +182,8 @@ public class PastedTableTests
         var rows = Vitta.Application.Features.Portfolio.ImportPortfolioHandler.ToPortfolioRows(mapped.Value);
 
         Assert.Equal(3, rows.Count);
-        Assert.Equal("CPF 529.982.247-25 · 22/05/2017", rows[0].PolicyNumber);
+        Assert.Equal("CPF 529.982.247-25 · 22/05/2017", rows[0].DisplayId);
+        Assert.Null(rows[0].PolicyNumber);
         Assert.Equal("ANA MARIA DE SOUZA LIMA", rows[0].HolderName);
         Assert.Equal("52998224725", rows[0].HolderCpf);
         Assert.Equal(1234.56m, rows[0].MonthlyPremium);
@@ -201,4 +202,74 @@ public class PastedTableTests
         Assert.Equal("ImportTemplate.LayoutChanged", result.Error.Code);
         Assert.Contains("Coluna 2", result.Error.Message);
     }
+}
+
+/// <summary>Extrato de comissoes da MAG (CSV): uma linha por cobertura, dados ficticios.</summary>
+public class CommissionStatementTests
+{
+    private static readonly string[] Header =
+    [
+        "CPF/CNPJ do Produtor", "Código do produtor", "Tipo de cliente", "Nome/Razão social", "CPF/CNPJ do cliente", "Proposta",
+        "UP da venda", "Nº Inscrição", "Descrição Produto", "Código do produto", "Valor base", "Parcela comissionada",
+        "Competência comissionada", "Parcela faturada", "Competência faturada", "Valor Angariação", "Valor Comissão", "%  Comissão",
+        "Código da Verba", "Nome da Verba",
+    ];
+
+    private static string[] Row(string name, string cpf, string proposal, string product, string value, string commission) =>
+        ["11222333000181", "7000001", "INDIVIDUAL", name, cpf, proposal, "F01 - RIO DE JANEIRO", proposal + "1", product, "1546", value,
+         "26", "202610", "26", "202609", "0", commission, "15%", "18", "CARTEIRA INDIVIDUAL"];
+
+    private static readonly string[][] Statement =
+    [
+        Header,
+        Row("ANA MARIA LIMA", "5299822472", "900000001", "CAPITAL SEGURADO POR MORTE", "1643.68", "164.37"),
+        Row("BRUNO REIS", "11144477735", "900000002", "VIDA INTEIRA", "207.19", "31.08"),
+        Row("BRUNO REIS", "11144477735", "900000002", "SAF ASSISTENCIA FUNERAL", "61.1", "9.16"),
+    ];
+
+    [Fact]
+    public void AutoMap_IgnoresBrokerColumns_AndFindsClientData()
+    {
+        var columns = SpreadsheetMapper.AutoMap(Header, ImportTemplateKind.Portfolio);
+
+        Assert.Contains(new ColumnMapping("holderName", "Nome/Razão social"), columns);
+        Assert.Contains(new ColumnMapping("holderCpf", "CPF/CNPJ do cliente"), columns);
+        Assert.Contains(new ColumnMapping("policyNumber", "Proposta"), columns);
+        Assert.Contains(new ColumnMapping("productName", "Descrição Produto"), columns);
+        Assert.Contains(new ColumnMapping("monthlyPremium", "Valor base"), columns);
+        Assert.Contains(new ColumnMapping("commissionAmount", "Valor Comissão"), columns);
+        Assert.Contains(new ColumnMapping("commissionRate", "%  Comissão"), columns);
+        Assert.Contains(new ColumnMapping("competence", "Competência comissionada"), columns);
+        Assert.Contains(new ColumnMapping("installment", "Parcela comissionada"), columns);
+        Assert.DoesNotContain(columns, c => c.Column.Contains("Produtor") || c.Column == "Nome da Verba");
+    }
+
+    [Fact]
+    public void CoveragesOfTheSameProposal_AreMergedIntoOnePolicy()
+    {
+        var columns = SpreadsheetMapper.AutoMap(Header, ImportTemplateKind.Portfolio);
+        var mapped = SpreadsheetMapper.Apply(new SpreadsheetData([], null, Statement), 1, columns, "MAG comissões");
+
+        var rows = Vitta.Application.Features.Portfolio.ImportPortfolioHandler.ToPortfolioRows(mapped.Value);
+
+        Assert.Equal(2, rows.Count);
+        var bruno = rows.Single(r => r.HolderName == "BRUNO REIS");
+        Assert.Equal("900000002", bruno.PolicyNumber);
+        Assert.Equal(268.29m, bruno.MonthlyPremium);
+        Assert.Equal(40.24m, bruno.CommissionAmount);
+        Assert.Equal(15m, bruno.CommissionRate);
+        Assert.Equal("VIDA INTEIRA + SAF ASSISTENCIA FUNERAL", bruno.ProductName);
+        Assert.Equal(2, bruno.Coverages);
+        Assert.Equal(26, bruno.Installment);
+        Assert.Equal(new DateOnly(2026, 10, 1), bruno.Competence);
+        Assert.Equal("05299822472", rows.Single(r => r.HolderName == "ANA MARIA LIMA").HolderCpf); // zero a esquerda que o Excel tirou
+    }
+
+    [Theory]
+    [InlineData("202610", 2026, 10)]
+    [InlineData("10/2026", 2026, 10)]
+    [InlineData("2026-10", 2026, 10)]
+    [InlineData("15/10/2026", 2026, 10)]
+    public void ParseCompetence_AcceptsCommonFormats(string input, int year, int month) =>
+        Assert.Equal(new DateOnly(year, month, 1), Vitta.Application.Features.Portfolio.ImportPortfolioHandler.ParseCompetence(input));
 }

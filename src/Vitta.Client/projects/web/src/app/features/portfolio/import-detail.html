@@ -37,6 +37,13 @@
     </div>
 
     @if (!d.isFirstImport) {
+      <div class="tabs view-tabs" role="tablist" aria-label="O que ver">
+        <button type="button" role="tab" [class.active]="view() === 'changes'" [attr.aria-selected]="view() === 'changes'" (click)="showView('changes')">Mudanças</button>
+        <button type="button" role="tab" [class.active]="view() === 'rows'" [attr.aria-selected]="view() === 'rows'" (click)="showView('rows')">Apólices do mês ({{ rows()?.length ?? d.totalRows }})</button>
+      </div>
+    }
+
+    @if (!d.isFirstImport && view() === 'changes') {
       <section class="card card--flush">
         <div class="card__header">
           <div class="tabs" role="tablist">
@@ -74,6 +81,122 @@
               </tbody>
             </table>
           </div>
+        }
+      </section>
+    } @else {
+      <section class="card card--flush">
+        <div class="card__header">
+          <div class="rows-toolbar">
+            <label class="search">
+              <vt-icon name="search" [size]="18" />
+              <input type="search" placeholder="Buscar por nome, CPF ou apólice" aria-label="Buscar apólices do mês" [value]="rowsSearch()" (input)="onRowsSearch($any($event.target).value)" />
+            </label>
+            @if (rows()) {
+              <div class="totals" aria-live="polite">
+                <span><strong>{{ totals().count }}</strong> apólice(s)</span>
+                @if (cols().premium) { <span>Prêmio total <strong>{{ totals().premium | brl }}</strong></span> }
+                @if (cols().commission) { <span>Comissão total <strong>{{ totals().commission | brl }}</strong></span> }
+              </div>
+            }
+          </div>
+        </div>
+
+        @if (rowsLoading()) {
+          <div style="padding: 1rem 1.25rem 1.25rem; display: grid; gap: 0.75rem">
+            @for (i of [1, 2, 3, 4, 5]; track i) { <div class="skeleton" style="height: 2.2rem"></div> }
+          </div>
+        } @else if (rows() === null) {
+          <vt-empty-state icon="alert" title="Não foi possível carregar" text="Tente novamente em instantes.">
+            <button class="btn" type="button" (click)="showView('rows')">Tentar de novo</button>
+          </vt-empty-state>
+        } @else if (filteredRows().length === 0) {
+          @if (rowsSearch().trim()) {
+            <vt-empty-state icon="search" title="Nenhuma apólice encontrada" text="Busque por parte do nome, pelo CPF ou pelo número da apólice." />
+          } @else {
+            <vt-empty-state icon="policy" title="Nenhuma apólice" text="Esta importação não tem apólices registradas." />
+          }
+        } @else {
+          <div class="table-wrap" style="margin-top: 1rem">
+            <table class="responsive">
+              <thead>
+                <tr>
+                  <th>Apólice</th>
+                  <th>Segurado</th>
+                  @if (cols().cpf) { <th>CPF</th> }
+                  @if (cols().product) { <th>Produto</th> }
+                  @if (cols().premium) { <th class="num">Prêmio</th> }
+                  @if (cols().commission) { <th class="num">Comissão</th> }
+                  @if (cols().installment) { <th class="num">Parcela</th> }
+                  @if (cols().status) { <th>Situação</th> }
+                  @if (cols().start) { <th>Início</th> }
+                  @if (cols().city) { <th>Cidade</th> }
+                  @if (cols().extras) { <th><span class="sr-only">Mais dados</span></th> }
+                </tr>
+              </thead>
+              <tbody>
+                @for (r of visibleRows(); track r.id) {
+                  <tr>
+                    <td data-label="Apólice" class="mono wrap-anywhere">{{ r.displayId }}</td>
+                    <td data-label="Segurado">
+                      @if (r.clientId) {
+                        <a class="primary-cell" [routerLink]="['/clientes', r.clientId]">{{ r.holderName }}</a>
+                      } @else {
+                        <strong>{{ r.holderName }}</strong>
+                      }
+                    </td>
+                    @if (cols().cpf) { <td data-label="CPF" class="mono nowrap">{{ (r.holderCpf | cpf) || '—' }}</td> }
+                    @if (cols().product) {
+                      <td data-label="Produto">
+                        <span class="product">
+                          <span>{{ r.productName || '—' }}</span>
+                          @if (r.coverages > 1) { <span class="badge badge--info">{{ r.coverages }} coberturas</span> }
+                        </span>
+                      </td>
+                    }
+                    @if (cols().premium) { <td data-label="Prêmio" class="num nowrap">{{ r.monthlyPremium === null ? '—' : (r.monthlyPremium | brl) }}</td> }
+                    @if (cols().commission) {
+                      <td data-label="Comissão" class="num nowrap">
+                        @if (r.commissionAmount !== null) { {{ r.commissionAmount | brl }} }
+                        @if (r.commissionRate !== null) { <span class="muted"> ({{ rate(r.commissionRate) }})</span> }
+                        @if (r.commissionAmount === null && r.commissionRate === null) { — }
+                      </td>
+                    }
+                    @if (cols().installment) { <td data-label="Parcela" class="num">{{ r.installment ?? '—' }}</td> }
+                    @if (cols().status) { <td data-label="Situação">{{ r.status || '—' }}</td> }
+                    @if (cols().start) { <td data-label="Início" class="nowrap">{{ r.startDate | isoDate }}</td> }
+                    @if (cols().city) { <td data-label="Cidade">{{ r.city || '—' }}</td> }
+                    @if (cols().extras) {
+                      <td class="actions">
+                        @if (r.extras) {
+                          <button class="btn btn--sm btn--ghost" type="button" [attr.aria-expanded]="expanded().has(r.id)" (click)="toggleExtras(r.id)">
+                            {{ expanded().has(r.id) ? 'menos' : 'mais' }}
+                          </button>
+                        }
+                      </td>
+                    }
+                  </tr>
+                  @if (r.extras && expanded().has(r.id)) {
+                    <tr class="extras-row">
+                      <td [attr.colspan]="colCount()">
+                        <div class="extras">
+                          @for (e of extrasLines(r.extras); track $index) {
+                            <div>@if (e.label) { <span>{{ e.label }}:</span> } {{ e.value }}</div>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </table>
+          </div>
+          @if (filteredRows().length > visibleRows().length) {
+            <div class="more">
+              <button class="btn btn--sm" type="button" (click)="showMoreRows()">
+                Mostrar mais ({{ filteredRows().length - visibleRows().length }} restantes)
+              </button>
+            </div>
+          }
         }
       </section>
     }

@@ -68,6 +68,8 @@ public static class PortfolioErrors
     public static readonly Error MonthAlreadyImported = Error.Conflict("Portfolio.MonthAlreadyImported", "Já existe importação desta seguradora para este mês. Exclua a anterior para reimportar.");
     public static readonly Error EmptyFile = Error.Validation("Portfolio.EmptyFile", "Nenhuma linha com número de apólice (ou CPF) foi encontrada na planilha.");
     public static readonly Error InsurerRequired = Error.Validation("Portfolio.InsurerRequired", "Escolha a seguradora da planilha.");
+    public static Error CompetenceMismatch(DateOnly fileMonth, DateOnly chosen) => Error.Validation("Portfolio.CompetenceMismatch",
+        $"O arquivo é da competência {fileMonth:MM/yyyy}, mas o mês escolhido é {chosen:MM/yyyy}. Confira o mês de referência.");
     public static Error InvalidFile(string message) => Error.Validation("Portfolio.InvalidFile", message);
     public static Error NotFound(Guid id) => Error.NotFound("Portfolio.NotFound", "Importação não encontrada.");
 }

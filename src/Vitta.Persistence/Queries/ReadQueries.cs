@@ -171,6 +171,24 @@ internal sealed class PortfolioQueries(VittaDbContext db) : IPortfolioQueries
             dto.TotalRows, dto.Entered, dto.Left, dto.Changed, dto.IsFirstImport, dto.CreatedAt, changes);
     }
 
+    public async Task<IReadOnlyList<PortfolioRowDto>?> ListRowsAsync(Guid importId, CancellationToken ct = default)
+    {
+        var import = await db.PortfolioImports.AsNoTracking().Include(x => x.Rows).FirstOrDefaultAsync(x => x.Id == importId, ct);
+        if (import is null)
+        {
+            return null;
+        }
+
+        var clientsByCpf = await ClientIdsByCpf(import.Rows.Select(r => r.HolderCpf), ct);
+        return import.Rows
+            .OrderBy(r => r.HolderName).ThenBy(r => r.PolicyNumber)
+            .Select(r => new PortfolioRowDto(
+                r.Id, r.ToRow().DisplayId, r.PolicyNumber, r.HolderName, r.HolderCpf, r.ProductName, r.MonthlyPremium, r.Status,
+                r.StartDate, r.City, r.Competence, r.Installment, r.CommissionAmount, r.CommissionRate, r.Coverages, r.Extras,
+                r.HolderCpf is { } cpf && clientsByCpf.TryGetValue(cpf, out var clientId) ? clientId : null))
+            .ToList();
+    }
+
     internal async Task<IReadOnlyList<PortfolioChangeDto>> RecentExitsAsync(int take, CancellationToken ct)
     {
         var imports = await db.PortfolioImports.AsNoTracking().Include(i => i.Changes).ToListAsync(ct);

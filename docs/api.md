@@ -150,7 +150,10 @@ SpreadsheetAnalysisDto {
 
 Campos por tipo (servidos por `GET /import-templates/fields?kind=`):
 - **Portfolio**: `policyNumber` (apólice), `holderName`* (segurado), `holderCpf`, `productName`, `monthlyPremium`,
-  `status`, `startDate` (início da vigência). Obrigatório também: `policyNumber` **ou** `holderCpf`. Sem nº da apólice,
+  `status`, `startDate` (início da vigência), `city`, `competence` (competência do arquivo), `installment` (parcela),
+  `commissionAmount`, `commissionRate`, `extras` (`multiple`: outras colunas guardadas como "Coluna: valor").
+  Linhas com o mesmo nº da apólice (ex.: extrato de comissões da MAG, uma linha por cobertura) viram uma só: prêmio e
+  comissão somados, produtos juntados com " + ". Colunas do produtor/corretor nunca são sugeridas como dados do cliente. Obrigatório também: `policyNumber` **ou** `holderCpf`. Sem nº da apólice,
   a linha é identificada por `"CPF 999.999.999-99 · dd/mm/aaaa"` (CPF + início da vigência) para comparar os meses.
 - **Prospects**: `name`*, `phone`, `email`, `source`, `nextFollowUpOn`, `notes` (`multiple`: várias colunas viram "Coluna: valor" nas observações).
 
@@ -163,6 +166,15 @@ Campos por tipo (servidos por `GET /import-templates/fields?kind=`):
 | POST | `/import-templates` | `ImportTemplateInput` | 201 `{ id }` · 400 (campo obrigatório sem coluna) · 409 (nome repetido) |
 | PUT | `/import-templates/{id}` | `ImportTemplateInput` | 204 · 400 · 404 · 409 |
 | DELETE | `/import-templates/{id}` | — | 204 · 404 |
+
+Carteira do mês ("tabela final"):
+- `GET /portfolio/imports/{id}/rows` → `PortfolioRowDto[]` { id; displayId; policyNumber|null; holderName; holderCpf|null;
+  productName|null; monthlyPremium|null; status|null; startDate|null; city|null; competence|null; installment|null;
+  commissionAmount|null; commissionRate|null; coverages; extras|null; clientId|null } · 404.
+- Comparação entre meses (funciona misturando fontes, ex.: outubro colado do site e novembro pelo extrato):
+  1) nº da apólice; 2) CPF + início da vigência; 3) CPF do cliente (conjunto de apólices dele). Status e prêmio só
+  são comparados quando os dois meses informam.
+- Se a coluna de competência estiver mapeada e o arquivo for de outro mês → 400 `Portfolio.CompetenceMismatch`.
 
 Importação com modelo:
 - `POST /portfolio/imports` aceita também `templateId` (opcional). Com modelo, `insurerId` pode ser omitido se o

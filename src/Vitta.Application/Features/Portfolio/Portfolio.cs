@@ -7,6 +7,7 @@ using Vitta.Domain.Common;
 using Vitta.Domain.Imports;
 using Vitta.Domain.Insurers;
 using Vitta.Domain.Portfolio;
+using F = Vitta.Domain.Imports.ImportFields.Portfolio;
 
 namespace Vitta.Application.Features.Portfolio;
 
@@ -23,6 +24,20 @@ public sealed record PortfolioImportDetailDto(
 public sealed record PortfolioChangeDto(
     Guid Id, Guid ImportId, DateOnly ReferenceMonth, string InsurerName, PortfolioChangeType Type, string PolicyNumber,
     string HolderName, string? HolderCpf, string? Detail, Guid? ClientId);
+
+/// <summary>Linha da carteira do mes (a "tabela final" da importacao).</summary>
+public sealed record PortfolioRowDto(
+    Guid Id, string DisplayId, string? PolicyNumber, string HolderName, string? HolderCpf, string? ProductName, decimal? MonthlyPremium,
+    string? Status, DateOnly? StartDate, string? City, DateOnly? Competence, int? Installment, decimal? CommissionAmount,
+    decimal? CommissionRate, int Coverages, string? Extras, Guid? ClientId);
+
+public sealed record GetPortfolioImportRowsQuery(Guid Id) : IQuery<Result<IReadOnlyList<PortfolioRowDto>>>;
+
+public sealed class GetPortfolioImportRowsHandler(IPortfolioQueries queries) : IQueryHandler<GetPortfolioImportRowsQuery, Result<IReadOnlyList<PortfolioRowDto>>>
+{
+    public async ValueTask<Result<IReadOnlyList<PortfolioRowDto>>> Handle(GetPortfolioImportRowsQuery q, CancellationToken ct) =>
+        await queries.ListRowsAsync(q.Id, ct) is { } rows ? Result.Success(rows) : PortfolioErrors.NotFound(q.Id);
+}
 
 // ---- Listar / detalhar ----
 public sealed record GetPortfolioImportsQuery : IQuery<IReadOnlyList<PortfolioImportDto>>;
@@ -107,6 +122,12 @@ public sealed class ImportPortfolioHandler(
             return PortfolioErrors.EmptyFile;
         }
 
+        // O usuario escolhe o mes; se o arquivo diz outra competencia, avisa antes de gravar (evita importar outubro como novembro).
+        if (FileCompetence(rows.Value) is { } fileMonth && fileMonth != month)
+        {
+            return PortfolioErrors.CompetenceMismatch(fileMonth, month);
+        }
+
         var previous = await imports.GetPreviousWithRowsAsync(insurerId.Value, month, ct);
         var import = PortfolioImport.Create(insurerId.Value, month, Path.GetFileName(c.FileName));
         import.Process(rows.Value, previous);
@@ -146,46 +167,116 @@ public sealed class ImportPortfolioHandler(
         return mapped.IsFailure ? mapped.Error : Result.Success(ToPortfolioRows(mapped.Value));
     }
 
+    /// <summary>
+    /// Traduz as linhas mapeadas para a carteira. Linhas da mesma apolice (ex.: extrato de comissoes da MAG, uma linha
+    /// por cobertura) viram uma so: premio e comissao somados, produtos juntados. Sem nº da apolice, a linha e
+    /// identificada pelo CPF + inicio da vigencia.
+    /// </summary>
     public static IReadOnlyList<PortfolioRow> ToPortfolioRows(IEnumerable<MappedRow> rows)
     {
-        var result = new List<PortfolioRow>();
+        var parsed = new List<(string Key, PortfolioRow Row)>();
         foreach (var row in rows)
         {
-            var cpfDigits = SpreadsheetMapper.Digits(row.Get(ImportFields.Portfolio.HolderCpf));
-            var policy = row.Get(ImportFields.Portfolio.PolicyNumber) ?? KeyWithoutPolicy(cpfDigits, row.Get(ImportFields.Portfolio.StartDate));
-            if (policy is null)
+            var cpfDigits = SpreadsheetMapper.Digits(row.Get(F.HolderCpf));
+            var cpf = cpfDigits.Length is > 0 and <= 11 ? cpfDigits.PadLeft(11, '0') : null;
+            var policy = row.Get(F.PolicyNumber);
+            var startDate = SpreadsheetMapper.ParseDate(row.Get(F.StartDate));
+            var key = policy is not null ? "P:" + policy.Trim().TrimStart('0').ToUpperInvariant()
+                : cpf is not null ? $"C:{cpf}|{startDate:yyyyMMdd}" : null;
+            if (key is null)
             {
                 continue;
             }
 
-            result.Add(new PortfolioRow(
-                policy,
-                row.Get(ImportFields.Portfolio.HolderName) ?? "(sem nome)",
-                cpfDigits.Length is > 0 and <= 11 ? cpfDigits.PadLeft(11, '0') : null,
-                row.Get(ImportFields.Portfolio.ProductName),
-                SpreadsheetMapper.ParseMoney(row.Get(ImportFields.Portfolio.MonthlyPremium)),
-                row.Get(ImportFields.Portfolio.Status)));
+            var extras = string.Join('\n', row.All(F.Extras).Select(e => $"{e.Column}: {e.Value}"));
+            parsed.Add((key, new PortfolioRow(
+                policy?.Trim(),
+                row.Get(F.HolderName) ?? "(sem nome)",
+                cpf,
+                row.Get(F.ProductName),
+                SpreadsheetMapper.ParseMoney(row.Get(F.MonthlyPremium)),
+                row.Get(F.Status))
+            {
+                StartDate = startDate,
+                City = Limit(row.Get(F.City), 100),
+                Competence = ParseCompetence(row.Get(F.Competence)),
+                Installment = int.TryParse(SpreadsheetMapper.Digits(row.Get(F.Installment)), out var n) ? n : null,
+                CommissionAmount = SpreadsheetMapper.ParseMoney(row.Get(F.CommissionAmount)),
+                CommissionRate = SpreadsheetMapper.ParseMoney(row.Get(F.CommissionRate)),
+                Extras = extras.Length == 0 ? null : extras,
+            }));
         }
 
-        return result;
+        return parsed.GroupBy(p => p.Key).Select(g => Merge(g.Select(p => p.Row).ToList())).ToList();
     }
 
-    /// <summary>
-    /// Sem nº da apolice (ex.: tabela copiada do site da MAG), a linha e identificada pelo CPF e, se houver, pelo inicio
-    /// da vigencia (diferencia duas apolices do mesmo cliente). Ex.: "CPF 026.078.677-20 · 22/05/2017".
-    /// </summary>
-    internal static string? KeyWithoutPolicy(string cpfDigits, string? startDate)
+    private static PortfolioRow Merge(List<PortfolioRow> rows)
     {
-        if (cpfDigits.Length is 0 or > 11)
+        if (rows.Count == 1)
+        {
+            return rows[0];
+        }
+
+        static decimal? Sum(IEnumerable<decimal?> values) => values.Any(v => v is not null) ? values.Sum(v => v ?? 0) : null;
+        var first = rows[0];
+        var products = rows.Select(r => r.ProductName?.Trim()).OfType<string>().Where(p => p.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var extras = string.Join('\n', rows.Select(r => r.Extras).OfType<string>().SelectMany(e => e.Split('\n')).Distinct());
+        return first with
+        {
+            ProductName = products.Count == 0 ? null : Limit(string.Join(" + ", products), 300),
+            MonthlyPremium = Sum(rows.Select(r => r.MonthlyPremium)),
+            Status = rows.Select(r => r.Status).OfType<string>().FirstOrDefault(),
+            StartDate = rows.Select(r => r.StartDate).OfType<DateOnly>().DefaultIfEmpty().Min() is var d && d != default ? d : null,
+            Installment = rows.Max(r => r.Installment),
+            CommissionAmount = Sum(rows.Select(r => r.CommissionAmount)),
+            CommissionRate = rows.Select(r => r.CommissionRate).Distinct().Count() == 1 ? first.CommissionRate : null,
+            Coverages = rows.Sum(r => r.Coverages),
+            Extras = extras.Length == 0 ? null : Limit(extras, 2000),
+        };
+    }
+
+    /// <summary>Competencia em "202610", "10/2026", "2026-10", "10/2026" ou data completa.</summary>
+    public static DateOnly? ParseCompetence(string? value)
+    {
+        var text = value?.Trim();
+        if (string.IsNullOrEmpty(text))
         {
             return null;
         }
 
-        var cpf = cpfDigits.PadLeft(11, '0');
-        var key = $"CPF {cpf[..3]}.{cpf[3..6]}.{cpf[6..9]}-{cpf[9..]}";
-        var date = SpreadsheetMapper.ParseDate(startDate);
-        return date is { } d ? $"{key} · {d:dd/MM/yyyy}" : key;
+        var digits = SpreadsheetMapper.Digits(text);
+        if (digits.Length == 6 && digits == text)
+        {
+            return MonthOf(int.Parse(digits[..4]), int.Parse(digits[4..]));
+        }
+
+        var parts = text.Split('/', '-', '.');
+        if (parts.Length == 2 && int.TryParse(parts[0], out var a) && int.TryParse(parts[1], out var b))
+        {
+            return a > 12 ? MonthOf(a, b) : MonthOf(b, a);
+        }
+
+        return SpreadsheetMapper.ParseDate(text) is { } date ? new DateOnly(date.Year, date.Month, 1) : null;
     }
+
+    private static DateOnly? MonthOf(int year, int month) =>
+        year is >= 2000 and <= 2100 && month is >= 1 and <= 12 ? new DateOnly(year, month, 1) : null;
+
+    /// <summary>Competencia predominante no arquivo (quando a coluna foi mapeada).</summary>
+    internal static DateOnly? FileCompetence(IReadOnlyList<PortfolioRow> rows)
+    {
+        var values = rows.Select(r => r.Competence).OfType<DateOnly>().ToList();
+        if (values.Count == 0)
+        {
+            return null;
+        }
+
+        var top = values.GroupBy(v => v).OrderByDescending(g => g.Count()).First();
+        return top.Count() >= values.Count * 0.8 ? top.Key : null;
+    }
+
+    private static string? Limit(string? value, int max) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim() is var v && v.Length > max ? v[..max] : value.Trim();
 }
 
 // ---- Excluir ----

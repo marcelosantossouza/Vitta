@@ -25,6 +25,11 @@ export function maskCpf(value: string): string {
   return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
 }
 
+/** Texto para busca: minúsculas e sem acentos ("José" -> "jose"). */
+export function normalizeText(value: string | null | undefined): string {
+  return (value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
 /** Data local de hoje como "yyyy-MM-dd". */
 export function todayIso(): string {
   const now = new Date();
