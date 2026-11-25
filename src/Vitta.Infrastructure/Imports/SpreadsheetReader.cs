@@ -20,6 +20,17 @@ internal sealed partial class SpreadsheetReader : ISpreadsheetReader
         var extension = Path.GetExtension(fileName).ToLowerInvariant();
         try
         {
+            if (!file.CanSeek)
+            {
+                var buffer = new MemoryStream();
+                await file.CopyToAsync(buffer, ct);
+                buffer.Position = 0;
+                file = buffer;
+            }
+
+            // A extensao pode mentir (ex.: a MAG manda .xlsx com nome .csv): o conteudo decide quando da para saber.
+            extension = await SniffAsync(file, ct) ?? extension;
+
             var data = extension switch
             {
                 ".xlsx" or ".xlsm" => ReadXlsx(file, sheetName),
@@ -38,6 +49,26 @@ internal sealed partial class SpreadsheetReader : ISpreadsheetReader
         {
             return SpreadsheetErrors.InvalidFile("Não foi possível ler a planilha. Verifique se o arquivo não está corrompido ou protegido por senha.");
         }
+    }
+
+    /// <summary>Formato real pela assinatura dos primeiros bytes: zip (PK) = .xlsx, OLE2 = .xls antigo; nulo = texto.</summary>
+    private static async Task<string?> SniffAsync(Stream file, CancellationToken ct)
+    {
+        var start = file.Position;
+        var header = new byte[4];
+        var read = await file.ReadAtLeastAsync(header, header.Length, throwOnEndOfStream: false, ct);
+        file.Position = start;
+        if (read < 4)
+        {
+            return null;
+        }
+
+        return header switch
+        {
+            [0x50, 0x4B, 0x03, 0x04] => ".xlsx",
+            [0xD0, 0xCF, 0x11, 0xE0] => ".xls",
+            _ => null,
+        };
     }
 
     private static SpreadsheetData ReadXlsx(Stream file, string? sheetName)

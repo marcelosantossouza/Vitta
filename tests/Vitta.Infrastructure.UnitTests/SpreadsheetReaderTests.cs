@@ -57,6 +57,25 @@ public class SpreadsheetReaderTests
     }
 
     [Fact]
+    public async Task XlsxNamedCsv_IsReadAsXlsx()
+    {
+        using var wb = new XLWorkbook();
+        var ws = wb.AddWorksheet("Extrato");
+        ws.Cell(1, 1).Value = "Proposta";
+        ws.Cell(2, 1).Value = 12345;
+        var stream = new MemoryStream();
+        wb.SaveAs(stream);
+        stream.Position = 0;
+
+        var result = await _reader.ReadAsync(stream, "teste_mag.csv");
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Extrato", result.Value.SheetName);
+        Assert.Equal(["Proposta"], result.Value.Rows[0]);
+        Assert.Equal(["12345"], result.Value.Rows[1]);
+    }
+
+    [Fact]
     public async Task OldXls_ReturnsFriendlyError()
     {
         var result = await _reader.ReadAsync(new MemoryStream([1, 2, 3]), "mag.xls");
