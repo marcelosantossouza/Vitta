@@ -21,7 +21,18 @@ public sealed record DashboardDto(
     IReadOnlyList<StageCountDto> ProspectsByStage,
     IReadOnlyList<InsurerSummaryDto> PoliciesByInsurer,
     IReadOnlyList<PortfolioChangeDto> RecentExits,
-    DateTimeOffset? LastImportAt);
+    DateTimeOffset? LastImportAt,
+    LastMonthCommissionDto? LastMonth = null);
+
+/// <summary>
+/// Comissao do ultimo mes carregado (mes de referencia mais recente das importacoes; varias seguradoras no mesmo mes
+/// sao somadas) comparada com o mes anterior das mesmas seguradoras.
+/// </summary>
+/// <param name="Commission">Nulo quando as planilhas do mes nao trazem comissao nem %.</param>
+/// <param name="ImportId">Preenchido quando o mes tem uma importacao so (o card leva direto para ela).</param>
+public sealed record LastMonthCommissionDto(
+    DateOnly Month, decimal? Commission, decimal Premium, int Policies, IReadOnlyList<string> Insurers, Guid? ImportId,
+    DateOnly? PreviousMonth, decimal? PreviousCommission);
 
 public sealed record GetDashboardQuery : IQuery<DashboardDto>;
 

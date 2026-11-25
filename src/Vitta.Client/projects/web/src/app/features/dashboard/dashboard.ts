@@ -3,12 +3,12 @@ import { RouterLink } from '@angular/router';
 import { AuthService, DashboardApi, DashboardDto, PROSPECT_STAGES, todayIso } from '@vitta/core';
 import { EmptyState } from '../../shared/empty-state';
 import { Icon } from '../../shared/icon';
-import { BrlPipe, ChangeTypePipe, IsoDatePipe, MonthPipe, StagePipe } from '../../shared/pipes';
+import { BrlPipe, ChangeTypePipe, IsoDatePipe, MonthPipe, PercentPipe, StagePipe } from '../../shared/pipes';
 import { ToastService } from '../../shared/toast.service';
 
 @Component({
   selector: 'vt-dashboard',
-  imports: [RouterLink, Icon, EmptyState, BrlPipe, IsoDatePipe, StagePipe, MonthPipe, ChangeTypePipe],
+  imports: [RouterLink, Icon, EmptyState, BrlPipe, IsoDatePipe, StagePipe, MonthPipe, ChangeTypePipe, PercentPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',

@@ -34,6 +34,25 @@ public static class DailyDigest
         html.Append($"""<h2 style="color:#0f6e5c;margin:0 0 4px">Resumo do dia</h2><p style="margin:0 0 16px;color:#6b7280">{E(today.ToString("dddd, dd 'de' MMMM 'de' yyyy", PtBr))}</p>""");
         text.AppendLine($"Resumo do dia — {today.ToString("dd/MM/yyyy", PtBr)}").AppendLine();
 
+        // Comissao do ultimo mes carregado: o numero que o corretor quer ver primeiro.
+        if (d.LastMonth is { Commission: { } commission } lastMonth)
+        {
+            var month = MonthLabel(lastMonth.Month);
+            var vs = lastMonth.PreviousCommission is { } prev
+                ? $"{(commission - prev >= 0 ? "+" : string.Empty)}{Money(commission - prev)} vs {MonthLabel(lastMonth.PreviousMonth!.Value)}"
+                : null;
+            html.Append("<div style=\"background:#0f6e5c;color:#fff;border-radius:10px;padding:14px 16px;margin:0 0 8px\">");
+            html.Append($"<div style=\"opacity:.8;font-size:13px\">Sua comissão de {E(month)} · {E(string.Join(", ", lastMonth.Insurers))}</div>");
+            html.Append($"<div style=\"font-size:26px;font-weight:bold\">{Money(commission)}</div>");
+            if (vs is not null)
+            {
+                html.Append($"<div style=\"opacity:.85;font-size:13px\">{E(vs)}</div>");
+            }
+
+            html.Append("</div>");
+            text.AppendLine($"SUA COMISSÃO DE {month.ToUpper(PtBr)}: {Money(commission)}{(vs is null ? string.Empty : $" ({vs})")}").AppendLine();
+        }
+
         // Carteira
         var commissionNote = book.ActiveWithoutRate > 0 ? $" (sem contar {Plural(book.ActiveWithoutRate, "apólice", "apólices")} sem %)" : string.Empty;
         html.Append(Section("Carteira"));
@@ -118,6 +137,9 @@ public static class DailyDigest
         $"""<tr><td style="padding:4px 0;color:#6b7280">{E(label)}</td><td style="padding:4px 0;text-align:right">{valueHtml}</td></tr>""";
     private static string Muted(string value) => $"""<p style="color:#6b7280;margin:6px 0">{E(value)}</p>""";
     private static string Money(decimal value) => value.ToString("C", PtBr);
+
+    /// <summary>"out/2026" (o pt-BR do .NET abrevia com ponto: "out.").</summary>
+    private static string MonthLabel(DateOnly month) => $"{PtBr.DateTimeFormat.GetAbbreviatedMonthName(month.Month).TrimEnd('.')}/{month.Year}";
     private static string E(string value) => Html.Encode(value);
     private static string Plural(int n, string one, string many) => $"{n} {(n == 1 ? one : many)}";
 

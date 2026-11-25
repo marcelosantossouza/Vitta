@@ -292,7 +292,48 @@ internal sealed class DashboardQueries(VittaDbContext db, PortfolioQueries portf
                 .Select(g => new InsurerSummaryDto(g.Key, insurers.GetValueOrDefault(g.Key, "?"), g.Count(), g.Sum(x => x.MonthlyPremium)))
                 .OrderByDescending(x => x.MonthlyPremium).ToList(),
             RecentExits: await portfolio.RecentExitsAsync(10, ct),
-            LastImportAt: lastImport.Max());
+            LastImportAt: lastImport.Max(),
+            LastMonth: await LastMonthAsync(insurers, ct));
+    }
+
+    private async Task<LastMonthCommissionDto?> LastMonthAsync(Dictionary<Guid, string> insurers, CancellationToken ct)
+    {
+        var months = await db.PortfolioImports.AsNoTracking().Select(i => new { i.Id, i.InsurerId, i.ReferenceMonth }).ToListAsync(ct);
+        if (months.Count == 0)
+        {
+            return null;
+        }
+
+        var latest = months.Max(m => m.ReferenceMonth);
+        var current = months.Where(m => m.ReferenceMonth == latest).ToList();
+        // Para cada seguradora do ultimo mes, a importacao imediatamente anterior dela.
+        var previous = current
+            .Select(c => months.Where(m => m.InsurerId == c.InsurerId && m.ReferenceMonth < latest).MaxBy(m => m.ReferenceMonth))
+            .Where(m => m is not null)
+            .Select(m => m!.Id)
+            .ToList();
+
+        var ids = current.Select(c => c.Id).Concat(previous).ToList();
+        var imports = await db.PortfolioImports.AsNoTracking().Include(i => i.Rows).Where(i => ids.Contains(i.Id)).ToListAsync(ct);
+        var totals = imports.ToDictionary(i => i.Id, i => MonthTotalsDto.From(i.ReferenceMonth, i.Rows.Select(r => r.ToRow()).ToList()));
+
+        static decimal? SumCommission(IEnumerable<MonthTotalsDto> t)
+        {
+            var withCommission = t.Where(x => x.Commission is not null).ToList();
+            return withCommission.Count > 0 ? withCommission.Sum(x => x.Commission!.Value) : null;
+        }
+
+        var now = current.Select(c => totals[c.Id]).ToList();
+        var before = previous.Select(id => totals[id]).ToList();
+        return new LastMonthCommissionDto(
+            latest,
+            SumCommission(now),
+            now.Sum(t => t.Premium),
+            now.Sum(t => t.Policies),
+            current.Select(c => insurers.GetValueOrDefault(c.InsurerId, "?")).Distinct().OrderBy(n => n).ToList(),
+            current.Count == 1 ? current[0].Id : null,
+            before.Count > 0 ? before.Max(t => t.Month) : null,
+            before.Count > 0 ? SumCommission(before) : null);
     }
 }
 

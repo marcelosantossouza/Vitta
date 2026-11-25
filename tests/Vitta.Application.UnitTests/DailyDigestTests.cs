@@ -25,7 +25,8 @@ public class DailyDigestTests
         ],
         [], [],
         [new PortfolioChangeDto(Guid.NewGuid(), Guid.NewGuid(), new DateOnly(2026, 10, 1), "MAG", PortfolioChangeType.Left, "123", "Carlos", "52998224725", null, null)],
-        null);
+        null,
+        new LastMonthCommissionDto(new DateOnly(2026, 10, 1), 10008.47m, 91000m, 51, ["MAG Seguros"], null, new DateOnly(2026, 9, 1), 9500m));
 
     private static readonly BookSummaryDto Book = new(10, 8, 12, 1, 3000m, 330m, 11m, 2);
 
@@ -42,6 +43,9 @@ public class DailyDigestTests
         Assert.Contains("Carlos", mail.Html);
         Assert.DoesNotContain("52998224725", mail.Html + mail.Text); // CPF nunca vai no e-mail
         Assert.Contains("https://vitta.exemplo.com/painel", mail.Html);
+        Assert.Contains("Sua comissão de out/2026", mail.Html);
+        Assert.Contains("R$ 10.008,47", mail.Html);
+        Assert.Contains("+R$ 508,47 vs set/2026", mail.Text);
     }
 
     [Fact]

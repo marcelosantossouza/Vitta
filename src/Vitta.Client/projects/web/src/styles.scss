@@ -267,19 +267,25 @@ dl.details {
 }
 
 /* ---------- Cards de indicadores (Painel, Clientes, Apolices, Carteira) ---------- */
-.kpis { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
+.kpis { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); }
 
 .kpi {
-  display: flex; gap: 0.9rem; align-items: flex-start;
+  display: flex; gap: 0.9rem; align-items: flex-start; min-width: 0;
   > div { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
 }
 .kpi__icon {
   display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
   background: var(--vt-primary-soft); color: var(--vt-primary);
 }
-.kpi__label { font-size: 0.8rem; color: var(--vt-muted); font-weight: 550; }
-.kpi__value { font-size: 1.65rem; font-weight: 750; letter-spacing: -0.02em; line-height: 1.15; overflow-wrap: anywhere; }
-.kpi__hint { font-size: 0.8rem; color: var(--vt-muted); text-decoration: none; }
+/* A area de texto do card e o "container": a fonte do valor acompanha a largura dela. */
+.kpi > div { flex: 1; container-type: inline-size; }
+.kpi__label { font-size: 0.8rem; color: var(--vt-muted); font-weight: 550; line-height: 1.3; }
+/* Valor sempre numa linha: a fonte acompanha a largura do card (R$ 10.008,47 cabe em card estreito). */
+.kpi__value {
+  font-size: clamp(1.05rem, 14cqi, 1.65rem); font-weight: 750; letter-spacing: -0.02em; line-height: 1.15;
+  white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.kpi__hint { font-size: 0.78rem; color: var(--vt-muted); text-decoration: none; line-height: 1.35; }
 a.kpi__hint { color: var(--vt-primary); font-weight: 550; }
 
 .kpi--highlight {
@@ -288,9 +294,13 @@ a.kpi__hint { color: var(--vt-primary); font-weight: 550; }
   .kpi__label, .kpi__hint { color: rgba(255, 255, 255, 0.75); }
 }
 
-.kpi__delta { font-size: 0.8rem; font-weight: 650; }
+.kpi__delta { font-size: 0.78rem; font-weight: 650; line-height: 1.35; font-variant-numeric: tabular-nums; }
+/* Trecho que nao pode quebrar no meio (ex.: "+R$ 508,47 (5,4%)"); a quebra acontece entre os trechos. */
+.nw { white-space: nowrap; }
 .kpi__delta--up { color: var(--vt-success, #15803d); }
 .kpi__delta--down { color: var(--vt-danger, #b91c1c); }
 .kpi--highlight .kpi__delta--up { color: #b6f5d8; }
 .kpi--highlight .kpi__delta--down { color: #ffd0d0; }
 .kpis + .toolbar, .kpis + .card, .kpis + section { margin-top: 1rem; }
+.kpi__hint a { color: var(--vt-primary); font-weight: 550; text-decoration: none; }
+.kpi--highlight .kpi__hint a { color: #fff; }

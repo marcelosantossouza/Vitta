@@ -24,12 +24,31 @@
     </div>
   } @else if (data(); as d) {
     <div class="kpis">
-      <div class="card kpi">
-        <span class="kpi__icon"><vt-icon name="users" /></span>
+      <div class="card kpi kpi--highlight">
+        <span class="kpi__icon"><vt-icon name="trending-up" /></span>
         <div>
-          <span class="kpi__label">Clientes ativos</span>
-          <strong class="kpi__value">{{ d.activeClients }}</strong>
-          <span class="kpi__hint">de {{ d.totalClients }} cadastrados</span>
+          @if (d.lastMonth; as m) {
+            <span class="kpi__label">Sua comissão de {{ m.month | month }}</span>
+            <strong class="kpi__value">{{ m.commission === null ? '—' : (m.commission | brl) }}</strong>
+            @if (m.commission !== null && m.previousCommission !== null) {
+              @let diff = m.commission - m.previousCommission;
+              <span class="kpi__delta" [class.kpi__delta--up]="diff > 0" [class.kpi__delta--down]="diff < 0">
+                <span class="nw">{{ diff > 0 ? '▲ +' : diff < 0 ? '▼ ' : '' }}{{ diff | brl }}@if (m.previousCommission) { ({{ (diff / m.previousCommission) * 100 | pct }}) }</span>
+                <span class="nw">vs {{ m.previousMonth | month }}</span>
+              </span>
+            }
+            @if (m.commission === null) {
+              <span class="kpi__hint">a planilha do mês não traz comissão</span>
+            } @else if (m.importId) {
+              <a class="kpi__hint" [routerLink]="['/carteira', m.importId]">{{ m.insurers.join(', ') }} · ver importação</a>
+            } @else {
+              <a class="kpi__hint" routerLink="/carteira">{{ m.insurers.join(', ') }}</a>
+            }
+          } @else {
+            <span class="kpi__label">Sua comissão do mês</span>
+            <strong class="kpi__value">—</strong>
+            <a class="kpi__hint" routerLink="/carteira">importe a carteira para ver</a>
+          }
         </div>
       </div>
       <div class="card kpi">
@@ -37,10 +56,12 @@
         <div>
           <span class="kpi__label">Apólices ativas</span>
           <strong class="kpi__value">{{ d.activePolicies }}</strong>
-          <a class="kpi__hint" routerLink="/apolices">ver apólices</a>
+          <span class="kpi__hint">
+            <a routerLink="/clientes">{{ d.activeClients }} cliente(s)</a> de {{ d.totalClients }} cadastrados · <a routerLink="/apolices">ver apólices</a>
+          </span>
         </div>
       </div>
-      <div class="card kpi kpi--highlight">
+      <div class="card kpi">
         <span class="kpi__icon"><vt-icon name="money" /></span>
         <div>
           <span class="kpi__label">Prêmio mensal ativo</span>

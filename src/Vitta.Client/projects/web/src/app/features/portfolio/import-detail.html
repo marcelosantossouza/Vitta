@@ -36,7 +36,7 @@
             <strong class="kpi__value">{{ c.current.commission === null ? '—' : (c.current.commission | brl) }}</strong>
             @if (c.commission; as v) {
               <span class="kpi__delta" [class.kpi__delta--up]="v.diff > 0" [class.kpi__delta--down]="v.diff < 0">
-                {{ v.diff > 0 ? '▲ +' : v.diff < 0 ? '▼ ' : '' }}{{ v.diff | brl }}@if (v.percent !== null) { ({{ v.percent | pct }}) }
+                <span class="nw">{{ v.diff > 0 ? '▲ +' : v.diff < 0 ? '▼ ' : '' }}{{ v.diff | brl }}@if (v.percent !== null) { ({{ v.percent | pct }}) }</span>
               </span>
               <span class="kpi__hint">era {{ c.previous!.commission | brl }} em {{ c.previous!.month | month }}</span>
             } @else if (c.current.commission === null) {
@@ -55,7 +55,7 @@
             <strong class="kpi__value">{{ c.current.premium | brl }}</strong>
             @if (c.premium; as v) {
               <span class="kpi__delta" [class.kpi__delta--up]="v.diff > 0" [class.kpi__delta--down]="v.diff < 0">
-                {{ v.diff > 0 ? '▲ +' : v.diff < 0 ? '▼ ' : '' }}{{ v.diff | brl }}@if (v.percent !== null) { ({{ v.percent | pct }}) }
+                <span class="nw">{{ v.diff > 0 ? '▲ +' : v.diff < 0 ? '▼ ' : '' }}{{ v.diff | brl }}@if (v.percent !== null) { ({{ v.percent | pct }}) }</span>
               </span>
               <span class="kpi__hint">era {{ c.previous!.premium | brl }} em {{ c.previous!.month | month }}</span>
             } @else {
