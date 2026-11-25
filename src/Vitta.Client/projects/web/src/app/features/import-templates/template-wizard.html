@@ -210,8 +210,19 @@
             @if (analysis()) {
               @if (f.multiple) {
                 <div class="checks">
+                  @if (headerOptions().length) {
+                    <div class="checks__actions">
+                      <button class="btn btn--sm" type="button" (click)="selectRemaining(f.field)">Marcar as restantes</button>
+                      <button class="btn btn--sm" type="button" (click)="clearMulti(f.field)" [disabled]="!selected(f.field).length">Limpar</button>
+                    </div>
+                  }
                   @for (h of headerOptions(); track h) {
-                    <label><input type="checkbox" [checked]="selected(f.field).includes(h)" (change)="toggleMulti(f.field, h, $any($event.target).checked)" /> {{ h }}</label>
+                    @let owner = usedBy(h);
+                    <label [class.taken]="owner" [attr.title]="owner ? 'Já usada em ' + owner : null">
+                      <input type="checkbox" [checked]="selected(f.field).includes(h)" [disabled]="!!owner"
+                        (change)="toggleMulti(f.field, h, $any($event.target).checked)" /> {{ h }}
+                      @if (owner) { <span class="muted small">— em {{ owner }}</span> }
+                    </label>
                   } @empty {
                     <span class="muted small">Nenhuma coluna nesta linha.</span>
                   }

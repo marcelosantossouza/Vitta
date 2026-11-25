@@ -144,7 +144,28 @@ export class TemplateWizard {
       const found = cols.map(c => byKey.get(norm(c))).filter((c): c is string => !!c);
       if (found.length) result[field] = [...new Set(found)];
     }
+    // Coluna ja usada por um campo de valor unico nao entra tambem em "Outras informacoes".
+    const defs = new Map(this.fields().map(f => [f.field, f]));
+    const taken = new Set(Object.entries(result).filter(([f]) => defs.get(f)?.multiple === false).flatMap(([, cols]) => cols.map(norm)));
+    for (const [field, cols] of Object.entries(result)) {
+      if (!defs.get(field)?.multiple) continue;
+      const kept = cols.filter(c => !taken.has(norm(c)));
+      if (kept.length) result[field] = kept;
+      else delete result[field];
+    }
     return result;
+  });
+
+  /** Coluna -> rotulo do campo de valor unico que ja a usa. */
+  private readonly usedBySingle = computed(() => {
+    const defs = new Map(this.fields().map(f => [f.field, f]));
+    const used = new Map<string, string>();
+    for (const [field, cols] of Object.entries(this.effective())) {
+      const def = defs.get(field);
+      if (!def || def.multiple) continue;
+      for (const c of cols) used.set(norm(c), def.label);
+    }
+    return used;
   });
 
   /** Para cada coluna da pre-visualizacao, os campos do Vitta que ela alimenta. */
@@ -291,8 +312,32 @@ export class TemplateWizard {
     return this.effective()[field] ?? [];
   }
 
+  /** Rotulo do campo de valor unico que ja usa a coluna (nulo = livre para "Outras informacoes"). */
+  protected usedBy(column: string): string | null {
+    return this.usedBySingle().get(norm(column)) ?? null;
+  }
+
+  /** Escolher a coluna para um campo unico tira ela dos campos de varias colunas. */
   protected setSingle(field: string, column: string): void {
-    this.mapping.update(m => ({ ...m, [field]: column ? [column] : [] }));
+    const multiple = this.fields().filter(f => f.multiple).map(f => f.field);
+    this.mapping.update(m => {
+      const next = { ...m, [field]: column ? [column] : [] };
+      if (column) {
+        for (const k of multiple) {
+          if (next[k]) next[k] = next[k].filter(c => norm(c) !== norm(column));
+        }
+      }
+      return next;
+    });
+  }
+
+  /** Marca todas as colunas que ainda nao alimentam outro campo. */
+  protected selectRemaining(field: string): void {
+    this.mapping.update(m => ({ ...m, [field]: this.headerOptions().filter(h => !this.usedBy(h)) }));
+  }
+
+  protected clearMulti(field: string): void {
+    this.mapping.update(m => ({ ...m, [field]: [] }));
   }
 
   protected toggleMulti(field: string, column: string, checked: boolean): void {

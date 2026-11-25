@@ -58,7 +58,13 @@
   border: 1px solid var(--vt-border); border-radius: var(--vt-radius-sm);
   label { display: flex; align-items: center; gap: 0.5rem; font-weight: 400; color: var(--vt-text); cursor: pointer; padding: 0.15rem 0; }
   input { width: 16px; height: 16px; min-height: 0; accent-color: var(--vt-primary); flex-shrink: 0; }
+  label.taken { color: var(--vt-text-muted, inherit); opacity: 0.6; cursor: default; }
 }
+.checks__actions {
+  display: flex; gap: 0.4rem; position: sticky; top: -0.4rem; z-index: 1;
+  padding: 0.25rem 0 0.4rem; background: var(--vt-surface, #fff);
+}
+.checks { max-height: 260px; }
 .mapping .form-actions { margin-top: 0.25rem; }
 
 @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } }
