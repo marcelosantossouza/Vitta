@@ -141,7 +141,7 @@ export class PortfolioPage {
             ? `Carteira base registrada (${result.totalRows} apólices).`
             : `Importação concluída: ${result.entered} entradas, ${result.left} saídas, ${result.changed} mudanças.`,
         );
-        void this.router.navigate(['/carteira', result.id]);
+        void this.router.navigate(['/carteira', result.id], { state: { bookSync: result.bookSync ?? null } });
       },
       error: err => {
         this.uploading.set(false);

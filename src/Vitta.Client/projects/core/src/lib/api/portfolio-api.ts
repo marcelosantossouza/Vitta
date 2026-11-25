@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_BASE_URL } from '../config/api-config';
-import { PortfolioImportDetailDto, PortfolioImportDto, PortfolioRowDto } from '../models/portfolio';
+import { BookSyncResultDto, PortfolioImportDetailDto, PortfolioImportDto, PortfolioRowDto } from '../models/portfolio';
 
 export interface UploadPortfolioRequest {
   /** Opcional quando o modelo (templateId) ja tem seguradora. */
@@ -30,6 +30,11 @@ export class PortfolioApi {
   /** Apólices do mês (tabela final da importação), ordenadas pelo nome do segurado. */
   rows(id: string): Observable<PortfolioRowDto[]> {
     return this.http.get<PortfolioRowDto[]>(`${this.baseUrl}/${id}/rows`);
+  }
+
+  /** Cadastra/atualiza clientes e apólices com as linhas de uma importação já feita. */
+  syncBook(id: string): Observable<BookSyncResultDto> {
+    return this.http.post<BookSyncResultDto>(`${this.baseUrl}/${id}/sync-book`, {});
   }
 
   upload(request: UploadPortfolioRequest): Observable<PortfolioImportDetailDto> {

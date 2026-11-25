@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { normalizeText, PortfolioApi, PortfolioChangeType, PortfolioImportDetailDto, PortfolioRowDto, variation } from '@vitta/core';
+import { BookSyncResultDto, bookSyncMessage, normalizeText, PortfolioApi, PortfolioChangeType, PortfolioImportDetailDto, PortfolioRowDto, variation } from '@vitta/core';
 import { EmptyState } from '../../shared/empty-state';
 import { Icon } from '../../shared/icon';
 import { BrlPipe, ChangeTypePipe, CpfPipe, IsoDatePipe, MonthPipe, PercentPipe } from '../../shared/pipes';
@@ -51,6 +51,27 @@ export class ImportDetail implements OnInit {
   readonly id = input.required<string>();
 
   protected readonly data = signal<PortfolioImportDetailDto | null>(null);
+  /** Resultado do cadastro automatico (vem da tela de importacao) ou do botao "Atualizar cadastro". */
+  protected readonly bookSync = signal<BookSyncResultDto | null>(
+    (inject(Router).getCurrentNavigation()?.extras.state?.['bookSync'] as BookSyncResultDto | null) ?? null,
+  );
+  protected readonly syncing = signal(false);
+  protected readonly bookSyncMessage = bookSyncMessage;
+
+  protected syncBook(): void {
+    this.syncing.set(true);
+    this.api.syncBook(this.id()).subscribe({
+      next: result => {
+        this.syncing.set(false);
+        this.bookSync.set(result);
+        this.toast.success(bookSyncMessage(result));
+      },
+      error: err => {
+        this.syncing.set(false);
+        this.toast.error(err, 'Não foi possível atualizar o cadastro.');
+      },
+    });
+  }
   protected readonly tab = signal<Tab>('Left');
 
   protected readonly view = signal<View>('changes');

@@ -32,6 +32,31 @@ export interface PortfolioChangeDto {
 export interface PortfolioImportDetailDto extends PortfolioImportDto {
   changes: PortfolioChangeDto[];
   totals: ImportTotalsDto;
+  /** Só na resposta da importação: o que entrou em Clientes e Apólices. */
+  bookSync?: BookSyncResultDto | null;
+}
+
+/** O que a importação fez no cadastro de clientes e apólices. */
+export interface BookSyncResultDto {
+  clientsCreated: number;
+  policiesCreated: number;
+  policiesUpdated: number;
+  /** Linhas sem nº da apólice que não bateram com nenhuma apólice cadastrada. */
+  skippedWithoutNumber: number;
+  /** Linhas novas sem CPF válido. */
+  skippedWithoutCpf: number;
+}
+
+/** Frase para o usuário: "3 clientes e 5 apólices cadastrados, 2 apólices atualizadas". */
+export function bookSyncMessage(r: BookSyncResultDto): string {
+  const parts: string[] = [];
+  if (r.policiesCreated) parts.push(`${r.policiesCreated} apólice(s) cadastrada(s)` + (r.clientsCreated ? ` (${r.clientsCreated} cliente(s) novo(s))` : ''));
+  if (r.policiesUpdated) parts.push(`${r.policiesUpdated} apólice(s) atualizada(s)`);
+  if (!parts.length) parts.push('Cadastro já estava em dia');
+  const skipped: string[] = [];
+  if (r.skippedWithoutNumber) skipped.push(`${r.skippedWithoutNumber} sem nº da apólice`);
+  if (r.skippedWithoutCpf) skipped.push(`${r.skippedWithoutCpf} sem CPF válido`);
+  return parts.join(', ') + '.' + (skipped.length ? ` Ficaram de fora: ${skipped.join(' e ')}.` : '');
 }
 
 export interface MonthTotalsDto {

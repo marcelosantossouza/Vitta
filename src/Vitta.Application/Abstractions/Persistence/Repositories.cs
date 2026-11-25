@@ -18,6 +18,8 @@ public interface IClientRepository
     Task<Client?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<bool> ExistsByCpfAsync(Cpf cpf, CancellationToken ct = default);
     Task<bool> HasPoliciesAsync(Guid clientId, CancellationToken ct = default);
+    /// <summary>Id de cada cliente pelo CPF (so digitos), para ligar linhas importadas ao cadastro.</summary>
+    Task<IReadOnlyDictionary<string, Guid>> IdsByCpfAsync(CancellationToken ct = default);
     void Add(Client client);
     void Remove(Client client);
 }
@@ -54,6 +56,8 @@ public interface IInsurerRepository
 public interface IPortfolioImportRepository
 {
     Task<PortfolioImport?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    /// <summary>Importacao com as linhas carregadas (sem tracking).</summary>
+    Task<PortfolioImport?> GetWithRowsAsync(Guid id, CancellationToken ct = default);
     Task<bool> ExistsAsync(Guid insurerId, DateOnly referenceMonth, CancellationToken ct = default);
     /// <summary>Importacao imediatamente anterior ao mes informado (com as linhas carregadas).</summary>
     Task<PortfolioImport?> GetPreviousWithRowsAsync(Guid insurerId, DateOnly referenceMonth, CancellationToken ct = default);

@@ -133,6 +133,7 @@ internal static class PortfolioEndpoints
         g.MapGet("/", async (ISender s, CancellationToken ct) => Results.Ok(await s.Send(new GetPortfolioImportsQuery(), ct)));
         g.MapGet("/{id:guid}", async (Guid id, ISender s, CancellationToken ct) => (await s.Send(new GetPortfolioImportQuery(id), ct)).ToOk());
         g.MapGet("/{id:guid}/rows", async (Guid id, ISender s, CancellationToken ct) => (await s.Send(new GetPortfolioImportRowsQuery(id), ct)).ToOk());
+        g.MapPost("/{id:guid}/sync-book", async (Guid id, ISender s, CancellationToken ct) => (await s.Send(new SyncBookFromImportCommand(id), ct)).ToOk());
         g.MapDelete("/{id:guid}", async (Guid id, ISender s, CancellationToken ct) => (await s.Send(new DeletePortfolioImportCommand(id), ct)).ToNoContent());
 
         g.MapPost("/", async ([FromForm] Guid? insurerId, [FromForm] string referenceMonth, [FromForm] Guid? templateId, IFormFile file, ISender s, CancellationToken ct) =>

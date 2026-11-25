@@ -53,6 +53,30 @@ public class PolicyCarrierSyncTests
     }
 
     [Fact]
+    public void Sync_CreatesClientAndPolicy_ForNewRows_AndReusesExistingClient()
+    {
+        var existingClientId = Guid.NewGuid();
+        var rows = new[]
+        {
+            Row("P-1", "52998224725", 120m, amount: 12m),              // CPF novo: cria cliente + apolice
+            Row("P-2", "529.982.247-25", 80m, 15m),                    // mesmo CPF: reaproveita o cliente criado
+            Row("P-3", "11144477735", 50m),                            // CPF ja cadastrado: so a apolice
+            Row("P-1", "52998224725", 120m),                           // repetida: nao duplica
+            Row(null, "11144477735", 10m),                             // sem numero e sem apolice unica: pula
+            Row("P-4", "123", 10m),                                    // CPF invalido: pula
+        };
+
+        var outcome = PolicyCarrierSync.Sync(rows, [], new Dictionary<string, Guid> { ["11144477735"] = existingClientId },
+            Insurer, new DateOnly(2026, 10, 1));
+
+        Assert.Equal(new BookSyncResultDto(1, 3, 0, 1, 1), outcome.Result);
+        var p1 = outcome.NewPolicies.Single(p => p.PolicyNumber == "P-1");
+        Assert.Equal((120m, 10m, new DateOnly(2026, 10, 1)), (p1.MonthlyPremium, p1.CommissionRate!.Value, p1.IssuedOn));
+        Assert.Equal(outcome.NewClients[0].Id, outcome.NewPolicies.Single(p => p.PolicyNumber == "P-2").ClientId);
+        Assert.Equal(existingClientId, outcome.NewPolicies.Single(p => p.PolicyNumber == "P-3").ClientId);
+    }
+
+    [Fact]
     public void MonthTotals_SumPremiumAndCommission()
     {
         var totals = MonthTotalsDto.From(new DateOnly(2026, 10, 1),

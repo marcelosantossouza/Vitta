@@ -23,6 +23,8 @@ internal sealed class FakeClientRepository : IClientRepository
     public Task<Client?> GetByIdAsync(Guid id, CancellationToken ct = default) => Task.FromResult(Clients.FirstOrDefault(c => c.Id == id));
     public Task<bool> ExistsByCpfAsync(Cpf cpf, CancellationToken ct = default) => Task.FromResult(Clients.Any(c => c.Cpf == cpf));
     public Task<bool> HasPoliciesAsync(Guid clientId, CancellationToken ct = default) => Task.FromResult(WithPolicies.Contains(clientId));
+    public Task<IReadOnlyDictionary<string, Guid>> IdsByCpfAsync(CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyDictionary<string, Guid>>(Clients.ToDictionary(c => c.Cpf.Value, c => c.Id));
     public void Add(Client client) => Clients.Add(client);
     public void Remove(Client client) => Clients.Remove(client);
 }

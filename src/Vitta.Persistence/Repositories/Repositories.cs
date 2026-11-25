@@ -18,6 +18,12 @@ internal sealed class ClientRepository(VittaDbContext db) : IClientRepository
     public Task<Client?> GetByIdAsync(Guid id, CancellationToken ct = default) => db.Clients.FirstOrDefaultAsync(c => c.Id == id, ct);
     public Task<bool> ExistsByCpfAsync(Cpf cpf, CancellationToken ct = default) => db.Clients.AnyAsync(c => c.Cpf == cpf, ct);
     public Task<bool> HasPoliciesAsync(Guid clientId, CancellationToken ct = default) => db.Policies.AnyAsync(p => p.ClientId == clientId, ct);
+
+    public async Task<IReadOnlyDictionary<string, Guid>> IdsByCpfAsync(CancellationToken ct = default)
+    {
+        var all = await db.Clients.AsNoTracking().Select(c => new { c.Id, c.Cpf }).ToListAsync(ct);
+        return all.ToDictionary(c => c.Cpf.Value, c => c.Id);
+    }
     public void Add(Client client) => db.Clients.Add(client);
     public void Remove(Client client) => db.Clients.Remove(client);
 }
@@ -64,6 +70,9 @@ internal sealed class PortfolioImportRepository(VittaDbContext db) : IPortfolioI
 {
     public Task<PortfolioImport?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
         db.PortfolioImports.FirstOrDefaultAsync(i => i.Id == id, ct);
+
+    public Task<PortfolioImport?> GetWithRowsAsync(Guid id, CancellationToken ct = default) =>
+        db.PortfolioImports.AsNoTracking().Include(i => i.Rows).FirstOrDefaultAsync(i => i.Id == id, ct);
 
     public Task<bool> ExistsAsync(Guid insurerId, DateOnly referenceMonth, CancellationToken ct = default) =>
         db.PortfolioImports.AnyAsync(i => i.InsurerId == insurerId && i.ReferenceMonth == referenceMonth, ct);

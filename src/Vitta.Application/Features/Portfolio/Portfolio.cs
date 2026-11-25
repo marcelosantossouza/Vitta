@@ -19,7 +19,11 @@ public sealed record PortfolioImportDetailDto(
     Guid Id, Guid InsurerId, string InsurerName, DateOnly ReferenceMonth, string FileName, PortfolioImportStatus Status,
     int TotalRows, int Entered, int Left, int Changed, bool IsFirstImport, DateTimeOffset CreatedAt,
     IReadOnlyList<PortfolioChangeDto> Changes, ImportTotalsDto Totals)
-    : PortfolioImportDto(Id, InsurerId, InsurerName, ReferenceMonth, FileName, Status, TotalRows, Entered, Left, Changed, IsFirstImport, CreatedAt);
+    : PortfolioImportDto(Id, InsurerId, InsurerName, ReferenceMonth, FileName, Status, TotalRows, Entered, Left, Changed, IsFirstImport, CreatedAt)
+{
+    /// <summary>Preenchido so na resposta da importacao: o que foi cadastrado/atualizado em Clientes e Apolices.</summary>
+    public BookSyncResultDto? BookSync { get; init; }
+}
 
 /// <summary>Totais do mes importado e do mes anterior da mesma seguradora (nulo na primeira importacao).</summary>
 public sealed record ImportTotalsDto(MonthTotalsDto Current, MonthTotalsDto? Previous);
@@ -59,6 +63,49 @@ public sealed class GetPortfolioImportRowsHandler(IPortfolioQueries queries) : I
         await queries.ListRowsAsync(q.Id, ct) is { } rows ? Result.Success(rows) : PortfolioErrors.NotFound(q.Id);
 }
 
+// ---- Atualizar cadastro a partir de uma importacao ja feita ----
+public sealed record SyncBookFromImportCommand(Guid ImportId) : ICommand<Result<BookSyncResultDto>>;
+
+public sealed class SyncBookFromImportHandler(
+    IPortfolioImportRepository imports, IPolicyRepository policies, IClientRepository clients, IUnitOfWork uow)
+    : ICommandHandler<SyncBookFromImportCommand, Result<BookSyncResultDto>>
+{
+    public async ValueTask<Result<BookSyncResultDto>> Handle(SyncBookFromImportCommand c, CancellationToken ct)
+    {
+        var import = await imports.GetWithRowsAsync(c.ImportId, ct);
+        if (import is null)
+        {
+            return PortfolioErrors.NotFound(c.ImportId);
+        }
+
+        var result = await BookSync.RunAsync(
+            import.Rows.Select(r => r.ToRow()).ToList(), import.InsurerId, import.ReferenceMonth, policies, clients, ct);
+        await uow.SaveChangesAsync(ct);
+        return result;
+    }
+}
+
+internal static class BookSync
+{
+    public static async Task<BookSyncResultDto> RunAsync(
+        IReadOnlyList<PortfolioRow> rows, Guid insurerId, DateOnly month, IPolicyRepository policies, IClientRepository clients, CancellationToken ct)
+    {
+        var outcome = PolicyCarrierSync.Sync(
+            rows, await policies.ListForCarrierSyncAsync(insurerId, ct), await clients.IdsByCpfAsync(ct), insurerId, month);
+        foreach (var client in outcome.NewClients)
+        {
+            clients.Add(client);
+        }
+
+        foreach (var policy in outcome.NewPolicies)
+        {
+            policies.Add(policy);
+        }
+
+        return outcome.Result;
+    }
+}
+
 // ---- Listar / detalhar ----
 public sealed record GetPortfolioImportsQuery : IQuery<IReadOnlyList<PortfolioImportDto>>;
 
@@ -87,6 +134,7 @@ public sealed class ImportPortfolioHandler(
     IPortfolioImportRepository imports,
     IImportTemplateRepository templates,
     IPolicyRepository policies,
+    IClientRepository clients,
     ISpreadsheetReader reader,
     IPortfolioQueries queries,
     TimeProvider clock,
@@ -153,13 +201,13 @@ public sealed class ImportPortfolioHandler(
         var import = PortfolioImport.Create(insurerId.Value, month, Path.GetFileName(c.FileName));
         import.Process(rows.Value, previous);
         template?.MarkUsed(clock.GetUtcNow());
-        // Mantem premio e % de comissao das apolices cadastradas iguais ao que a seguradora informou.
-        PolicyCarrierSync.Apply(rows.Value, await policies.ListForCarrierSyncAsync(insurerId.Value, ct));
+        // O que a seguradora informou vira cadastro: atualiza apolices existentes e cadastra as novas (com o cliente).
+        var sync = await BookSync.RunAsync(rows.Value, insurerId.Value, month, policies, clients, ct);
 
         imports.Add(import);
         await uow.SaveChangesAsync(ct);
 
-        return (await queries.GetImportAsync(import.Id, ct))!;
+        return (await queries.GetImportAsync(import.Id, ct))! with { BookSync = sync };
     }
 
     private static Result<IReadOnlyList<PortfolioRow>> ReadWithTemplate(SpreadsheetData data, ImportTemplate template)

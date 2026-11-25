@@ -9,7 +9,23 @@
         <h1>{{ d.insurerName }} · {{ d.referenceMonth | month }}</h1>
         <p class="subtitle">Arquivo {{ d.fileName }} · importado em {{ d.createdAt | isoDate }}</p>
       </div>
+      <button class="btn" type="button" (click)="syncBook()" [disabled]="syncing()"
+        title="Cadastra em Clientes e Apólices as linhas que ainda não existem e atualiza prêmio e % das que já existem">
+        <vt-icon name="refresh" [size]="16" /> {{ syncing() ? 'Atualizando…' : 'Atualizar clientes e apólices' }}
+      </button>
     </div>
+
+    @if (bookSync(); as b) {
+      <div class="alert alert--success">
+        <vt-icon name="check" [size]="18" />
+        <div>
+          <strong>Clientes e apólices: {{ bookSyncMessage(b) }}</strong>
+          <p>
+            <a routerLink="/apolices">Ver apólices</a> · <a routerLink="/clientes">Ver clientes</a>
+          </p>
+        </div>
+      </div>
+    }
 
     @if (comparison(); as c) {
       <div class="kpis">
