@@ -28,7 +28,9 @@ describe('Shell', () => {
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
 
-    expect(el.querySelectorAll('nav a').length).toBe(8);
+    expect(el.querySelectorAll('nav a').length).toBe(7);
+    expect(Array.from(el.querySelectorAll('.group__title')).map(t => t.textContent?.trim())).toEqual(['Carteira', 'Vendas', 'Cadastros']);
+    expect(el.querySelector('.sidebar__footer a.settings')?.textContent).toContain('Configurações');
     expect(el.querySelector('.sidebar__user strong')?.textContent).toContain('Carlos Souza');
     expect(el.querySelector('.avatar')?.textContent?.trim()).toBe('CS');
   });

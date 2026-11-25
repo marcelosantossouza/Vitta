@@ -10,6 +10,12 @@ interface NavItem {
   icon: IconName;
 }
 
+interface NavGroup {
+  /** Titulo do grupo; nulo = sem titulo (Painel, no topo). */
+  title: string | null;
+  items: NavItem[];
+}
+
 @Component({
   selector: 'vt-shell',
   imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, Logo],
@@ -31,16 +37,27 @@ export class Shell {
       .join(''),
   );
 
-  protected readonly nav: NavItem[] = [
-    { path: '/painel', label: 'Painel', icon: 'dashboard' },
-    { path: '/clientes', label: 'Clientes', icon: 'users' },
-    { path: '/apolices', label: 'Apólices', icon: 'policy' },
-    { path: '/prospeccao', label: 'Prospecção', icon: 'target' },
-    { path: '/carteira', label: 'Carteira', icon: 'folder' },
-    { path: '/modelos', label: 'Modelos de planilha', icon: 'sheet' },
-    { path: '/seguradoras', label: 'Seguradoras', icon: 'building' },
-    { path: '/configuracoes', label: 'Configurações', icon: 'settings' },
+  /** Menu por assunto: o dia a dia em cima, cadastros de apoio embaixo; Configuracoes fica no rodape. */
+  protected readonly groups: NavGroup[] = [
+    { title: null, items: [{ path: '/painel', label: 'Painel', icon: 'dashboard' }] },
+    {
+      title: 'Carteira',
+      items: [
+        { path: '/clientes', label: 'Clientes', icon: 'users' },
+        { path: '/apolices', label: 'Apólices', icon: 'policy' },
+        { path: '/carteira', label: 'Importações', icon: 'upload' },
+      ],
+    },
+    { title: 'Vendas', items: [{ path: '/prospeccao', label: 'Prospecção', icon: 'target' }] },
+    {
+      title: 'Cadastros',
+      items: [
+        { path: '/modelos', label: 'Modelos de planilha', icon: 'sheet' },
+        { path: '/seguradoras', label: 'Seguradoras', icon: 'building' },
+      ],
+    },
   ];
+  protected readonly settings: NavItem = { path: '/configuracoes', label: 'Configurações', icon: 'settings' };
 
   protected toggleMenu(): void {
     this.menuOpen.update(open => !open);

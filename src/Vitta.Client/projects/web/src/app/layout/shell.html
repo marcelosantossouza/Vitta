@@ -14,14 +14,25 @@
     </button>
   </div>
 
-  <nav>
-    @for (item of nav; track item.path) {
-      <a [routerLink]="item.path" routerLinkActive="active" (click)="closeMenu()">
-        <vt-icon [name]="item.icon" [size]="19" />
-        <span>{{ item.label }}</span>
-      </a>
+  <nav aria-label="Menu principal">
+    @for (group of groups; track group.title) {
+      <div class="group">
+        @if (group.title) { <span class="group__title">{{ group.title }}</span> }
+        @for (item of group.items; track item.path) {
+          <a [routerLink]="item.path" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMenu()">
+            <vt-icon [name]="item.icon" [size]="18" />
+            <span>{{ item.label }}</span>
+          </a>
+        }
+      </div>
     }
   </nav>
+
+  <div class="sidebar__footer">
+    <a class="settings" [routerLink]="settings.path" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMenu()">
+      <vt-icon [name]="settings.icon" [size]="18" />
+      <span>{{ settings.label }}</span>
+    </a>
 
   <div class="sidebar__user">
     <span class="avatar">{{ initials() }}</span>
@@ -32,6 +43,7 @@
     <button class="icon-btn" type="button" (click)="logout()" title="Sair" aria-label="Sair">
       <vt-icon name="logout" [size]="19" />
     </button>
+  </div>
   </div>
 </aside>
 
