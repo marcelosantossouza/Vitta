@@ -1,0 +1,24 @@
+# {$VITTA_DOMAIN} vem do .env (ex.: vitta.seudominio.com.br). O Caddy emite e renova o certificado HTTPS sozinho.
+{$VITTA_DOMAIN} {
+	encode gzip
+
+	# API e health check vao para o container da API; o resto e o site Angular.
+	handle /api/* {
+		reverse_proxy api:8080
+	}
+	handle /health {
+		reverse_proxy api:8080
+	}
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}

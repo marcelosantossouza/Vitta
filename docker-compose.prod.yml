@@ -1,0 +1,67 @@
+# Producao (VPS). Uso:
+#   cp deploy/.env.prod.example .env      # e preencha
+#   docker compose -f docker-compose.prod.yml up -d --build
+# So o container "web" (Caddy) expoe portas (80/443). Banco, API e IA ficam na rede interna.
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vitta
+      POSTGRES_USER: vitta
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vitta"]
+      interval: 5s
+      retries: 10
+
+  ai:
+    build: ./src/Vitta.AI
+    restart: unless-stopped
+    environment:
+      VITTA_AI_ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      VITTA_AI_GROQ_API_KEY: ${GROQ_API_KEY:-}
+      VITTA_AI_MODEL: ${AI_MODEL:-claude-haiku-5-5}
+
+  api:
+    build:
+      context: .
+      dockerfile: src/Vitta.API/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Database__Provider: Postgres
+      Database__MigrateOnStartup: "true"
+      ConnectionStrings__Vitta: Host=postgres;Port=5432;Database=vitta;Username=vitta;Password=${POSTGRES_PASSWORD}
+      AiService__BaseUrl: http://ai:8000
+      Auth__Jwt__Key: ${JWT_KEY:?defina JWT_KEY no .env}
+      Auth__SeedAdmin__Name: ${ADMIN_NAME:-Administrador}
+      Auth__SeedAdmin__Email: ${ADMIN_EMAIL:?defina ADMIN_EMAIL no .env}
+      Auth__SeedAdmin__Password: ${ADMIN_PASSWORD:?defina ADMIN_PASSWORD no .env}
+      Cors__Origins__0: https://${VITTA_DOMAIN}
+
+  web:
+    build:
+      context: .
+      dockerfile: deploy/web.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      VITTA_DOMAIN: ${VITTA_DOMAIN:?defina VITTA_DOMAIN no .env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
