@@ -42,14 +42,18 @@ internal sealed class ClientQueries(VittaDbContext db) : IClientQueries
         var ids = clients.Select(c => c.Id).ToList();
         var policies = await db.Policies.AsNoTracking()
             .Where(p => ids.Contains(p.ClientId) && p.Status == PolicyStatus.Active)
-            .Select(p => new { p.ClientId, p.MonthlyPremium })
+            .Select(p => new { p.ClientId, p.MonthlyPremium, p.CommissionRate })
             .ToListAsync(ct);
-        var byClient = policies.GroupBy(p => p.ClientId).ToDictionary(g => g.Key, g => (Count: g.Count(), Sum: g.Sum(x => x.MonthlyPremium)));
+        var byClient = policies.GroupBy(p => p.ClientId).ToDictionary(g => g.Key, g => (
+            Count: g.Count(),
+            Sum: g.Sum(x => x.MonthlyPremium),
+            Commission: g.Any(x => x.CommissionRate is not null) ? g.Sum(x => Policy.CommissionOf(x.MonthlyPremium, x.CommissionRate) ?? 0) : (decimal?)null,
+            WithoutRate: g.Count(x => x.CommissionRate is null)));
 
         var items = clients.Select(c =>
         {
-            var (count, sum) = byClient.GetValueOrDefault(c.Id);
-            return new ClientListItemDto(c.Id, c.FullName, c.Cpf.Formatted, c.Phone, c.Email, count, sum);
+            var (count, sum, commission, withoutRate) = byClient.GetValueOrDefault(c.Id);
+            return new ClientListItemDto(c.Id, c.FullName, c.Cpf.Formatted, c.Phone, c.Email, count, sum, commission, withoutRate);
         }).ToList();
 
         return new PagedResult<ClientListItemDto>(items, page, pageSize, total);
@@ -105,12 +109,34 @@ internal sealed class PolicyQueries(VittaDbContext db) : IPolicyQueries
         return new PagedResult<PolicyDto>(items, page, pageSize, total);
     }
 
+    public async Task<BookSummaryDto> SummaryAsync(CancellationToken ct = default)
+    {
+        var totalClients = await db.Clients.CountAsync(ct);
+        var policies = await db.Policies.AsNoTracking()
+            .Select(p => new { p.ClientId, p.Status, p.MonthlyPremium, p.CommissionRate })
+            .ToListAsync(ct);
+        var active = policies.Where(p => p.Status == PolicyStatus.Active).ToList();
+        var withRate = active.Where(p => p.CommissionRate is not null).ToList();
+        var commission = withRate.Sum(p => Policy.CommissionOf(p.MonthlyPremium, p.CommissionRate) ?? 0);
+        var premiumWithRate = withRate.Sum(p => p.MonthlyPremium);
+
+        return new BookSummaryDto(
+            totalClients,
+            active.Select(p => p.ClientId).Distinct().Count(),
+            active.Count,
+            policies.Count - active.Count,
+            active.Sum(p => p.MonthlyPremium),
+            commission,
+            premiumWithRate > 0 ? Math.Round(commission / premiumWithRate * 100m, 2) : null,
+            active.Count - withRate.Count);
+    }
+
     internal static IQueryable<PolicyDto> Project(VittaDbContext db, IQueryable<Policy> policies) =>
         from p in policies
         join c in db.Clients on p.ClientId equals c.Id
         join i in db.Insurers on p.InsurerId equals i.Id
         select new PolicyDto(p.Id, p.ClientId, c.FullName, p.InsurerId, i.Name, p.PolicyNumber, p.ProductName, p.MonthlyPremium,
-            p.IssuedOn, p.Status, p.EndedOn, p.EndReason);
+            p.IssuedOn, p.Status, p.EndedOn, p.EndReason, p.CommissionRate, Policy.CommissionOf(p.MonthlyPremium, p.CommissionRate));
 }
 
 internal sealed class ProspectQueries(VittaDbContext db) : IProspectQueries
@@ -152,11 +178,20 @@ internal sealed class PortfolioQueries(VittaDbContext db) : IPortfolioQueries
 
     public async Task<PortfolioImportDetailDto?> GetImportAsync(Guid id, CancellationToken ct = default)
     {
-        var i = await db.PortfolioImports.AsNoTracking().Include(x => x.Changes).FirstOrDefaultAsync(x => x.Id == id, ct);
+        var i = await db.PortfolioImports.AsNoTracking().Include(x => x.Changes).Include(x => x.Rows).AsSplitQuery()
+            .FirstOrDefaultAsync(x => x.Id == id, ct);
         if (i is null)
         {
             return null;
         }
+
+        var previous = await db.PortfolioImports.AsNoTracking().Include(x => x.Rows)
+            .Where(x => x.InsurerId == i.InsurerId && x.ReferenceMonth < i.ReferenceMonth)
+            .OrderByDescending(x => x.ReferenceMonth)
+            .FirstOrDefaultAsync(ct);
+        var totals = new ImportTotalsDto(
+            MonthTotalsDto.From(i.ReferenceMonth, i.Rows.Select(r => r.ToRow()).ToList()),
+            previous is null ? null : MonthTotalsDto.From(previous.ReferenceMonth, previous.Rows.Select(r => r.ToRow()).ToList()));
 
         var insurers = await InsurerNames(ct);
         var dto = ToDto(i, insurers);
@@ -168,7 +203,7 @@ internal sealed class PortfolioQueries(VittaDbContext db) : IPortfolioQueries
             .ToList();
 
         return new PortfolioImportDetailDto(dto.Id, dto.InsurerId, dto.InsurerName, dto.ReferenceMonth, dto.FileName, dto.Status,
-            dto.TotalRows, dto.Entered, dto.Left, dto.Changed, dto.IsFirstImport, dto.CreatedAt, changes);
+            dto.TotalRows, dto.Entered, dto.Left, dto.Changed, dto.IsFirstImport, dto.CreatedAt, changes, totals);
     }
 
     public async Task<IReadOnlyList<PortfolioRowDto>?> ListRowsAsync(Guid importId, CancellationToken ct = default)

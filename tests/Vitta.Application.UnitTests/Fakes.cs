@@ -1,3 +1,4 @@
+using Vitta.Domain.Settings;
 using Vitta.Application.Abstractions.Ai;
 using Vitta.Application.Abstractions.Imports;
 using Vitta.Application.Abstractions.Persistence;
@@ -72,4 +73,27 @@ internal sealed class FakeAiService(Func<SpreadsheetAnalysisRequest, Spreadsheet
         LastRequest = request;
         return analyze is null ? throw new AiUnavailableException("offline") : Task.FromResult(analyze(request));
     }
+
+    public LlmChoice? LastTest { get; private set; }
+
+    public Task<AiProvidersInfo> GetProvidersAsync(CancellationToken cancellationToken = default) =>
+        analyze is null
+            ? throw new AiUnavailableException("offline")
+            : Task.FromResult(new AiProvidersInfo("anthropic", "medium",
+                [new("anthropic", "Anthropic (Claude)", true, "claude-opus-5-5", []), new("groq", "Groq", false, "openai/gpt-oss-120b", [])]));
+
+    public Task<AiConnectionTest> TestConnectionAsync(LlmChoice choice, CancellationToken cancellationToken = default)
+    {
+        LastTest = choice;
+        return analyze is null
+            ? throw new AiUnavailableException("offline")
+            : Task.FromResult(new AiConnectionTest(true, choice.Provider, choice.Model, 120, "ok"));
+    }
+}
+
+internal sealed class FakeAiSettingsRepository(AiSettings? saved = null) : IAiSettingsRepository
+{
+    public AiSettings? Saved { get; private set; } = saved;
+    public Task<AiSettings?> GetAsync(CancellationToken ct = default) => Task.FromResult(Saved);
+    public void Add(AiSettings settings) => Saved = settings;
 }

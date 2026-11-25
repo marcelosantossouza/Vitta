@@ -265,3 +265,32 @@ dl.details {
   dt { font-size: 0.78rem; color: var(--vt-muted); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
   dd { margin: 0.2rem 0 0; font-weight: 500; word-break: break-word; }
 }
+
+/* ---------- Cards de indicadores (Painel, Clientes, Apolices, Carteira) ---------- */
+.kpis { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
+
+.kpi {
+  display: flex; gap: 0.9rem; align-items: flex-start;
+  > div { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+}
+.kpi__icon {
+  display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+  background: var(--vt-primary-soft); color: var(--vt-primary);
+}
+.kpi__label { font-size: 0.8rem; color: var(--vt-muted); font-weight: 550; }
+.kpi__value { font-size: 1.65rem; font-weight: 750; letter-spacing: -0.02em; line-height: 1.15; overflow-wrap: anywhere; }
+.kpi__hint { font-size: 0.8rem; color: var(--vt-muted); text-decoration: none; }
+a.kpi__hint { color: var(--vt-primary); font-weight: 550; }
+
+.kpi--highlight {
+  background: linear-gradient(135deg, #0f6e5c, #0b4f42); color: #fff; border-color: transparent;
+  .kpi__icon { background: rgba(255, 255, 255, 0.15); color: #fff; }
+  .kpi__label, .kpi__hint { color: rgba(255, 255, 255, 0.75); }
+}
+
+.kpi__delta { font-size: 0.8rem; font-weight: 650; }
+.kpi__delta--up { color: var(--vt-success, #15803d); }
+.kpi__delta--down { color: var(--vt-danger, #b91c1c); }
+.kpi--highlight .kpi__delta--up { color: #b6f5d8; }
+.kpi--highlight .kpi__delta--down { color: #ffd0d0; }
+.kpis + .toolbar, .kpis + .card, .kpis + section { margin-top: 1rem; }

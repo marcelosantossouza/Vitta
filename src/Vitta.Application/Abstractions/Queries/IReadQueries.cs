@@ -22,6 +22,7 @@ public interface IClientQueries
 public interface IPolicyQueries
 {
     Task<PagedResult<PolicyDto>> SearchAsync(PolicyFilter filter, int page, int pageSize, CancellationToken ct = default);
+    Task<BookSummaryDto> SummaryAsync(CancellationToken ct = default);
 }
 
 public sealed record PolicyFilter(Guid? ClientId, Guid? InsurerId, PolicyStatus? Status, string? Search);

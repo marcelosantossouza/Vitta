@@ -50,6 +50,7 @@ public static class DependencyInjection
         services.AddScoped<IPortfolioImportRepository, PortfolioImportRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IImportTemplateRepository, ImportTemplateRepository>();
+        services.AddScoped<IAiSettingsRepository, AiSettingsRepository>();
 
         // Leitura
         services.AddScoped<IClientQueries, ClientQueries>();

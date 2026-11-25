@@ -3,7 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_BASE_URL } from '../config/api-config';
 import { IdResponse, PagedResult } from '../models/common';
-import { CreatePolicyRequest, EndPolicyRequest, PolicyDto, PolicyFilter, UpdatePolicyRequest } from '../models/policy';
+import { BookSummaryDto, CreatePolicyRequest, EndPolicyRequest, PolicyDto, PolicyFilter, UpdatePolicyRequest } from '../models/policy';
 
 @Injectable({ providedIn: 'root' })
 export class PoliciesApi {
@@ -18,6 +18,10 @@ export class PoliciesApi {
       }
     }
     return this.http.get<PagedResult<PolicyDto>>(this.baseUrl, { params });
+  }
+
+  summary(): Observable<BookSummaryDto> {
+    return this.http.get<BookSummaryDto>(`${this.baseUrl}/summary`);
   }
 
   create(request: CreatePolicyRequest): Observable<IdResponse> {

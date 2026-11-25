@@ -39,6 +39,7 @@ export class Shell {
     { path: '/carteira', label: 'Carteira', icon: 'folder' },
     { path: '/modelos', label: 'Modelos de planilha', icon: 'sheet' },
     { path: '/seguradoras', label: 'Seguradoras', icon: 'building' },
+    { path: '/configuracoes', label: 'Configurações', icon: 'settings' },
   ];
 
   protected toggleMenu(): void {

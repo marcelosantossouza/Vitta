@@ -83,7 +83,7 @@ public class AnalyzeSpreadsheetHandlerTests
     {
         var ai = new FakeAiService(_ => new SpreadsheetSuggestion(2,
             [new("name", 1), new("phone", 2), new("email", 3), new("source", 7), new("name", 2)], "Contatos", "ok", "high", "ai"));
-        var handler = new AnalyzeSpreadsheetHandler(new FakeSpreadsheetReader(Rows), ai, NullLogger<AnalyzeSpreadsheetHandler>.Instance);
+        var handler = new AnalyzeSpreadsheetHandler(new FakeSpreadsheetReader(Rows), ai, new FakeAiSettingsRepository(), NullLogger<AnalyzeSpreadsheetHandler>.Instance);
 
         var result = await handler.Handle(new AnalyzeSpreadsheetCommand(ImportTemplateKind.Prospects, "contatos.xlsx", Stream.Null, null), default);
 
@@ -98,7 +98,7 @@ public class AnalyzeSpreadsheetHandlerTests
     [Fact]
     public async Task FallsBackToHeuristic_WhenAiIsUnavailable()
     {
-        var handler = new AnalyzeSpreadsheetHandler(new FakeSpreadsheetReader(Rows), new FakeAiService(), NullLogger<AnalyzeSpreadsheetHandler>.Instance);
+        var handler = new AnalyzeSpreadsheetHandler(new FakeSpreadsheetReader(Rows), new FakeAiService(), new FakeAiSettingsRepository(), NullLogger<AnalyzeSpreadsheetHandler>.Instance);
 
         var result = await handler.Handle(new AnalyzeSpreadsheetCommand(ImportTemplateKind.Prospects, "contatos.csv", Stream.Null, null), default);
 

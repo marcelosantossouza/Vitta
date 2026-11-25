@@ -7,12 +7,13 @@ import {
 } from '@vitta/core';
 import { EmptyState } from '../../shared/empty-state';
 import { Icon } from '../../shared/icon';
-import { BrlPipe, IsoDatePipe, PolicyStatusPipe } from '../../shared/pipes';
+import { BrlPipe, IsoDatePipe, PercentPipe, PolicyStatusPipe } from '../../shared/pipes';
 import { ToastService } from '../../shared/toast.service';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'vt-client-detail',
-  imports: [RouterLink, ReactiveFormsModule, Icon, EmptyState, BrlPipe, IsoDatePipe, PolicyStatusPipe],
+  imports: [RouterLink, ReactiveFormsModule, Icon, EmptyState, BrlPipe, IsoDatePipe, PercentPipe, PolicyStatusPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './client-detail.html',
   styleUrl: './client-detail.scss',
@@ -33,6 +34,8 @@ export class ClientDetail implements OnInit {
   protected readonly busy = signal(false);
   protected readonly dialog = signal<'policy' | 'end' | null>(null);
   protected readonly endingPolicy = signal<PolicyDto | null>(null);
+  /** Apolice aberta para edicao no dialogo (nulo = nova apolice). */
+  protected readonly editingPolicy = signal<PolicyDto | null>(null);
   protected readonly dialogError = signal<string | null>(null);
 
   protected readonly endStatuses: { value: PolicyEndStatus; label: string }[] = [
@@ -43,14 +46,27 @@ export class ClientDetail implements OnInit {
 
   protected readonly activePolicies = computed(() => this.client()?.policies.filter(p => p.status === 'Active') ?? []);
   protected readonly monthlyPremium = computed(() => this.activePolicies().reduce((sum, p) => sum + p.monthlyPremium, 0));
+  protected readonly monthlyCommission = computed(() => this.activePolicies().reduce((sum, p) => sum + (p.monthlyCommission ?? 0), 0));
+  protected readonly withoutRate = computed(() => this.activePolicies().filter(p => p.commissionRate == null).length);
+  /** Previa da comissao no dialogo, conforme o usuario digita. */
+  protected readonly previewCommission = signal<number | null>(null);
 
   protected readonly policyForm = this.fb.group({
     insurerId: ['', Validators.required],
     policyNumber: ['', [Validators.required, Validators.maxLength(50)]],
     productName: ['', [Validators.required, Validators.maxLength(150)]],
     monthlyPremium: [0, [Validators.required, Validators.min(0)]],
+    commissionRate: [null as number | null, [Validators.min(0), Validators.max(300)]],
     issuedOn: [todayIso(), Validators.required],
   });
+
+  constructor() {
+    this.policyForm.valueChanges.subscribe(() => {
+      const v = this.policyForm.getRawValue();
+      const rate = v.commissionRate === null || (v.commissionRate as unknown) === '' ? null : Number(v.commissionRate);
+      this.previewCommission.set(rate === null || Number.isNaN(rate) ? null : Math.round(Number(v.monthlyPremium) * rate) / 100);
+    });
+  }
 
   protected readonly endForm = this.fb.group({
     status: ['Cancelled' as PolicyEndStatus, Validators.required],
@@ -81,7 +97,25 @@ export class ClientDetail implements OnInit {
   }
 
   protected openNewPolicy(): void {
-    this.policyForm.reset({ insurerId: this.insurers()[0]?.id ?? '', policyNumber: '', productName: '', monthlyPremium: 0, issuedOn: todayIso() });
+    this.editingPolicy.set(null);
+    this.policyForm.enable();
+    this.policyForm.reset({
+      insurerId: this.insurers()[0]?.id ?? '', policyNumber: '', productName: '', monthlyPremium: 0, commissionRate: null, issuedOn: todayIso(),
+    });
+    this.dialogError.set(null);
+    this.dialog.set('policy');
+  }
+
+  /** Edita produto, premio e % (seguradora, numero e emissao identificam a apolice e ficam fixos). */
+  protected openEditPolicy(policy: PolicyDto): void {
+    this.editingPolicy.set(policy);
+    this.policyForm.reset({
+      insurerId: policy.insurerId, policyNumber: policy.policyNumber, productName: policy.productName,
+      monthlyPremium: policy.monthlyPremium, commissionRate: policy.commissionRate, issuedOn: policy.issuedOn,
+    });
+    this.policyForm.controls.insurerId.disable();
+    this.policyForm.controls.policyNumber.disable();
+    this.policyForm.controls.issuedOn.disable();
     this.dialogError.set(null);
     this.dialog.set('policy');
   }
@@ -92,12 +126,18 @@ export class ClientDetail implements OnInit {
       return;
     }
     const v = this.policyForm.getRawValue();
+    const commissionRate = v.commissionRate === null || (v.commissionRate as unknown) === '' ? null : Number(v.commissionRate);
+    const editing = this.editingPolicy();
     this.busy.set(true);
-    this.policiesApi
-      .create({ ...v, clientId: this.id(), monthlyPremium: Number(v.monthlyPremium), policyNumber: v.policyNumber.trim(), productName: v.productName.trim() })
-      .subscribe({
+    const request$: Observable<unknown> = editing
+      ? this.policiesApi.update(editing.id, { productName: v.productName.trim(), monthlyPremium: Number(v.monthlyPremium), commissionRate })
+      : this.policiesApi.create({
+          ...v, clientId: this.id(), monthlyPremium: Number(v.monthlyPremium), commissionRate,
+          policyNumber: v.policyNumber.trim(), productName: v.productName.trim(),
+        });
+    request$.subscribe({
         next: () => {
-          this.toast.success('Apólice adicionada.');
+          this.toast.success(editing ? 'Apólice atualizada.' : 'Apólice adicionada.');
           this.closeDialog();
           this.load();
         },

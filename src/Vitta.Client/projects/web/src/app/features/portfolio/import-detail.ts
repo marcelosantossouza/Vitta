@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { normalizeText, PortfolioApi, PortfolioChangeType, PortfolioImportDetailDto, PortfolioRowDto } from '@vitta/core';
+import { normalizeText, PortfolioApi, PortfolioChangeType, PortfolioImportDetailDto, PortfolioRowDto, variation } from '@vitta/core';
 import { EmptyState } from '../../shared/empty-state';
 import { Icon } from '../../shared/icon';
-import { BrlPipe, ChangeTypePipe, CpfPipe, IsoDatePipe, MonthPipe } from '../../shared/pipes';
+import { BrlPipe, ChangeTypePipe, CpfPipe, IsoDatePipe, MonthPipe, PercentPipe } from '../../shared/pipes';
 import { ToastService } from '../../shared/toast.service';
 
 type Tab = PortfolioChangeType | 'all';
@@ -14,7 +14,7 @@ const percent = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 });
 
 @Component({
   selector: 'vt-import-detail',
-  imports: [RouterLink, Icon, EmptyState, MonthPipe, ChangeTypePipe, CpfPipe, IsoDatePipe, BrlPipe],
+  imports: [RouterLink, Icon, EmptyState, MonthPipe, ChangeTypePipe, CpfPipe, IsoDatePipe, BrlPipe, PercentPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './import-detail.html',
   styles: `
@@ -77,7 +77,8 @@ export class ImportDetail implements OnInit {
     };
   });
 
-  protected readonly colCount = computed(() => 2 + Object.values(this.cols()).filter(Boolean).length);
+  // A comissao ocupa duas colunas (% e valor).
+  protected readonly colCount = computed(() => 2 + Object.values(this.cols()).filter(Boolean).length + (this.cols().commission ? 1 : 0));
 
   protected readonly filteredRows = computed(() => {
     const list = this.rows() ?? [];
@@ -95,7 +96,18 @@ export class ImportDetail implements OnInit {
   protected readonly totals = computed(() => {
     const list = this.filteredRows();
     const sum = (pick: (r: PortfolioRowDto) => number | null) => list.reduce((acc, r) => acc + (pick(r) ?? 0), 0);
-    return { count: list.length, premium: sum(r => r.monthlyPremium), commission: sum(r => r.commissionAmount) };
+    return { count: list.length, premium: sum(r => r.monthlyPremium), commission: sum(r => this.commissionOf(r)) };
+  });
+
+  /** Mes atual x mes anterior (premio, comissao e apolices), com variacao em R$ e %. */
+  protected readonly comparison = computed(() => {
+    const t = this.data()?.totals;
+    if (!t) return null;
+    const prev = t.previous;
+    const premium = prev ? variation(t.current.premium, prev.premium) : null;
+    const commission = prev && t.current.commission != null && prev.commission != null ? variation(t.current.commission, prev.commission) : null;
+    const policies = prev ? t.current.policies - prev.policies : null;
+    return { current: t.current, previous: prev, premium, commission, policies };
   });
 
   protected readonly tabs = computed(() => {
@@ -163,6 +175,20 @@ export class ImportDetail implements OnInit {
 
   protected rate(value: number): string {
     return `${percent.format(value)}%`;
+  }
+
+  /** % da linha: coluna de % (12 ou 0,12 do Excel) ou, sem ela, comissao / premio. */
+  protected rateOf(r: PortfolioRowDto): number | null {
+    if (r.commissionRate !== null && r.commissionRate > 0) return r.commissionRate <= 1 ? r.commissionRate * 100 : r.commissionRate;
+    if (r.commissionAmount !== null && r.monthlyPremium) return (r.commissionAmount / r.monthlyPremium) * 100;
+    return null;
+  }
+
+  /** Comissao da linha: coluna de comissao ou premio x %. */
+  protected commissionOf(r: PortfolioRowDto): number | null {
+    if (r.commissionAmount !== null) return r.commissionAmount;
+    const rate = this.rateOf(r);
+    return rate !== null && r.monthlyPremium !== null ? Math.round(r.monthlyPremium * rate) / 100 : null;
   }
 
   private loadRows(): void {

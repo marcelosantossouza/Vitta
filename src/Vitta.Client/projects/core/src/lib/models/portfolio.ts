@@ -31,6 +31,22 @@ export interface PortfolioChangeDto {
 
 export interface PortfolioImportDetailDto extends PortfolioImportDto {
   changes: PortfolioChangeDto[];
+  totals: ImportTotalsDto;
+}
+
+export interface MonthTotalsDto {
+  month: string;
+  policies: number;
+  premium: number;
+  /** Nulo quando a planilha não traz comissão nem %. */
+  commission: number | null;
+  averageRate: number | null;
+}
+
+/** Mês importado e o anterior da mesma seguradora (nulo na primeira importação). */
+export interface ImportTotalsDto {
+  current: MonthTotalsDto;
+  previous: MonthTotalsDto | null;
 }
 
 /** Linha da "tabela final" de uma importação: uma por apólice (coberturas da mesma proposta já unidas). */

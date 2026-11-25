@@ -26,6 +26,12 @@
         <div><dt>Cliente desde</dt><dd>{{ c.createdAt | isoDate }}</dd></div>
         <div><dt>Apólices ativas</dt><dd>{{ activePolicies().length }}</dd></div>
         <div><dt>Prêmio mensal ativo</dt><dd>{{ monthlyPremium() | brl }}</dd></div>
+        <div>
+          <dt>Sua comissão mensal</dt>
+          <dd><strong>{{ monthlyCommission() | brl }}</strong>
+            @if (withoutRate() > 0) { <span class="muted small"> ({{ withoutRate() }} apólice(s) sem %)</span> }
+          </dd>
+        </div>
       </dl>
 
       @if (c.notes) {
@@ -50,6 +56,8 @@
                 <th>Seguradora</th>
                 <th>Produto</th>
                 <th class="num">Prêmio</th>
+                <th class="num">% comissão</th>
+                <th class="num">Comissão mensal</th>
                 <th>Emissão</th>
                 <th>Status</th>
                 <th></th>
@@ -62,6 +70,8 @@
                   <td data-label="Seguradora">{{ p.insurerName }}</td>
                   <td data-label="Produto">{{ p.productName || '—' }}</td>
                   <td data-label="Prêmio" class="num">{{ p.monthlyPremium | brl }}</td>
+                  <td data-label="% comissão" class="num">{{ p.commissionRate | pct: 2 }}</td>
+                  <td data-label="Comissão mensal" class="num">{{ p.monthlyCommission | brl }}</td>
                   <td data-label="Emissão" class="nowrap">{{ p.issuedOn | isoDate }}</td>
                   <td data-label="Status">
                     <div class="status-cell">
@@ -70,6 +80,7 @@
                     </div>
                   </td>
                   <td class="actions">
+                    <button class="btn btn--sm btn--ghost" type="button" (click)="openEditPolicy(p)"><vt-icon name="edit" [size]="14" /> Editar</button>
                     @if (p.status === 'Active') {
                       <button class="btn btn--sm" type="button" (click)="openEnd(p)">Encerrar</button>
                     } @else {
@@ -90,7 +101,7 @@
   <div class="dialog-backdrop" (click)="closeDialog()">
     <form class="dialog" [formGroup]="policyForm" (ngSubmit)="savePolicy()" (click)="$event.stopPropagation()" novalidate>
       <div class="dialog__header">
-        <h2>Nova apólice</h2>
+        <h2>{{ editingPolicy() ? 'Editar apólice ' + editingPolicy()!.policyNumber : 'Nova apólice' }}</h2>
         <button class="btn btn--ghost btn--icon" type="button" (click)="closeDialog()" aria-label="Fechar"><vt-icon name="x" /></button>
       </div>
       <div class="form-grid">
@@ -116,13 +127,21 @@
           Data de emissão *
           <input type="date" formControlName="issuedOn" />
         </label>
+        <label class="field">
+          % de comissão
+          <input type="number" min="0" max="300" step="0.01" formControlName="commissionRate" inputmode="decimal" placeholder="Ex.: 12,5" />
+          <span class="hint">
+            @if (previewCommission() !== null) { Você recebe {{ previewCommission() | brl }} por mês. } @else { Quanto você recebe sobre o prêmio. }
+            A importação da carteira atualiza este valor quando a planilha traz o %.
+          </span>
+        </label>
       </div>
       @if (dialogError(); as message) {
         <div class="alert alert--danger" style="margin-top: 1rem"><vt-icon name="alert" [size]="18" /><span>{{ message }}</span></div>
       }
       <div class="form-actions">
         <button class="btn" type="button" (click)="closeDialog()">Cancelar</button>
-        <button class="btn btn--primary" type="submit" [disabled]="busy()">{{ busy() ? 'Salvando…' : 'Adicionar apólice' }}</button>
+        <button class="btn btn--primary" type="submit" [disabled]="busy()">{{ busy() ? 'Salvando…' : editingPolicy() ? 'Salvar alterações' : 'Adicionar apólice' }}</button>
       </div>
     </form>
   </div>

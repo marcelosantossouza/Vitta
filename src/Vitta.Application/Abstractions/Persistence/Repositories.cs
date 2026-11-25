@@ -5,6 +5,7 @@ using Vitta.Domain.Insurers;
 using Vitta.Domain.Policies;
 using Vitta.Domain.Portfolio;
 using Vitta.Domain.Prospects;
+using Vitta.Domain.Settings;
 using Vitta.Domain.Users;
 
 namespace Vitta.Application.Abstractions.Persistence;
@@ -25,8 +26,13 @@ public interface IPolicyRepository
 {
     Task<Policy?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<bool> NumberExistsAsync(Guid insurerId, string policyNumber, CancellationToken ct = default);
+    /// <summary>Apolices da seguradora (com tracking) e o CPF do cliente, para atualizar com a carteira importada.</summary>
+    Task<IReadOnlyList<PolicySyncCandidate>> ListForCarrierSyncAsync(Guid insurerId, CancellationToken ct = default);
     void Add(Policy policy);
 }
+
+/// <param name="ClientCpf">CPF do cliente, so digitos.</param>
+public sealed record PolicySyncCandidate(Policy Policy, string ClientCpf);
 
 public interface IProspectRepository
 {
@@ -70,4 +76,11 @@ public interface IImportTemplateRepository
     Task<bool> NameExistsAsync(ImportTemplateKind kind, string name, Guid? exceptId, CancellationToken ct = default);
     void Add(ImportTemplate template);
     void Remove(ImportTemplate template);
+}
+
+public interface IAiSettingsRepository
+{
+    /// <summary>Configuracao de IA salva (nula = ninguem salvou ainda: valem os padroes do servico de IA).</summary>
+    Task<AiSettings?> GetAsync(CancellationToken ct = default);
+    void Add(AiSettings settings);
 }

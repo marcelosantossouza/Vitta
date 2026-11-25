@@ -98,6 +98,7 @@ secured.MapProspectEndpoints();
 secured.MapPortfolioEndpoints();
 secured.MapInsurerEndpoints();
 secured.MapImportTemplateEndpoints();
+secured.MapSettingsEndpoints();
 
 app.Run();
 

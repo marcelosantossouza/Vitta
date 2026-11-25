@@ -1,0 +1,107 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Configurações</h1>
+      <p class="subtitle">Ajustes gerais da Vitta.</p>
+    </div>
+  </div>
+
+  <section class="card ai">
+    <div class="card__header">
+      <h2><vt-icon name="sparkles" [size]="18" /> Inteligência artificial</h2>
+      @if (data(); as d) {
+        @if (d.isCustom) {
+          <span class="badge badge--primary">Configurada</span>
+        } @else {
+          <span class="badge">Padrão do servidor</span>
+        }
+      }
+    </div>
+    <p class="muted small intro">
+      A IA lê as primeiras linhas de uma planilha de exemplo para sugerir as colunas de um modelo. Ela só é usada ao criar ou
+      ajustar modelos — a importação mensal não chama a IA. CPFs, telefones, valores e e-mails são mascarados antes do envio.
+    </p>
+
+    @if (loading()) {
+      @for (i of [1, 2, 3]; track i) { <div class="skeleton" style="height: 2.6rem"></div> }
+    } @else if (data(); as d) {
+      @if (!d.serviceOnline) {
+        <div class="alert alert--warning">
+          <vt-icon name="alert" [size]="18" />
+          <span>O serviço de IA (Vitta.AI) não respondeu. Você ainda pode salvar a escolha; enquanto ele estiver fora, os modelos
+            de planilha são sugeridos pelos nomes das colunas.</span>
+        </div>
+      }
+
+      <div class="field">
+        Provedor
+        <div class="providers" role="radiogroup" aria-label="Provedor de IA">
+          @for (p of providers(); track p.id) {
+            <button type="button" class="provider" role="radio" [attr.aria-checked]="provider() === p.id" [class.active]="provider() === p.id"
+              (click)="selectProvider(p.id)">
+              <strong>{{ p.label }}</strong>
+              @if (p.configured) {
+                <span class="badge badge--success">Chave configurada</span>
+              } @else {
+                <span class="badge badge--warning">Sem chave no servidor</span>
+              }
+            </button>
+          } @empty {
+            <span class="muted small">Lista de provedores indisponível com o serviço fora do ar.</span>
+          }
+        </div>
+        @if (current(); as p) {
+          @if (!p.configured) {
+            <span class="hint">Para usar {{ p.label }}, coloque a chave em <code>src/Vitta.AI/.env</code>
+              ({{ p.id === 'groq' ? 'VITTA_AI_GROQ_API_KEY' : 'VITTA_AI_ANTHROPIC_API_KEY' }}) e reinicie o serviço de IA.</span>
+          }
+        }
+      </div>
+
+      <label class="field">
+        Modelo
+        <select (change)="setModelOption($any($event.target).value)">
+          @for (m of current()?.models ?? []; track m.id) {
+            <option [value]="m.id" [selected]="modelOption() === m.id">{{ m.label }} ({{ m.id }})</option>
+          }
+          <option [value]="custom" [selected]="modelOption() === custom">Outro modelo…</option>
+        </select>
+        @if (modelOption() === custom) {
+          <input [value]="customModel()" (input)="customModel.set($any($event.target).value); test.set(null)" maxlength="100"
+            placeholder="Id do modelo, ex.: claude-haiku-5-5" />
+        }
+        @if (selectedNote(); as note) { <span class="hint">{{ note }}</span> }
+      </label>
+
+      <label class="field">
+        Esforço de raciocínio
+        <select (change)="effort.set($any($event.target).value); test.set(null)">
+          @for (e of efforts; track e) { <option [value]="e" [selected]="effort() === e">{{ effortLabels[e] }}</option> }
+        </select>
+        <span class="hint">Quanto o modelo "pensa" antes de responder. Médio costuma bastar para entender uma planilha.</span>
+      </label>
+
+      @if (test(); as t) {
+        <div class="alert" [class.alert--success]="t.ok" [class.alert--danger]="!t.ok">
+          <vt-icon [name]="t.ok ? 'check' : 'alert'" [size]="18" />
+          <span>{{ t.message }}@if (t.latencyMs != null) { — respondeu em {{ (t.latencyMs / 1000).toFixed(1) }} s }</span>
+        </div>
+      }
+      @if (error(); as message) {
+        <div class="alert alert--danger"><vt-icon name="alert" [size]="18" /><span>{{ message }}</span></div>
+      }
+
+      <div class="form-actions">
+        <button class="btn" type="button" (click)="runTest()" [disabled]="testing() || saving()">
+          <vt-icon name="refresh" [size]="16" /> {{ testing() ? 'Testando…' : 'Testar conexão' }}
+        </button>
+        <button class="btn btn--primary" type="button" (click)="save()" [disabled]="saving() || testing()">
+          <vt-icon name="check" [size]="16" /> {{ saving() ? 'Salvando…' : 'Salvar' }}
+        </button>
+      </div>
+      <p class="muted small" style="margin: 0">
+        <vt-icon name="shield" [size]="14" /> As chaves de API ficam só no servidor, nunca nesta tela nem no banco de dados.
+      </p>
+    }
+  </section>
+</div>

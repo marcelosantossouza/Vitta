@@ -18,8 +18,28 @@ public record PortfolioImportDto(
 public sealed record PortfolioImportDetailDto(
     Guid Id, Guid InsurerId, string InsurerName, DateOnly ReferenceMonth, string FileName, PortfolioImportStatus Status,
     int TotalRows, int Entered, int Left, int Changed, bool IsFirstImport, DateTimeOffset CreatedAt,
-    IReadOnlyList<PortfolioChangeDto> Changes)
+    IReadOnlyList<PortfolioChangeDto> Changes, ImportTotalsDto Totals)
     : PortfolioImportDto(Id, InsurerId, InsurerName, ReferenceMonth, FileName, Status, TotalRows, Entered, Left, Changed, IsFirstImport, CreatedAt);
+
+/// <summary>Totais do mes importado e do mes anterior da mesma seguradora (nulo na primeira importacao).</summary>
+public sealed record ImportTotalsDto(MonthTotalsDto Current, MonthTotalsDto? Previous);
+
+/// <param name="Commission">Soma da comissao (coluna de comissao ou premio x %); nulo quando a planilha nao traz nenhuma das duas.</param>
+/// <param name="AverageRate">Comissao / premio das linhas com comissao, em %.</param>
+public sealed record MonthTotalsDto(DateOnly Month, int Policies, decimal Premium, decimal? Commission, decimal? AverageRate)
+{
+    public static MonthTotalsDto From(DateOnly month, IReadOnlyCollection<PortfolioRow> rows)
+    {
+        var commissions = rows
+            .Select(r => (r.MonthlyPremium, Commission: r.CommissionAmount ?? Domain.Policies.Policy.CommissionOf(r.MonthlyPremium ?? 0, PolicyCarrierSync.RateOf(r))))
+            .Where(x => x.Commission is not null)
+            .ToList();
+        decimal? commission = commissions.Count > 0 ? commissions.Sum(x => x.Commission!.Value) : null;
+        var premiumWithCommission = commissions.Sum(x => x.MonthlyPremium ?? 0);
+        return new MonthTotalsDto(month, rows.Count, rows.Sum(r => r.MonthlyPremium ?? 0), commission,
+            commission is { } c && premiumWithCommission > 0 ? Math.Round(c / premiumWithCommission * 100m, 2) : null);
+    }
+}
 
 public sealed record PortfolioChangeDto(
     Guid Id, Guid ImportId, DateOnly ReferenceMonth, string InsurerName, PortfolioChangeType Type, string PolicyNumber,
@@ -66,6 +86,7 @@ public sealed class ImportPortfolioHandler(
     IInsurerRepository insurers,
     IPortfolioImportRepository imports,
     IImportTemplateRepository templates,
+    IPolicyRepository policies,
     ISpreadsheetReader reader,
     IPortfolioQueries queries,
     TimeProvider clock,
@@ -132,6 +153,8 @@ public sealed class ImportPortfolioHandler(
         var import = PortfolioImport.Create(insurerId.Value, month, Path.GetFileName(c.FileName));
         import.Process(rows.Value, previous);
         template?.MarkUsed(clock.GetUtcNow());
+        // Mantem premio e % de comissao das apolices cadastradas iguais ao que a seguradora informou.
+        PolicyCarrierSync.Apply(rows.Value, await policies.ListForCarrierSyncAsync(insurerId.Value, ct));
 
         imports.Add(import);
         await uow.SaveChangesAsync(ct);

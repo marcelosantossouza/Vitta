@@ -39,7 +39,27 @@ public sealed class Policy : AggregateRoot
     public DateOnly? EndedOn { get; private set; }
     public string? EndReason { get; private set; }
 
-    public static Result<Policy> Create(Guid clientId, Guid insurerId, string policyNumber, string productName, decimal monthlyPremium, DateOnly issuedOn)
+    /// <summary>Percentual de comissao do corretor sobre o premio (12.5 = 12,5%). Nulo = ainda nao informado.</summary>
+    public decimal? CommissionRate { get; private set; }
+
+    /// <summary>Quanto o corretor recebe por mes desta apolice (premio x percentual).</summary>
+    public decimal? MonthlyCommission => CommissionOf(MonthlyPremium, CommissionRate);
+
+    public static decimal? CommissionOf(decimal premium, decimal? rate) =>
+        rate is { } r ? Math.Round(premium * r / 100m, 2, MidpointRounding.AwayFromZero) : null;
+
+    /// <summary>Planilhas trazem 12% como "12" ou, em celula de porcentagem do Excel, como 0.12. Valores ate 1 viram percentual.</summary>
+    public static decimal? NormalizeRate(decimal? rate) =>
+        rate switch
+        {
+            null => null,
+            <= 0 => null,
+            <= 1 => Math.Round(rate.Value * 100m, 4),
+            _ => Math.Round(rate.Value, 4),
+        };
+
+    public static Result<Policy> Create(
+        Guid clientId, Guid insurerId, string policyNumber, string productName, decimal monthlyPremium, DateOnly issuedOn, decimal? commissionRate = null)
     {
         if (string.IsNullOrWhiteSpace(policyNumber))
         {
@@ -51,21 +71,62 @@ public sealed class Policy : AggregateRoot
             return PolicyErrors.InvalidPremium;
         }
 
-        return new Policy(clientId, insurerId, policyNumber.Trim(), productName.Trim(), monthlyPremium, issuedOn);
+        if (!ValidRate(commissionRate))
+        {
+            return PolicyErrors.InvalidCommissionRate;
+        }
+
+        return new Policy(clientId, insurerId, policyNumber.Trim(), productName.Trim(), monthlyPremium, issuedOn) { CommissionRate = commissionRate };
     }
 
-    public Result Update(string productName, decimal monthlyPremium)
+    public Result Update(string productName, decimal monthlyPremium, decimal? commissionRate)
     {
         if (monthlyPremium < 0)
         {
             return PolicyErrors.InvalidPremium;
         }
 
+        if (!ValidRate(commissionRate))
+        {
+            return PolicyErrors.InvalidCommissionRate;
+        }
+
         ProductName = productName.Trim();
         MonthlyPremium = monthlyPremium;
+        CommissionRate = commissionRate;
         Touch();
         return Result.Success();
     }
+
+    /// <summary>
+    /// Atualiza premio e percentual (ja normalizado, ver <see cref="NormalizeRate"/>) com o que a seguradora informou na
+    /// carteira do mes. So muda o que veio preenchido. Devolve true quando algo mudou.
+    /// </summary>
+    public bool SyncFromCarrier(decimal? monthlyPremium, decimal? rate)
+    {
+        var changed = false;
+        if (monthlyPremium is > 0 and var premium && premium != MonthlyPremium)
+        {
+            MonthlyPremium = premium;
+            changed = true;
+        }
+
+        if (rate is not null && ValidRate(rate) && rate != CommissionRate)
+        {
+            CommissionRate = rate;
+            changed = true;
+        }
+
+        if (changed)
+        {
+            Touch();
+        }
+
+        return changed;
+    }
+
+    // Comissao de primeiro ano em seguro de vida pode passar de 100%; acima de 300% e quase certamente erro de digitacao.
+    private static bool ValidRate(decimal? rate) => rate is null or (>= 0 and <= 300);
 
     public Result End(PolicyStatus newStatus, DateOnly endedOn, string? reason)
     {
@@ -99,6 +160,7 @@ public sealed class Policy : AggregateRoot
 public static class PolicyErrors
 {
     public static readonly Error InvalidPremium = Error.Validation("Policy.InvalidPremium", "Prêmio não pode ser negativo.");
+    public static readonly Error InvalidCommissionRate = Error.Validation("Policy.InvalidCommissionRate", "Percentual de comissão deve ficar entre 0% e 300%.");
     public static readonly Error NotActive = Error.Conflict("Policy.NotActive", "Esta apólice não está ativa.");
     public static readonly Error NumberAlreadyExists = Error.Conflict("Policy.NumberAlreadyExists", "Já existe uma apólice com este número nesta seguradora.");
     public static Error NotFound(Guid id) => Error.NotFound("Policy.NotFound", "Apólice não encontrada.");

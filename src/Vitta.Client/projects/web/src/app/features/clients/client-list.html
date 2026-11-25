@@ -9,6 +9,8 @@
     <a class="btn btn--primary" routerLink="/clientes/novo"><vt-icon name="user-plus" [size]="18" /> Novo cliente</a>
   </div>
 
+  <vt-book-kpis view="clients" />
+
   <div class="toolbar">
     <label class="search">
       <vt-icon name="search" [size]="18" />
@@ -40,6 +42,8 @@
                 <th>Contato</th>
                 <th class="num">Apólices ativas</th>
                 <th class="num">Prêmio mensal</th>
+                <th class="num">% comissão</th>
+                <th class="num">Comissão mensal</th>
               </tr>
             </thead>
             <tbody>
@@ -52,6 +56,13 @@
                     <span class="badge" [class.badge--success]="c.activePolicyCount > 0">{{ c.activePolicyCount }}</span>
                   </td>
                   <td data-label="Prêmio mensal" class="num">{{ c.monthlyPremium | brl }}</td>
+                  <td data-label="% comissão" class="num">{{ rateOf(c) | pct }}</td>
+                  <td data-label="Comissão mensal" class="num">
+                    @if (c.monthlyCommission != null) { <strong>{{ c.monthlyCommission | brl }}</strong> } @else { <span class="muted">—</span> }
+                    @if (c.policiesWithoutRate > 0 && c.activePolicyCount > 0) {
+                      <span class="muted small" title="Apólices ativas sem % de comissão não entram na soma"> ({{ c.policiesWithoutRate }} sem %)</span>
+                    }
+                  </td>
                 </tr>
               }
             </tbody>

@@ -1,6 +1,6 @@
 import { Pipe, PipeTransform } from '@angular/core';
 import {
-  changeTypeLabel, formatCpf, formatCurrency, formatDate, formatMonth, policyStatusLabel, prospectStageLabel,
+  changeTypeLabel, formatCpf, formatCurrency, formatDate, formatMonth, formatPercent, policyStatusLabel, prospectStageLabel,
 } from '@vitta/core';
 
 @Pipe({ name: 'brl' })
@@ -49,5 +49,12 @@ export class StagePipe implements PipeTransform {
 export class ChangeTypePipe implements PipeTransform {
   transform(value: string | null | undefined): string {
     return changeTypeLabel(value);
+  }
+}
+
+@Pipe({ name: 'pct' })
+export class PercentPipe implements PipeTransform {
+  transform(value: number | null | undefined, digits = 1): string {
+    return formatPercent(value, digits);
   }
 }

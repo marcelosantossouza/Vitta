@@ -7,6 +7,8 @@
     <a class="btn btn--primary" routerLink="/clientes"><vt-icon name="users" [size]="18" /> Ir para clientes</a>
   </div>
 
+  <vt-book-kpis view="policies" />
+
   <div class="toolbar">
     <label class="search">
       <vt-icon name="search" [size]="18" />
@@ -42,6 +44,8 @@
                 <th>Seguradora</th>
                 <th>Produto</th>
                 <th class="num">Prêmio</th>
+                <th class="num">% comissão</th>
+                <th class="num">Comissão mensal</th>
                 <th>Emissão</th>
                 <th>Status</th>
               </tr>
@@ -54,6 +58,10 @@
                   <td data-label="Seguradora">{{ p.insurerName }}</td>
                   <td data-label="Produto">{{ p.productName || '—' }}</td>
                   <td data-label="Prêmio" class="num">{{ p.monthlyPremium | brl }}</td>
+                  <td data-label="% comissão" class="num">{{ p.commissionRate | pct: 2 }}</td>
+                  <td data-label="Comissão mensal" class="num">
+                    @if (p.monthlyCommission != null) { <strong>{{ p.monthlyCommission | brl }}</strong> } @else { <span class="muted">—</span> }
+                  </td>
                   <td data-label="Emissão" class="nowrap">{{ p.issuedOn | isoDate }}</td>
                   <td data-label="Status"><span [class]="'badge ' + statusClass(p.status)">{{ p.status | policyStatus }}</span></td>
                 </tr>

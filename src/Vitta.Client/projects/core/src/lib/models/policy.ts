@@ -14,6 +14,23 @@ export interface PolicyDto {
   status: PolicyStatus;
   endedOn: string | null;
   endReason: string | null;
+  /** % de comissão do corretor (12.5 = 12,5%); nulo = não informado. */
+  commissionRate: number | null;
+  /** Prêmio × %: quanto o corretor recebe por mês. */
+  monthlyCommission: number | null;
+}
+
+/** Números da carteira cadastrada (cards de Clientes e Apólices). Valores consideram só apólices ativas. */
+export interface BookSummaryDto {
+  totalClients: number;
+  clientsWithActivePolicies: number;
+  activePolicies: number;
+  endedPolicies: number;
+  monthlyPremium: number;
+  monthlyCommission: number;
+  averageCommissionRate: number | null;
+  /** Apólices ativas sem % de comissão: o total de comissão está incompleto enquanto houver. */
+  activeWithoutRate: number;
 }
 
 export interface CreatePolicyRequest {
@@ -23,11 +40,13 @@ export interface CreatePolicyRequest {
   productName: string;
   monthlyPremium: number;
   issuedOn: string;
+  commissionRate?: number | null;
 }
 
 export interface UpdatePolicyRequest {
   productName: string;
   monthlyPremium: number;
+  commissionRate: number | null;
 }
 
 export interface EndPolicyRequest {

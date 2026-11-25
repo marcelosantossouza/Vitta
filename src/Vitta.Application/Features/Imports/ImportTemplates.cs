@@ -1,6 +1,7 @@
 using Mediator;
 using Microsoft.Extensions.Logging;
 using Vitta.Application.Abstractions.Ai;
+using Vitta.Application.Features.Settings;
 using Vitta.Application.Abstractions.Imports;
 using Vitta.Application.Abstractions.Persistence;
 using Vitta.Application.Abstractions.Queries;
@@ -126,7 +127,8 @@ public sealed class DeleteImportTemplateHandler(IImportTemplateRepository templa
 public sealed record AnalyzeSpreadsheetCommand(ImportTemplateKind Kind, string FileName, Stream File, string? SheetName)
     : ICommand<Result<SpreadsheetAnalysisDto>>;
 
-public sealed class AnalyzeSpreadsheetHandler(ISpreadsheetReader reader, IAiService ai, ILogger<AnalyzeSpreadsheetHandler> logger)
+public sealed class AnalyzeSpreadsheetHandler(
+    ISpreadsheetReader reader, IAiService ai, IAiSettingsRepository aiSettings, ILogger<AnalyzeSpreadsheetHandler> logger)
     : ICommandHandler<AnalyzeSpreadsheetCommand, Result<SpreadsheetAnalysisDto>>
 {
     /// <summary>Linhas enviadas para a IA e devolvidas para a pre-visualizacao.</summary>
@@ -156,7 +158,8 @@ public sealed class AnalyzeSpreadsheetHandler(ISpreadsheetReader reader, IAiServ
         try
         {
             var masked = preview.Select(r => r.Select(MaskForAi).ToArray()).ToList();
-            suggestion = await ai.AnalyzeSpreadsheetAsync(new SpreadsheetAnalysisRequest(c.Kind, c.FileName, data.SheetName, masked, fields), ct);
+            var llm = (await aiSettings.GetAsync(ct))?.ToChoice();
+            suggestion = await ai.AnalyzeSpreadsheetAsync(new SpreadsheetAnalysisRequest(c.Kind, c.FileName, data.SheetName, masked, fields, llm), ct);
         }
         catch (AiUnavailableException ex)
         {

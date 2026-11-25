@@ -7,6 +7,7 @@ using Vitta.Domain.Insurers;
 using Vitta.Domain.Policies;
 using Vitta.Domain.Portfolio;
 using Vitta.Domain.Prospects;
+using Vitta.Domain.Settings;
 using Vitta.Domain.Users;
 using Vitta.Persistence.Context;
 
@@ -27,6 +28,16 @@ internal sealed class PolicyRepository(VittaDbContext db) : IPolicyRepository
 
     public Task<bool> NumberExistsAsync(Guid insurerId, string policyNumber, CancellationToken ct = default) =>
         db.Policies.AnyAsync(p => p.InsurerId == insurerId && p.PolicyNumber == policyNumber, ct);
+
+    public async Task<IReadOnlyList<PolicySyncCandidate>> ListForCarrierSyncAsync(Guid insurerId, CancellationToken ct = default)
+    {
+        var rows = await (
+            from p in db.Policies
+            where p.InsurerId == insurerId
+            join c in db.Clients on p.ClientId equals c.Id
+            select new { Policy = p, c.Cpf }).ToListAsync(ct);
+        return rows.Select(r => new PolicySyncCandidate(r.Policy, r.Cpf.Value)).ToList();
+    }
 
     public void Add(Policy policy) => db.Policies.Add(policy);
 }
@@ -92,4 +103,10 @@ internal sealed class ImportTemplateRepository(VittaDbContext db) : IImportTempl
 
     public void Add(ImportTemplate template) => db.ImportTemplates.Add(template);
     public void Remove(ImportTemplate template) => db.ImportTemplates.Remove(template);
+}
+
+internal sealed class AiSettingsRepository(VittaDbContext db) : IAiSettingsRepository
+{
+    public Task<AiSettings?> GetAsync(CancellationToken ct = default) => db.AiSettings.FirstOrDefaultAsync(x => x.Id == AiSettings.SingletonId, ct);
+    public void Add(AiSettings settings) => db.AiSettings.Add(settings);
 }

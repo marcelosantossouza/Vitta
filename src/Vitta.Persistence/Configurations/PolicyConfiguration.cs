@@ -16,6 +16,8 @@ internal sealed class PolicyConfiguration : IEntityTypeConfiguration<Policy>
         b.HasIndex(x => new { x.InsurerId, x.PolicyNumber }).IsUnique();
         b.Property(x => x.ProductName).HasMaxLength(150);
         b.Property(x => x.MonthlyPremium).HasPrecision(12, 2);
+        b.Property(x => x.CommissionRate).HasPrecision(7, 4);
+        b.Ignore(x => x.MonthlyCommission);
         b.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
         b.Property(x => x.EndReason).HasMaxLength(500);
         b.HasOne<Client>().WithMany().HasForeignKey(x => x.ClientId).OnDelete(DeleteBehavior.Restrict);

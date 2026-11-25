@@ -5,14 +5,15 @@ import { ClientListItemDto, ClientsApi, PagedResult } from '@vitta/core';
 import { debounceTime, distinctUntilChanged, merge, Subject, switchMap, map } from 'rxjs';
 import { EmptyState } from '../../shared/empty-state';
 import { Icon } from '../../shared/icon';
-import { BrlPipe } from '../../shared/pipes';
+import { BookKpis } from '../../shared/book-kpis';
+import { BrlPipe, PercentPipe } from '../../shared/pipes';
 import { ToastService } from '../../shared/toast.service';
 
 const PAGE_SIZE = 20;
 
 @Component({
   selector: 'vt-client-list',
-  imports: [RouterLink, Icon, EmptyState, BrlPipe],
+  imports: [RouterLink, Icon, EmptyState, BrlPipe, PercentPipe, BookKpis],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './client-list.html',
 })
@@ -28,6 +29,11 @@ export class ClientList {
   protected readonly result = signal<PagedResult<ClientListItemDto> | null>(null);
   protected readonly loading = signal(true);
   protected readonly searching = signal(false);
+
+  /** % efetivo do cliente: comissao / premio das apolices ativas. */
+  protected rateOf(c: ClientListItemDto): number | null {
+    return c.monthlyCommission != null && c.monthlyPremium > 0 ? (c.monthlyCommission / c.monthlyPremium) * 100 : null;
+  }
 
   constructor() {
     const searches = this.search$.pipe(

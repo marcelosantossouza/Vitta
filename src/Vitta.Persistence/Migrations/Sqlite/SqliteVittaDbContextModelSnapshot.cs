@@ -201,6 +201,10 @@ namespace Vitta.Persistence.Migrations.Sqlite
                     b.Property<Guid>("ClientId")
                         .HasColumnType("TEXT");
 
+                    b.Property<double?>("CommissionRate")
+                        .HasPrecision(7, 4)
+                        .HasColumnType("REAL");
+
                     b.Property<long>("CreatedAt")
                         .HasColumnType("INTEGER");
 
@@ -339,6 +343,38 @@ namespace Vitta.Persistence.Migrations.Sqlite
                     b.HasIndex("Stage");
 
                     b.ToTable("prospects", (string)null);
+                });
+
+            modelBuilder.Entity("Vitta.Domain.Settings.AiSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Effort")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("UpdatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ai_settings", (string)null);
                 });
 
             modelBuilder.Entity("Vitta.Domain.Users.User", b =>

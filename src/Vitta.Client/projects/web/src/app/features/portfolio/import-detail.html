@@ -11,6 +11,72 @@
       </div>
     </div>
 
+    @if (comparison(); as c) {
+      <div class="kpis">
+        <div class="card kpi kpi--highlight">
+          <span class="kpi__icon"><vt-icon name="trending-up" /></span>
+          <div>
+            <span class="kpi__label">Sua comissão no mês</span>
+            <strong class="kpi__value">{{ c.current.commission === null ? '—' : (c.current.commission | brl) }}</strong>
+            @if (c.commission; as v) {
+              <span class="kpi__delta" [class.kpi__delta--up]="v.diff > 0" [class.kpi__delta--down]="v.diff < 0">
+                {{ v.diff > 0 ? '▲ +' : v.diff < 0 ? '▼ ' : '' }}{{ v.diff | brl }}@if (v.percent !== null) { ({{ v.percent | pct }}) }
+              </span>
+              <span class="kpi__hint">era {{ c.previous!.commission | brl }} em {{ c.previous!.month | month }}</span>
+            } @else if (c.current.commission === null) {
+              <span class="kpi__hint">a planilha não traz comissão nem %</span>
+            } @else if (!c.previous) {
+              <span class="kpi__hint">primeiro mês importado</span>
+            } @else {
+              <span class="kpi__hint">mês anterior sem comissão para comparar</span>
+            }
+          </div>
+        </div>
+        <div class="card kpi">
+          <span class="kpi__icon"><vt-icon name="money" /></span>
+          <div>
+            <span class="kpi__label">Prêmio da carteira</span>
+            <strong class="kpi__value">{{ c.current.premium | brl }}</strong>
+            @if (c.premium; as v) {
+              <span class="kpi__delta" [class.kpi__delta--up]="v.diff > 0" [class.kpi__delta--down]="v.diff < 0">
+                {{ v.diff > 0 ? '▲ +' : v.diff < 0 ? '▼ ' : '' }}{{ v.diff | brl }}@if (v.percent !== null) { ({{ v.percent | pct }}) }
+              </span>
+              <span class="kpi__hint">era {{ c.previous!.premium | brl }} em {{ c.previous!.month | month }}</span>
+            } @else {
+              <span class="kpi__hint">primeiro mês importado</span>
+            }
+          </div>
+        </div>
+        <div class="card kpi">
+          <span class="kpi__icon"><vt-icon name="target" /></span>
+          <div>
+            <span class="kpi__label">Comissão média</span>
+            <strong class="kpi__value">{{ c.current.averageRate | pct }}</strong>
+            @if (c.previous?.averageRate != null) {
+              <span class="kpi__hint">era {{ c.previous!.averageRate | pct }} em {{ c.previous!.month | month }}</span>
+            } @else {
+              <span class="kpi__hint">comissão ÷ prêmio</span>
+            }
+          </div>
+        </div>
+        <div class="card kpi">
+          <span class="kpi__icon"><vt-icon name="policy" /></span>
+          <div>
+            <span class="kpi__label">Apólices</span>
+            <strong class="kpi__value">{{ c.current.policies }}</strong>
+            @if (c.policies !== null) {
+              <span class="kpi__delta" [class.kpi__delta--up]="c.policies > 0" [class.kpi__delta--down]="c.policies < 0">
+                {{ c.policies > 0 ? '▲ +' + c.policies : c.policies < 0 ? '▼ ' + c.policies : 'sem variação' }}
+              </span>
+              <span class="kpi__hint">eram {{ c.previous!.policies }} em {{ c.previous!.month | month }}</span>
+            } @else {
+              <span class="kpi__hint">primeiro mês importado</span>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
     @if (d.isFirstImport) {
       <div class="alert">
         <vt-icon name="info" [size]="18" />
@@ -125,7 +191,7 @@
                   @if (cols().cpf) { <th>CPF</th> }
                   @if (cols().product) { <th>Produto</th> }
                   @if (cols().premium) { <th class="num">Prêmio</th> }
-                  @if (cols().commission) { <th class="num">Comissão</th> }
+                  @if (cols().commission) { <th class="num">% comissão</th><th class="num">Comissão</th> }
                   @if (cols().installment) { <th class="num">Parcela</th> }
                   @if (cols().status) { <th>Situação</th> }
                   @if (cols().start) { <th>Início</th> }
@@ -155,10 +221,9 @@
                     }
                     @if (cols().premium) { <td data-label="Prêmio" class="num nowrap">{{ r.monthlyPremium === null ? '—' : (r.monthlyPremium | brl) }}</td> }
                     @if (cols().commission) {
+                      <td data-label="% comissão" class="num nowrap">{{ rateOf(r) | pct: 2 }}</td>
                       <td data-label="Comissão" class="num nowrap">
-                        @if (r.commissionAmount !== null) { {{ r.commissionAmount | brl }} }
-                        @if (r.commissionRate !== null) { <span class="muted"> ({{ rate(r.commissionRate) }})</span> }
-                        @if (r.commissionAmount === null && r.commissionRate === null) { — }
+                        @if (commissionOf(r); as value) { <strong>{{ value | brl }}</strong> } @else { — }
                       </td>
                     }
                     @if (cols().installment) { <td data-label="Parcela" class="num">{{ r.installment ?? '—' }}</td> }

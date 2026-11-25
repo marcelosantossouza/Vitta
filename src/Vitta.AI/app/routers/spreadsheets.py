@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
 from app.config import Settings, get_settings
-from app.llm import LlmClient, LlmUnavailableError
+from app.llm import LlmChoice, LlmClient, LlmUnavailableError
 
 router = APIRouter(prefix="/v1/spreadsheets", tags=["spreadsheets"])
 
@@ -32,6 +32,7 @@ class AnalyzeRequest(CamelModel):
     sheet_name: str | None = None
     rows: list[list[str]] = Field(max_length=60)
     fields: list[TargetField]
+    llm: LlmChoice | None = None
 
 
 class SuggestedColumn(CamelModel):
@@ -119,10 +120,10 @@ def build_prompt(req: AnalyzeRequest) -> str:
 
 @router.post("/analyze", response_model=AnalyzeResponse, response_model_by_alias=True)
 def analyze(req: AnalyzeRequest, settings: Settings = Depends(get_settings)) -> AnalyzeResponse:
-    llm = LlmClient(settings)
+    llm = LlmClient(settings, req.llm)
     if not llm.enabled:
         # A Vitta.API trata 503 como "IA indisponivel" e usa a heuristica por nomes de coluna.
-        raise HTTPException(status_code=503, detail="IA em modo offline (sem VITTA_AI_ANTHROPIC_API_KEY).")
+        raise HTTPException(status_code=503, detail=f"IA em modo offline (sem chave para {llm.provider}).")
 
     try:
         result = llm.parse(SYSTEM_PROMPT, build_prompt(req), _Analysis)

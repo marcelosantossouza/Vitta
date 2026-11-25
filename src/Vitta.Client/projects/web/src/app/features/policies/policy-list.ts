@@ -7,12 +7,13 @@ import {
 import { debounceTime, Subject, switchMap } from 'rxjs';
 import { EmptyState } from '../../shared/empty-state';
 import { Icon } from '../../shared/icon';
-import { BrlPipe, IsoDatePipe, PolicyStatusPipe } from '../../shared/pipes';
+import { BookKpis } from '../../shared/book-kpis';
+import { BrlPipe, IsoDatePipe, PercentPipe, PolicyStatusPipe } from '../../shared/pipes';
 import { ToastService } from '../../shared/toast.service';
 
 @Component({
   selector: 'vt-policy-list',
-  imports: [RouterLink, Icon, EmptyState, BrlPipe, IsoDatePipe, PolicyStatusPipe],
+  imports: [RouterLink, Icon, EmptyState, BrlPipe, IsoDatePipe, PercentPipe, PolicyStatusPipe, BookKpis],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './policy-list.html',
 })

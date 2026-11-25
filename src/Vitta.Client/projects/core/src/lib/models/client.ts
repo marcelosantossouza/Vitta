@@ -21,6 +21,9 @@ export interface ClientListItemDto {
   email: string | null;
   activePolicyCount: number;
   monthlyPremium: number;
+  /** Comissão mensal somada das apólices ativas com %; nulo quando nenhuma tem %. */
+  monthlyCommission: number | null;
+  policiesWithoutRate: number;
 }
 
 export interface ClientDetailDto {

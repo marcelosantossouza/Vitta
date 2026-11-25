@@ -9,9 +9,11 @@ using Vitta.Application.Features.Insurers;
 using Vitta.Application.Features.Policies;
 using Vitta.Application.Features.Portfolio;
 using Vitta.Application.Features.Prospects;
+using Vitta.Application.Features.Settings;
 using Vitta.Domain.Imports;
 using Vitta.Domain.Policies;
 using Vitta.Domain.Prospects;
+using Vitta.Domain.Settings;
 
 namespace Vitta.API.Endpoints;
 
@@ -52,17 +54,18 @@ internal static class ClientEndpoints
 
 internal static class PolicyEndpoints
 {
-    public sealed record PolicyUpdateInput(string ProductName, decimal MonthlyPremium);
+    public sealed record PolicyUpdateInput(string ProductName, decimal MonthlyPremium, decimal? CommissionRate);
     public sealed record PolicyEndInput(PolicyStatus Status, DateOnly EndedOn, string? Reason);
 
     public static void MapPolicyEndpoints(this IEndpointRouteBuilder app)
     {
         var g = app.MapGroup("/policies").WithTags("Apolices");
+        g.MapGet("/summary", async (ISender s, CancellationToken ct) => Results.Ok(await s.Send(new GetBookSummaryQuery(), ct)));
         g.MapGet("/", async (Guid? clientId, Guid? insurerId, PolicyStatus? status, string? search, int? page, int? pageSize, ISender s, CancellationToken ct) =>
             Results.Ok(await s.Send(new GetPoliciesQuery(clientId, insurerId, status, search, page ?? 1, pageSize ?? 20), ct)));
         g.MapPost("/", async (CreatePolicyCommand cmd, ISender s, CancellationToken ct) => (await s.Send(cmd, ct)).ToCreated("/api/policies"));
         g.MapPut("/{id:guid}", async (Guid id, PolicyUpdateInput i, ISender s, CancellationToken ct) =>
-            (await s.Send(new UpdatePolicyCommand(id, i.ProductName, i.MonthlyPremium), ct)).ToNoContent());
+            (await s.Send(new UpdatePolicyCommand(id, i.ProductName, i.MonthlyPremium, i.CommissionRate), ct)).ToNoContent());
         g.MapPost("/{id:guid}/end", async (Guid id, PolicyEndInput i, ISender s, CancellationToken ct) =>
             (await s.Send(new EndPolicyCommand(id, i.Status, i.EndedOn, i.Reason), ct)).ToNoContent());
         g.MapPost("/{id:guid}/reactivate", async (Guid id, ISender s, CancellationToken ct) =>
@@ -194,4 +197,19 @@ internal static class ImportTemplateEndpoints
 
     private static SaveImportTemplateCommand ToCommand(Guid? id, ImportTemplateInput i) =>
         new(id, i.Name, i.Kind, i.InsurerId, i.SheetName, i.HeaderRow, i.Columns ?? [], i.CreatedByAi ?? false, i.AiNotes);
+}
+
+internal static class SettingsEndpoints
+{
+    public sealed record AiSettingsInput(AiProvider Provider, string Model, string Effort);
+
+    public static void MapSettingsEndpoints(this IEndpointRouteBuilder app)
+    {
+        var g = app.MapGroup("/settings").WithTags("Configuracoes");
+        g.MapGet("/ai", async (ISender s, CancellationToken ct) => Results.Ok(await s.Send(new GetAiSettingsQuery(), ct)));
+        g.MapPut("/ai", async (AiSettingsInput i, ISender s, CancellationToken ct) =>
+            (await s.Send(new UpdateAiSettingsCommand(i.Provider, i.Model, i.Effort), ct)).ToNoContent());
+        g.MapPost("/ai/test", async (AiSettingsInput i, ISender s, CancellationToken ct) =>
+            Results.Ok(await s.Send(new TestAiConnectionCommand(i.Provider, i.Model, i.Effort), ct)));
+    }
 }

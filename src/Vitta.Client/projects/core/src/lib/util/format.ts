@@ -69,3 +69,15 @@ export function problemMessage(error: unknown, fallback = 'Algo deu errado. Tent
   }
   return fallback;
 }
+
+/** 12.5 -> "12,5%". Nulo -> "—". */
+export function formatPercent(value: number | null | undefined, digits = 1): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return '—';
+  return `${value.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: digits })}%`;
+}
+
+/** Variação entre dois valores: diferença absoluta e % sobre o anterior (nulo quando o anterior é zero). */
+export function variation(current: number, previous: number): { diff: number; percent: number | null } {
+  const diff = Math.round((current - previous) * 100) / 100;
+  return { diff, percent: previous ? (diff / previous) * 100 : null };
+}

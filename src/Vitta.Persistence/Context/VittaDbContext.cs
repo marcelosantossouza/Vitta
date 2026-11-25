@@ -6,6 +6,7 @@ using Vitta.Domain.Insurers;
 using Vitta.Domain.Policies;
 using Vitta.Domain.Portfolio;
 using Vitta.Domain.Prospects;
+using Vitta.Domain.Settings;
 using Vitta.Domain.Users;
 
 namespace Vitta.Persistence.Context;
@@ -24,6 +25,7 @@ public abstract class VittaDbContext(DbContextOptions options) : DbContext(optio
     public DbSet<PortfolioImport> PortfolioImports => Set<PortfolioImport>();
     public DbSet<User> Users => Set<User>();
     public DbSet<ImportTemplate> ImportTemplates => Set<ImportTemplate>();
+    public DbSet<AiSettings> AiSettings => Set<AiSettings>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) =>
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(VittaDbContext).Assembly);

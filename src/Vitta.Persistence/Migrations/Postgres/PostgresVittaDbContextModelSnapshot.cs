@@ -207,6 +207,10 @@ namespace Vitta.Persistence.Migrations.Postgres
                     b.Property<Guid>("ClientId")
                         .HasColumnType("uuid");
 
+                    b.Property<decimal?>("CommissionRate")
+                        .HasPrecision(7, 4)
+                        .HasColumnType("numeric(7,4)");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -345,6 +349,38 @@ namespace Vitta.Persistence.Migrations.Postgres
                     b.HasIndex("Stage");
 
                     b.ToTable("prospects", "vitta");
+                });
+
+            modelBuilder.Entity("Vitta.Domain.Settings.AiSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Effort")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ai_settings", "vitta");
                 });
 
             modelBuilder.Entity("Vitta.Domain.Users.User", b =>

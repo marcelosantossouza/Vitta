@@ -11,7 +11,23 @@ namespace Vitta.Application.Features.Policies;
 
 public sealed record PolicyDto(
     Guid Id, Guid ClientId, string ClientName, Guid InsurerId, string InsurerName, string PolicyNumber, string ProductName,
-    decimal MonthlyPremium, DateOnly IssuedOn, PolicyStatus Status, DateOnly? EndedOn, string? EndReason);
+    decimal MonthlyPremium, DateOnly IssuedOn, PolicyStatus Status, DateOnly? EndedOn, string? EndReason,
+    decimal? CommissionRate, decimal? MonthlyCommission);
+
+/// <summary>Numeros da carteira cadastrada para os cards de Clientes e Apolices (so apolices ativas entram nos valores).</summary>
+/// <param name="MonthlyCommission">Soma da comissao das apolices ativas que tem percentual.</param>
+/// <param name="AverageCommissionRate">Comissao / premio das apolices com percentual (media ponderada pelo premio).</param>
+/// <param name="ActiveWithoutRate">Apolices ativas sem percentual: enquanto houver, o total de comissao esta incompleto.</param>
+public sealed record BookSummaryDto(
+    int TotalClients, int ClientsWithActivePolicies, int ActivePolicies, int EndedPolicies,
+    decimal MonthlyPremium, decimal MonthlyCommission, decimal? AverageCommissionRate, int ActiveWithoutRate);
+
+public sealed record GetBookSummaryQuery : IQuery<BookSummaryDto>;
+
+public sealed class GetBookSummaryHandler(IPolicyQueries queries) : IQueryHandler<GetBookSummaryQuery, BookSummaryDto>
+{
+    public async ValueTask<BookSummaryDto> Handle(GetBookSummaryQuery q, CancellationToken ct) => await queries.SummaryAsync(ct);
+}
 
 // ---- Listar ----
 public sealed record GetPoliciesQuery(Guid? ClientId, Guid? InsurerId, PolicyStatus? Status, string? Search, int Page = 1, int PageSize = 20)
@@ -27,7 +43,8 @@ public sealed class GetPoliciesHandler(IPolicyQueries queries) : IQueryHandler<G
 }
 
 // ---- Criar ----
-public sealed record CreatePolicyCommand(Guid ClientId, Guid InsurerId, string PolicyNumber, string ProductName, decimal MonthlyPremium, DateOnly IssuedOn)
+public sealed record CreatePolicyCommand(
+    Guid ClientId, Guid InsurerId, string PolicyNumber, string ProductName, decimal MonthlyPremium, DateOnly IssuedOn, decimal? CommissionRate = null)
     : ICommand<Result<Guid>>;
 
 internal sealed class CreatePolicyValidator : AbstractValidator<CreatePolicyCommand>
@@ -62,7 +79,7 @@ public sealed class CreatePolicyHandler(IPolicyRepository policies, IClientRepos
             return PolicyErrors.NumberAlreadyExists;
         }
 
-        var result = Policy.Create(c.ClientId, c.InsurerId, c.PolicyNumber, c.ProductName, c.MonthlyPremium, c.IssuedOn);
+        var result = Policy.Create(c.ClientId, c.InsurerId, c.PolicyNumber, c.ProductName, c.MonthlyPremium, c.IssuedOn, c.CommissionRate);
         if (result.IsFailure)
         {
             return result.Error;
@@ -75,7 +92,7 @@ public sealed class CreatePolicyHandler(IPolicyRepository policies, IClientRepos
 }
 
 // ---- Atualizar ----
-public sealed record UpdatePolicyCommand(Guid Id, string ProductName, decimal MonthlyPremium) : ICommand<Result>;
+public sealed record UpdatePolicyCommand(Guid Id, string ProductName, decimal MonthlyPremium, decimal? CommissionRate = null) : ICommand<Result>;
 
 internal sealed class UpdatePolicyValidator : AbstractValidator<UpdatePolicyCommand>
 {
@@ -90,7 +107,7 @@ public sealed class UpdatePolicyHandler(IPolicyRepository policies, IUnitOfWork 
 {
     public async ValueTask<Result> Handle(UpdatePolicyCommand c, CancellationToken ct) =>
         await policies.GetByIdAsync(c.Id, ct) is { } policy
-            ? await SaveIfOk(policy.Update(c.ProductName, c.MonthlyPremium), uow, ct)
+            ? await SaveIfOk(policy.Update(c.ProductName, c.MonthlyPremium, c.CommissionRate), uow, ct)
             : PolicyErrors.NotFound(c.Id);
 
     internal static async Task<Result> SaveIfOk(Result result, IUnitOfWork uow, CancellationToken ct)

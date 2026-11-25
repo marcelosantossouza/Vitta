@@ -35,6 +35,7 @@ export const routes: Routes = [
       { path: 'modelos/novo', title: 'Novo modelo — Vitta', loadComponent: () => import('./features/import-templates/template-wizard').then(m => m.TemplateWizard) },
       { path: 'modelos/:id', title: 'Editar modelo — Vitta', loadComponent: () => import('./features/import-templates/template-wizard').then(m => m.TemplateWizard) },
       { path: 'seguradoras', title: 'Seguradoras — Vitta', loadComponent: () => import('./features/insurers/insurers').then(m => m.Insurers) },
+      { path: 'configuracoes', title: 'Configurações — Vitta', loadComponent: () => import('./features/settings/settings-page').then(m => m.SettingsPage) },
     ],
   },
   { path: '**', redirectTo: '' },
