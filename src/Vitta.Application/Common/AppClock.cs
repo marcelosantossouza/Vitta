@@ -8,6 +8,9 @@ public static class AppClock
     public static DateOnly Today(this TimeProvider time) =>
         DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(time.GetUtcNow(), Brazil).DateTime);
 
+    /// <summary>Data e hora atuais no horario de Brasilia (agendamentos).</summary>
+    public static DateTime LocalNow(this TimeProvider time) => TimeZoneInfo.ConvertTime(time.GetUtcNow(), Brazil).DateTime;
+
     private static TimeZoneInfo FindBrazilTimeZone()
     {
         try

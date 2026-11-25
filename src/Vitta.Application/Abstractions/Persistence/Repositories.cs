@@ -88,3 +88,10 @@ public interface IAiSettingsRepository
     Task<AiSettings?> GetAsync(CancellationToken ct = default);
     void Add(AiSettings settings);
 }
+
+public interface INotificationSettingsRepository
+{
+    /// <summary>Configuracao do e-mail diario (nula = ninguem configurou ainda).</summary>
+    Task<NotificationSettings?> GetAsync(CancellationToken ct = default);
+    void Add(NotificationSettings settings);
+}

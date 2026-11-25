@@ -51,6 +51,7 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IImportTemplateRepository, ImportTemplateRepository>();
         services.AddScoped<IAiSettingsRepository, AiSettingsRepository>();
+        services.AddScoped<INotificationSettingsRepository, NotificationSettingsRepository>();
 
         // Leitura
         services.AddScoped<IClientQueries, ClientQueries>();

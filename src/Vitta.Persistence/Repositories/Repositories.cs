@@ -119,3 +119,10 @@ internal sealed class AiSettingsRepository(VittaDbContext db) : IAiSettingsRepos
     public Task<AiSettings?> GetAsync(CancellationToken ct = default) => db.AiSettings.FirstOrDefaultAsync(x => x.Id == AiSettings.SingletonId, ct);
     public void Add(AiSettings settings) => db.AiSettings.Add(settings);
 }
+
+internal sealed class NotificationSettingsRepository(VittaDbContext db) : INotificationSettingsRepository
+{
+    public Task<NotificationSettings?> GetAsync(CancellationToken ct = default) =>
+        db.NotificationSettings.FirstOrDefaultAsync(x => x.Id == NotificationSettings.SingletonId, ct);
+    public void Add(NotificationSettings settings) => db.NotificationSettings.Add(settings);
+}

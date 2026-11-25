@@ -383,6 +383,37 @@ namespace Vitta.Persistence.Migrations.Postgres
                     b.ToTable("ai_settings", "vitta");
                 });
 
+            modelBuilder.Entity("Vitta.Domain.Settings.NotificationSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("DailyEmailEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateOnly?>("LastSentOn")
+                        .HasColumnType("date");
+
+                    b.Property<string>("RecipientList")
+                        .IsRequired()
+                        .HasMaxLength(4200)
+                        .HasColumnType("character varying(4200)");
+
+                    b.Property<TimeOnly>("SendAt")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("notification_settings", "vitta");
+                });
+
             modelBuilder.Entity("Vitta.Domain.Users.User", b =>
                 {
                     b.Property<Guid>("Id")

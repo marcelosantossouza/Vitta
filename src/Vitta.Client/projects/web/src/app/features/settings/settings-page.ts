@@ -4,13 +4,14 @@ import {
   problemMessage, SettingsApi, toAiProviderEnum,
 } from '@vitta/core';
 import { Icon } from '../../shared/icon';
+import { NotificationSettings } from './notification-settings';
 import { ToastService } from '../../shared/toast.service';
 
 const CUSTOM = '__custom__';
 
 @Component({
   selector: 'vt-settings-page',
-  imports: [Icon],
+  imports: [Icon, NotificationSettings],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './settings-page.html',
   styleUrl: './settings-page.scss',

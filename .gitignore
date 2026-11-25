@@ -33,3 +33,7 @@ __pycache__/
 *.db
 *.db-shm
 *.db-wal
+
+# Backups e credenciais do rclone (producao)
+/backups/
+/deploy/backup/rclone/

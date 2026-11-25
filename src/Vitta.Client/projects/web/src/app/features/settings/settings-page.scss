@@ -10,3 +10,4 @@
 }
 code { font-size: 0.85em; }
 .form-actions { display: flex; gap: 0.6rem; justify-content: flex-end; flex-wrap: wrap; }
+.page > section + vt-notification-settings { display: block; margin-top: 1rem; }

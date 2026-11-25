@@ -52,3 +52,21 @@ export const AI_EFFORT_LABELS: Record<AiEffort, string> = {
 export function toAiProviderEnum(id: AiProviderId): AiProviderEnum {
   return id === 'groq' ? 'Groq' : 'Anthropic';
 }
+
+/** E-mail diário com o resumo da corretora. */
+export interface NotificationSettingsDto {
+  dailyEmailEnabled: boolean;
+  recipients: string[];
+  /** "HH:mm", horário de Brasília. */
+  sendAt: string;
+  lastSentOn: string | null;
+  /** SMTP configurado no servidor (.env). */
+  emailConfigured: boolean;
+  emailFrom: string | null;
+}
+
+export interface NotificationSettingsInput {
+  dailyEmailEnabled: boolean;
+  recipients: string[];
+  sendAt: string;
+}

@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_BASE_URL } from '../config/api-config';
-import { AiConnectionTest, AiSettingsDto, AiSettingsInput } from '../models/settings';
+import { AiConnectionTest, AiSettingsDto, AiSettingsInput, NotificationSettingsDto, NotificationSettingsInput } from '../models/settings';
 
 @Injectable({ providedIn: 'root' })
 export class SettingsApi {
@@ -19,5 +19,18 @@ export class SettingsApi {
 
   testAi(input: AiSettingsInput): Observable<AiConnectionTest> {
     return this.http.post<AiConnectionTest>(`${this.baseUrl}/ai/test`, input);
+  }
+
+  getNotifications(): Observable<NotificationSettingsDto> {
+    return this.http.get<NotificationSettingsDto>(`${this.baseUrl}/notifications`);
+  }
+
+  saveNotifications(input: NotificationSettingsInput): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/notifications`, input);
+  }
+
+  /** Envia o resumo agora para a lista salva; devolve quantos destinatários. */
+  sendDigestNow(): Observable<number> {
+    return this.http.post<number>(`${this.baseUrl}/notifications/send-now`, {});
   }
 }

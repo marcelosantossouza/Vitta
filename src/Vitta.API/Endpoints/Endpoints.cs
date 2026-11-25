@@ -6,6 +6,7 @@ using Vitta.Application.Features.Clients;
 using Vitta.Application.Features.Dashboard;
 using Vitta.Application.Features.Imports;
 using Vitta.Application.Features.Insurers;
+using Vitta.Application.Features.Notifications;
 using Vitta.Application.Features.Policies;
 using Vitta.Application.Features.Portfolio;
 using Vitta.Application.Features.Prospects;
@@ -203,6 +204,7 @@ internal static class ImportTemplateEndpoints
 internal static class SettingsEndpoints
 {
     public sealed record AiSettingsInput(AiProvider Provider, string Model, string Effort);
+    public sealed record NotificationsInput(bool DailyEmailEnabled, IReadOnlyList<string>? Recipients, string SendAt);
 
     public static void MapSettingsEndpoints(this IEndpointRouteBuilder app)
     {
@@ -212,5 +214,11 @@ internal static class SettingsEndpoints
             (await s.Send(new UpdateAiSettingsCommand(i.Provider, i.Model, i.Effort), ct)).ToNoContent());
         g.MapPost("/ai/test", async (AiSettingsInput i, ISender s, CancellationToken ct) =>
             Results.Ok(await s.Send(new TestAiConnectionCommand(i.Provider, i.Model, i.Effort), ct)));
+
+        g.MapGet("/notifications", async (ISender s, CancellationToken ct) => Results.Ok(await s.Send(new GetNotificationSettingsQuery(), ct)));
+        g.MapPut("/notifications", async (NotificationsInput i, ISender s, CancellationToken ct) =>
+            (await s.Send(new UpdateNotificationSettingsCommand(i.DailyEmailEnabled, i.Recipients ?? [], i.SendAt), ct)).ToNoContent());
+        g.MapPost("/notifications/send-now", async (ISender s, CancellationToken ct) =>
+            (await s.Send(new SendDailyDigestCommand(Scheduled: false), ct)).ToOk());
     }
 }

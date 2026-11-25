@@ -4,9 +4,11 @@ using Microsoft.Extensions.Options;
 using Vitta.Application.Abstractions.Ai;
 using Vitta.Application.Abstractions.Auth;
 using Vitta.Application.Abstractions.Imports;
+using Vitta.Application.Abstractions.Notifications;
 using Vitta.Infrastructure.Ai;
 using Vitta.Infrastructure.Auth;
 using Vitta.Infrastructure.Imports;
+using Vitta.Infrastructure.Notifications;
 
 namespace Vitta.Infrastructure;
 
@@ -31,6 +33,8 @@ public static class DependencyInjection
 
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<ISpreadsheetReader, SpreadsheetReader>();
+        services.Configure<EmailOptions>(configuration.GetSection(EmailOptions.SectionName));
+        services.AddSingleton<IEmailSender, SmtpEmailSender>();
         return services;
     }
 }

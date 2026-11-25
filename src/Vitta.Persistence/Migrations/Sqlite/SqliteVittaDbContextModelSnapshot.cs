@@ -377,6 +377,37 @@ namespace Vitta.Persistence.Migrations.Sqlite
                     b.ToTable("ai_settings", (string)null);
                 });
 
+            modelBuilder.Entity("Vitta.Domain.Settings.NotificationSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("DailyEmailEnabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateOnly?>("LastSentOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RecipientList")
+                        .IsRequired()
+                        .HasMaxLength(4200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<TimeOnly>("SendAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("UpdatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("notification_settings", (string)null);
+                });
+
             modelBuilder.Entity("Vitta.Domain.Users.User", b =>
                 {
                     b.Property<Guid>("Id")

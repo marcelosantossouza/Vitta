@@ -26,6 +26,7 @@ public abstract class VittaDbContext(DbContextOptions options) : DbContext(optio
     public DbSet<User> Users => Set<User>();
     public DbSet<ImportTemplate> ImportTemplates => Set<ImportTemplate>();
     public DbSet<AiSettings> AiSettings => Set<AiSettings>();
+    public DbSet<NotificationSettings> NotificationSettings => Set<NotificationSettings>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) =>
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(VittaDbContext).Assembly);
