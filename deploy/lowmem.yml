@@ -1,0 +1,32 @@
+# Modo economico para maquinas de 1 GB de RAM (ex.: Oracle VM.Standard.E2.1.Micro). Use junto com o compose de producao:
+#   docker compose -f docker-compose.prod.yml -f deploy/lowmem.yml up -d --no-build
+# As imagens NAO sao montadas no servidor (lento demais em 1 GB): venha prontas do seu computador com
+# scripts/ship-images.sh. Os limites somam ~770 MB (teto, nao consumo: medido ~480 MB com 300 apolices);
+# o resto fica para o sistema e o swap cobre picos.
+services:
+  postgres:
+    command: >
+      postgres -c shared_buffers=32MB -c effective_cache_size=128MB -c work_mem=2MB
+      -c maintenance_work_mem=16MB -c max_connections=20 -c max_wal_size=256MB
+    mem_limit: 160m
+
+  api:
+    image: vitta-api:latest
+    environment:
+      # GC de estacao de trabalho: bem menos memoria que o GC de servidor (padrao do ASP.NET).
+      DOTNET_gcServer: "0"
+      DOTNET_GCConserveMemory: "5"
+      DOTNET_TieredPGO: "0"
+    mem_limit: 320m
+
+  ai:
+    image: vitta-ai:latest
+    mem_limit: 128m
+
+  backup:
+    image: vitta-backup:latest
+    mem_limit: 64m
+
+  web:
+    image: vitta-web:latest
+    mem_limit: 96m
