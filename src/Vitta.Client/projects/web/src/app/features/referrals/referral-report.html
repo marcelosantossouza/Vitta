@@ -1,0 +1,177 @@
+<div class="page">
+  <div class="page-header no-print">
+    <div>
+      <a class="back" routerLink="/indicacoes"><vt-icon name="chevron-left" [size]="16" /> Indicações</a>
+      <h1>{{ report()?.group?.name ?? 'Indicação' }}
+        @if (report()?.group?.code; as code) { <span class="badge">{{ code }}</span> }</h1>
+    </div>
+    <div class="actions">
+      <button class="btn" type="button" (click)="dialog.set('edit')" [disabled]="!report()"><vt-icon name="edit" [size]="16" /> Editar</button>
+      <button class="btn" type="button" (click)="openAdd()"><vt-icon name="user-plus" [size]="16" /> Adicionar segurados</button>
+      <button class="btn btn--primary" type="button" (click)="exportPdf()" [disabled]="!report()"><vt-icon name="upload" [size]="16" /> Exportar PDF</button>
+    </div>
+  </div>
+
+  <div class="toolbar no-print">
+    <label class="inline">Mês
+      <input type="month" [value]="month()" (change)="changeMonth($any($event.target).value)" />
+    </label>
+    <label class="toggle">
+      <input type="checkbox" [checked]="showValues()" (change)="showValues.set($any($event.target).checked)" />
+      Mostrar valores por pessoa (também no PDF)
+    </label>
+  </div>
+
+  @if (loading() && !report()) {
+    <div class="kpis">@for (i of [1, 2, 3, 4]; track i) { <div class="card kpi"><div class="skeleton" style="height: 2.6rem"></div></div> }</div>
+  } @else if (report(); as r) {
+    <!-- Cabecalho que so aparece no PDF -->
+    <header class="print-only print-head">
+      <div>
+        <h1>Relatório de indicação · {{ r.month | month }}</h1>
+        <p><strong>{{ r.group.name }}</strong>@if (r.group.code) { · código {{ r.group.code }} }</p>
+      </div>
+      <p class="muted small">Gerado em {{ generatedAt }}</p>
+    </header>
+
+    <div class="kpis">
+      <div class="card kpi">
+        <span class="kpi__icon"><vt-icon name="users" /></span>
+        <div><span class="kpi__label">Segurados ativos</span><strong class="kpi__value">{{ r.activeMembers }}</strong>
+          <span class="kpi__hint">{{ r.newPolicies }} nova(s) · {{ r.cancelledPolicies }} cancelada(s) no mês</span></div>
+      </div>
+      <div class="card kpi">
+        <span class="kpi__icon"><vt-icon name="money" /></span>
+        <div><span class="kpi__label">Prêmio mensal</span><strong class="kpi__value">{{ r.premium | brl }}</strong>
+          <span class="kpi__hint">apólices valendo no fim do mês</span></div>
+      </div>
+      <div class="card kpi">
+        <span class="kpi__icon"><vt-icon name="trending-up" /></span>
+        <div><span class="kpi__label">Comissão da corretora</span>
+          <strong class="kpi__value">{{ r.commission === null ? '—' : (r.commission | brl) }}</strong>
+          <span class="kpi__hint">{{ r.commissionBase === 'Planilhas' ? 'pelas planilhas das seguradoras' : 'estimada (prêmio × %)' }}
+            @if (r.commissionBase === 'Apólices' && r.policiesWithoutRate) { · {{ r.policiesWithoutRate }} apólice(s) sem % }</span></div>
+      </div>
+      <div class="card kpi kpi--highlight">
+        <span class="kpi__icon"><vt-icon name="link" /></span>
+        <div><span class="kpi__label">{{ r.group.shareLabel }} @if (r.group.sharePercent !== null) { ({{ r.group.sharePercent | pct }} da comissão) }</span>
+          <strong class="kpi__value">{{ r.share === null ? '—' : (r.share | brl) }}</strong>
+          <span class="kpi__hint">@if (r.group.sharePercent === null) { sem percentual definido } @else { referente a {{ r.month | month }} }</span></div>
+      </div>
+    </div>
+
+    <section class="card">
+      <div class="card__header"><h2>Últimos 12 meses</h2></div>
+      <div class="table-wrap">
+        <table class="history">
+          <thead><tr><th>Mês</th><th class="num">Ativos</th><th class="num">Prêmio</th><th class="num">Comissão</th><th class="num">{{ r.group.shareLabel }}</th><th class="bar-col no-print"></th></tr></thead>
+          <tbody>
+            @for (h of r.history; track h.month) {
+              <tr [class.current]="h.month === r.month">
+                <td>{{ h.month | month }}</td>
+                <td class="num">{{ h.activeMembers }}</td>
+                <td class="num">{{ h.premium | brl }}</td>
+                <td class="num">{{ h.commission === null ? '—' : (h.commission | brl) }}</td>
+                <td class="num">{{ h.share === null ? '—' : (h.share | brl) }}</td>
+                <td class="bar-col no-print"><span class="bar" [style.width.%]="(h.premium / maxShare()) * 100"></span></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card__header"><h2>Segurados ({{ r.members.length }})</h2></div>
+      @if (r.members.length === 0) {
+        <p class="muted">Nenhum segurado nesta indicação. <button class="link-btn no-print" type="button" (click)="openAdd()">Adicionar segurados</button></p>
+      } @else {
+        <div class="table-wrap">
+          <table class="members">
+            <thead>
+              <tr>
+                <th>Nome</th><th>Situação</th><th>Desde</th><th>Produto(s)</th>
+                @if (showValues()) { <th class="num">Prêmio</th><th class="num">Comissão</th> }
+                <th class="no-print"></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (m of r.members; track m.clientId) {
+                <tr>
+                  <td><a class="name" [routerLink]="['/clientes', m.clientId]">{{ m.name }}</a></td>
+                  <td>
+                    <span class="badge" [class.badge--success]="m.status === 'Ativo'" [class.badge--danger]="m.status === 'Cancelado'">{{ m.status }}</span>
+                  </td>
+                  <td class="nowrap">{{ m.since | isoDate }}</td>
+                  <td>
+                    @for (p of m.policies; track p.id) {
+                      <span class="product">{{ p.productName }} <span class="muted">({{ p.insurerName }})</span>
+                        @if (p.status !== 'Ativa') { <span class="badge" [class.badge--info]="p.status === 'Nova'" [class.badge--danger]="p.status === 'Cancelada'">{{ p.status }}</span> }</span>
+                    } @empty { <span class="muted">—</span> }
+                  </td>
+                  @if (showValues()) {
+                    <td class="num nowrap">{{ m.monthlyPremium | brl }}</td>
+                    <td class="num nowrap">{{ (m.importedCommission ?? m.monthlyCommission) === null ? '—' : ((m.importedCommission ?? m.monthlyCommission) | brl) }}</td>
+                  }
+                  <td class="no-print">
+                    <button class="btn btn--ghost btn--icon btn--sm" type="button" (click)="removeMember(m.clientId, m.name)" [attr.aria-label]="'Tirar ' + m.name"><vt-icon name="x" [size]="14" /></button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+
+    <p class="muted small foot">
+      Comissão {{ r.commissionBase === 'Planilhas' ? 'conforme as planilhas mensais das seguradoras' : 'estimada pelo prêmio e percentual das apólices' }}.
+      @if (r.group.sharePercent !== null) { {{ r.group.shareLabel }} = {{ r.group.sharePercent | pct }} da comissão da corretora. }
+      Documento sem CPF ou dados de contato dos segurados.
+    </p>
+
+    <div class="danger-zone no-print">
+      <button class="btn btn--ghost btn--sm" type="button" (click)="removeGroup()"><vt-icon name="trash" [size]="14" /> Excluir esta indicação</button>
+    </div>
+  }
+</div>
+
+@if (dialog() === 'edit' && report(); as r) {
+  <vt-referral-form [group]="r.group" (closed)="dialog.set(null)" (saved)="saved()" />
+}
+
+@if (dialog() === 'add') {
+  <div class="dialog-backdrop" (click)="closeDialog()">
+    <div class="dialog" (click)="$event.stopPropagation()">
+      <div class="dialog__header">
+        <h2>Adicionar segurados</h2>
+        <button class="btn btn--ghost btn--icon" type="button" (click)="closeDialog()" aria-label="Fechar"><vt-icon name="x" /></button>
+      </div>
+      <label class="search">
+        <vt-icon name="search" [size]="18" />
+        <input type="search" placeholder="Buscar cliente por nome ou CPF" [value]="search()" (input)="typed($any($event.target).value)" />
+      </label>
+      <div class="pick-list">
+        @if (candidates() === null) {
+          <div class="skeleton" style="height: 8rem"></div>
+        } @else {
+          @for (c of candidates(); track c.id) {
+            <label class="pick" [class.in]="c.referralGroupId === id()">
+              <input type="checkbox" [checked]="picked().has(c.id)" [disabled]="c.referralGroupId === id()" (change)="toggle(c.id, $any($event.target).checked)" />
+              <span><strong>{{ c.fullName }}</strong>
+                <span class="muted small block">{{ c.activePolicyCount }} apólice(s) ativa(s)
+                  @if (c.referralGroupId === id()) { · já está nesta indicação }
+                  @else if (c.referralGroupName) { · <span class="warn">hoje em "{{ c.referralGroupName }}" (vai mudar)</span> }</span></span>
+            </label>
+          } @empty { <p class="muted">Nenhum cliente encontrado.</p> }
+        }
+      </div>
+      <div class="form-actions">
+        <button class="btn" type="button" (click)="closeDialog()">Cancelar</button>
+        <button class="btn btn--primary" type="button" (click)="addPicked()" [disabled]="busy() || picked().size === 0">
+          <vt-icon name="check" [size]="16" /> Adicionar {{ picked().size || '' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

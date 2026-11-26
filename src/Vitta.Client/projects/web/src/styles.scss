@@ -304,3 +304,12 @@ a.kpi__hint { color: var(--vt-primary); font-weight: 550; }
 .kpis + .toolbar, .kpis + .card, .kpis + section { margin-top: 1rem; }
 .kpi__hint a { color: var(--vt-primary); font-weight: 550; text-decoration: none; }
 .kpi--highlight .kpi__hint a { color: #fff; }
+
+/* ---------- Impressao / PDF: so o conteudo da pagina ---------- */
+@media print {
+  vt-shell { display: block !important; }
+  vt-shell .sidebar, vt-shell .topbar, vt-shell .backdrop, vt-toast-container { display: none !important; }
+  vt-shell .content { padding: 0 !important; max-width: none !important; }
+  body { background: #fff !important; }
+  @page { margin: 14mm 12mm; }
+}

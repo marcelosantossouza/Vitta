@@ -24,6 +24,9 @@ export interface ClientListItemDto {
   /** Comissão mensal somada das apólices ativas com %; nulo quando nenhuma tem %. */
   monthlyCommission: number | null;
   policiesWithoutRate: number;
+  /** Grupo de indicação (carimbo). */
+  referralGroupId?: string | null;
+  referralGroupName?: string | null;
 }
 
 export interface ClientDetailDto {
@@ -36,4 +39,6 @@ export interface ClientDetailDto {
   notes: string | null;
   createdAt: string;
   policies: PolicyDto[];
+  referralGroupId?: string | null;
+  referralGroupName?: string | null;
 }

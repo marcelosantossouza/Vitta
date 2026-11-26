@@ -36,7 +36,7 @@ internal sealed class ClientQueries(VittaDbContext db) : IClientQueries
 
         var total = await query.CountAsync(ct);
         var clients = await query.OrderBy(c => c.SearchName).Skip((page - 1) * pageSize).Take(pageSize)
-            .Select(c => new { c.Id, c.FullName, c.Cpf, c.Phone, c.Email })
+            .Select(c => new { c.Id, c.FullName, c.Cpf, c.Phone, c.Email, c.ReferralGroupId })
             .ToListAsync(ct);
 
         var ids = clients.Select(c => c.Id).ToList();
@@ -50,10 +50,14 @@ internal sealed class ClientQueries(VittaDbContext db) : IClientQueries
             Commission: g.Any(x => x.CommissionRate is not null) ? g.Sum(x => Policy.CommissionOf(x.MonthlyPremium, x.CommissionRate) ?? 0) : (decimal?)null,
             WithoutRate: g.Count(x => x.CommissionRate is null)));
 
+        var groupIds = clients.Where(c => c.ReferralGroupId != null).Select(c => c.ReferralGroupId!.Value).Distinct().ToList();
+        var groups = await db.ReferralGroups.AsNoTracking().Where(g => groupIds.Contains(g.Id)).ToDictionaryAsync(g => g.Id, g => g.Name, ct);
+
         var items = clients.Select(c =>
         {
             var (count, sum, commission, withoutRate) = byClient.GetValueOrDefault(c.Id);
-            return new ClientListItemDto(c.Id, c.FullName, c.Cpf.Formatted, c.Phone, c.Email, count, sum, commission, withoutRate);
+            return new ClientListItemDto(c.Id, c.FullName, c.Cpf.Formatted, c.Phone, c.Email, count, sum, commission, withoutRate,
+                c.ReferralGroupId, c.ReferralGroupId is { } g ? groups.GetValueOrDefault(g) : null);
         }).ToList();
 
         return new PagedResult<ClientListItemDto>(items, page, pageSize, total);
@@ -70,8 +74,11 @@ internal sealed class ClientQueries(VittaDbContext db) : IClientQueries
         var policies = await PolicyQueries.Project(db, db.Policies.AsNoTracking().Where(p => p.ClientId == id))
             .ToListAsync(ct);
 
+        var groupName = c.ReferralGroupId is { } gid
+            ? await db.ReferralGroups.AsNoTracking().Where(g => g.Id == gid).Select(g => g.Name).FirstOrDefaultAsync(ct)
+            : null;
         return new ClientDetailDto(c.Id, c.FullName, c.Cpf.Formatted, c.BirthDate, c.Email, c.Phone, c.Notes, c.CreatedAt,
-            policies.OrderBy(p => p.Status).ThenByDescending(p => p.IssuedOn).ToList());
+            policies.OrderBy(p => p.Status).ThenByDescending(p => p.IssuedOn).ToList(), c.ReferralGroupId, groupName);
     }
 }
 

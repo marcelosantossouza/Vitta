@@ -35,6 +35,14 @@ entra no funil com origem (`?origem=`), autorização registrada e contato no pr
 3. Simulação de preço na página (precisa da tabela de produtos MAG).
 4. Pedido de exclusão de dados pelo próprio lead (LGPD art. 18).
 
+### Indicações
+
+Feito: grupos de indicação (pessoa, empresa, sindicato ou código), carimbo dos segurados, relatório mensal com
+percentual de nome livre e PDF.
+
+1. Acesso do parceiro (login só com o painel dele), se o formato do repasse for confirmado com o contador.
+2. Vincular prospects à indicação e levar o vínculo na conversão em cliente.
+
 ## Carteira
 
 1. **Campos personalizados** (catálogo de campos com nome, tipo e descrição + valores em JSONB), para que colunas

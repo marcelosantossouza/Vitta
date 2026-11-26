@@ -56,6 +56,9 @@ namespace Vitta.Persistence.Migrations.Postgres
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
 
+                    b.Property<Guid?>("ReferralGroupId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("SearchName")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -68,6 +71,8 @@ namespace Vitta.Persistence.Migrations.Postgres
 
                     b.HasIndex("Cpf")
                         .IsUnique();
+
+                    b.HasIndex("ReferralGroupId");
 
                     b.HasIndex("SearchName");
 
@@ -470,6 +475,48 @@ namespace Vitta.Persistence.Migrations.Postgres
                     b.HasKey("Id");
 
                     b.ToTable("prospect_imports", "vitta");
+                });
+
+            modelBuilder.Entity("Vitta.Domain.Referrals.ReferralGroup", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Code")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("ShareLabel")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<decimal?>("SharePercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("referral_groups", "vitta");
                 });
 
             modelBuilder.Entity("Vitta.Domain.Settings.AiSettings", b =>

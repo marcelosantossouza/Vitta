@@ -6,8 +6,8 @@ namespace Vitta.Application.Features.Clients;
 /// <param name="PoliciesWithoutRate">Apolices ativas ainda sem percentual de comissao (o total de comissao fica incompleto).</param>
 public sealed record ClientListItemDto(
     Guid Id, string FullName, string Cpf, string? Phone, string? Email, int ActivePolicyCount, decimal MonthlyPremium,
-    decimal? MonthlyCommission, int PoliciesWithoutRate);
+    decimal? MonthlyCommission, int PoliciesWithoutRate, Guid? ReferralGroupId = null, string? ReferralGroupName = null);
 
 public sealed record ClientDetailDto(
     Guid Id, string FullName, string Cpf, DateOnly? BirthDate, string? Email, string? Phone, string? Notes,
-    DateTimeOffset CreatedAt, IReadOnlyList<PolicyDto> Policies);
+    DateTimeOffset CreatedAt, IReadOnlyList<PolicyDto> Policies, Guid? ReferralGroupId = null, string? ReferralGroupName = null);

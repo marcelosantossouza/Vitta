@@ -26,6 +26,9 @@ public sealed class Client : AggregateRoot
     public string? Phone { get; private set; }
     public string? Notes { get; private set; }
 
+    /// <summary>Grupo de indicacao que trouxe este segurado (pessoa, empresa, sindicato ou codigo).</summary>
+    public Guid? ReferralGroupId { get; private set; }
+
     public static Result<Client> Create(string fullName, string cpf, DateOnly? birthDate, string? email, string? phone)
     {
         if (string.IsNullOrWhiteSpace(fullName))
@@ -54,6 +57,17 @@ public sealed class Client : AggregateRoot
     }
 
     /// <summary>Atualiza os dados cadastrais. O CPF nao muda (identifica o cliente nas seguradoras).</summary>
+    public void AssignReferral(Guid? referralGroupId)
+    {
+        if (ReferralGroupId == referralGroupId)
+        {
+            return;
+        }
+
+        ReferralGroupId = referralGroupId;
+        Touch();
+    }
+
     public Result Update(string fullName, DateOnly? birthDate, string? email, string? phone, string? notes)
     {
         if (string.IsNullOrWhiteSpace(fullName))

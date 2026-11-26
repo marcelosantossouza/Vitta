@@ -15,7 +15,7 @@
   </div>
 
   <nav aria-label="Menu principal">
-    @for (group of groups; track group.title) {
+    @for (group of groups(); track group.title) {
       <div class="group">
         @if (group.title) { <span class="group__title">{{ group.title }}</span> }
         @for (item of group.items; track item.path) {

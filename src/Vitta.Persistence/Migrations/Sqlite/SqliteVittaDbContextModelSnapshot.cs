@@ -50,6 +50,9 @@ namespace Vitta.Persistence.Migrations.Sqlite
                         .HasMaxLength(30)
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("ReferralGroupId")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("SearchName")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -62,6 +65,8 @@ namespace Vitta.Persistence.Migrations.Sqlite
 
                     b.HasIndex("Cpf")
                         .IsUnique();
+
+                    b.HasIndex("ReferralGroupId");
 
                     b.HasIndex("SearchName");
 
@@ -464,6 +469,48 @@ namespace Vitta.Persistence.Migrations.Sqlite
                     b.HasKey("Id");
 
                     b.ToTable("prospect_imports", (string)null);
+                });
+
+            modelBuilder.Entity("Vitta.Domain.Referrals.ReferralGroup", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Code")
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ShareLabel")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<double?>("SharePercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("REAL");
+
+                    b.Property<long?>("UpdatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("referral_groups", (string)null);
                 });
 
             modelBuilder.Entity("Vitta.Domain.Settings.AiSettings", b =>

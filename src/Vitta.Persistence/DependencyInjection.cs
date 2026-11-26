@@ -54,11 +54,13 @@ public static class DependencyInjection
         services.AddScoped<IAiSettingsRepository, AiSettingsRepository>();
         services.AddScoped<INotificationSettingsRepository, NotificationSettingsRepository>();
         services.AddScoped<ILeadCaptureSettingsRepository, LeadCaptureSettingsRepository>();
+        services.AddScoped<IReferralGroupRepository, ReferralGroupRepository>();
 
         // Leitura
         services.AddScoped<IClientQueries, ClientQueries>();
         services.AddScoped<IPolicyQueries, PolicyQueries>();
         services.AddScoped<IProspectQueries, ProspectQueries>();
+        services.AddScoped<Vitta.Application.Features.Referrals.IReferralQueries, ReferralQueries>();
         services.AddScoped<PortfolioQueries>();
         services.AddScoped<IPortfolioQueries>(sp => sp.GetRequiredService<PortfolioQueries>());
         services.AddScoped<IDashboardQueries, DashboardQueries>();

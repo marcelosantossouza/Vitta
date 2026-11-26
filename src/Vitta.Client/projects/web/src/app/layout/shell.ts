@@ -8,6 +8,8 @@ interface NavItem {
   path: string;
   label: string;
   icon: IconName;
+  /** So aparece para administradores (a API tambem exige o perfil). */
+  adminOnly?: boolean;
 }
 
 interface NavGroup {
@@ -38,7 +40,7 @@ export class Shell {
   );
 
   /** Menu por assunto: o dia a dia em cima, cadastros de apoio embaixo; Configuracoes fica no rodape. */
-  protected readonly groups: NavGroup[] = [
+  private readonly allGroups: NavGroup[] = [
     { title: null, items: [{ path: '/painel', label: 'Painel', icon: 'dashboard' }] },
     {
       title: 'Carteira',
@@ -48,7 +50,13 @@ export class Shell {
         { path: '/carteira', label: 'Importações', icon: 'upload' },
       ],
     },
-    { title: 'Vendas', items: [{ path: '/prospeccao', label: 'Prospecção', icon: 'target' }] },
+    {
+      title: 'Vendas',
+      items: [
+        { path: '/prospeccao', label: 'Prospecção', icon: 'target' },
+        { path: '/indicacoes', label: 'Indicações', icon: 'link', adminOnly: true },
+      ],
+    },
     {
       title: 'Cadastros',
       items: [
@@ -63,6 +71,9 @@ export class Shell {
     { path: '/configuracoes', label: 'Configurações', icon: 'settings' },
   ];
   protected readonly isAdmin = this.auth.isAdmin;
+  protected readonly groups = computed(() =>
+    this.allGroups.map(g => ({ ...g, items: g.items.filter(i => !i.adminOnly || this.isAdmin()) })),
+  );
   protected readonly roleLabel = computed(() => {
     const role = this.auth.role();
     return role ? USER_ROLE_LABELS[role] : '';

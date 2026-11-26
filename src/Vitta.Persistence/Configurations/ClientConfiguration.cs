@@ -21,6 +21,7 @@ internal sealed class ClientConfiguration : IEntityTypeConfiguration<Client>
         b.HasIndex(x => x.Cpf).IsUnique();
         b.Property(x => x.Email).HasMaxLength(200);
         b.Property(x => x.Phone).HasMaxLength(30);
+        b.HasIndex(x => x.ReferralGroupId);
         b.Ignore(x => x.DomainEvents);
     }
 }

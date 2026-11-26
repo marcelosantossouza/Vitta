@@ -12,6 +12,9 @@
         <div class="profile__title">
           <h1>{{ c.fullName }}</h1>
           <span class="muted mono">CPF {{ c.cpf }}</span>
+          @if (c.referralGroupName) {
+            <span class="muted small">Indicado por <a [routerLink]="['/indicacoes', c.referralGroupId]">{{ c.referralGroupName }}</a></span>
+          }
         </div>
         <div class="actions">
           <a class="btn" [routerLink]="['/clientes', c.id, 'editar']"><vt-icon name="edit" [size]="16" /> Editar</a>

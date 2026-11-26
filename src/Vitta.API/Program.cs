@@ -123,6 +123,7 @@ secured.MapInsurerEndpoints();
 secured.MapImportTemplateEndpoints();
 secured.MapSettingsEndpoints();
 secured.MapUserEndpoints();
+secured.MapReferralEndpoints();
 
 app.Run();
 

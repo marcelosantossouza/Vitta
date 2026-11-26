@@ -32,7 +32,7 @@ describe('Shell', () => {
     login('Admin');
     const el = await render();
 
-    expect(el.querySelectorAll('nav a').length).toBe(7);
+    expect(el.querySelectorAll('nav a').length).toBe(8); // inclui Indicações (só administrador)
     expect(Array.from(el.querySelectorAll('.group__title')).map(t => t.textContent?.trim())).toEqual(['Carteira', 'Vendas', 'Cadastros']);
     const admin = Array.from(el.querySelectorAll('.sidebar__footer a.settings')).map(a => a.textContent?.trim());
     expect(admin).toEqual(['Usuários', 'Configurações']);
@@ -46,6 +46,7 @@ describe('Shell', () => {
     const el = await render();
 
     expect(el.querySelectorAll('.sidebar__footer a.settings').length).toBe(0);
+    expect(el.querySelector('nav a[href="/indicacoes"]')).toBeNull();
     expect(el.querySelector('.sidebar__user small')?.textContent).toContain('Assistente');
     expect(el.querySelector('a[href="/trocar-senha"]')).not.toBeNull();
   });

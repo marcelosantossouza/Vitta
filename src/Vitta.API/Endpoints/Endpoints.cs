@@ -11,6 +11,7 @@ using Vitta.Application.Features.Notifications;
 using Vitta.Application.Features.Policies;
 using Vitta.Application.Features.Portfolio;
 using Vitta.Application.Features.Prospects;
+using Vitta.Application.Features.Referrals;
 using Vitta.Application.Features.Settings;
 using Vitta.Application.Features.Users;
 using Vitta.Domain.Imports;
@@ -283,6 +284,29 @@ internal static class SettingsEndpoints
             (await s.Send(new UpdateNotificationSettingsCommand(i.DailyEmailEnabled, i.Recipients ?? [], i.SendAt), ct)).ToNoContent());
         g.MapPost("/notifications/send-now", async (ISender s, CancellationToken ct) =>
             (await s.Send(new SendDailyDigestCommand(Scheduled: false), ct)).ToOk());
+    }
+}
+
+internal static class ReferralEndpoints
+{
+    public sealed record ReferralInput(string Name, string? Code, string? Notes, decimal? SharePercent, string? ShareLabel);
+    public sealed record AssignInput(Guid? GroupId, IReadOnlyList<Guid> ClientIds);
+
+    /// <summary>Grupos de indicacao: so o dono (Administrador) carimba e ve os resultados.</summary>
+    public static void MapReferralEndpoints(this IEndpointRouteBuilder app)
+    {
+        var g = app.MapGroup("/referrals").WithTags("Indicacoes").RequireAuthorization(AuthPolicies.Admin);
+        g.MapGet("/", async (ISender s, CancellationToken ct) => Results.Ok(await s.Send(new GetReferralGroupsQuery(), ct)));
+        g.MapGet("/{id:guid}/report", async (Guid id, DateOnly? month, ISender s, CancellationToken ct) =>
+            (await s.Send(new GetReferralReportQuery(id, month), ct)).ToOk());
+        g.MapPost("/", async (ReferralInput i, ISender s, CancellationToken ct) =>
+            (await s.Send(new SaveReferralGroupCommand(null, i.Name, i.Code, i.Notes, i.SharePercent, i.ShareLabel), ct)).ToCreated("/api/referrals"));
+        g.MapPut("/{id:guid}", async (Guid id, ReferralInput i, ISender s, CancellationToken ct) =>
+            (await s.Send(new SaveReferralGroupCommand(id, i.Name, i.Code, i.Notes, i.SharePercent, i.ShareLabel), ct)).ToNoContent());
+        g.MapDelete("/{id:guid}", async (Guid id, ISender s, CancellationToken ct) =>
+            (await s.Send(new DeleteReferralGroupCommand(id), ct)).ToNoContent());
+        g.MapPost("/assign", async (AssignInput i, ISender s, CancellationToken ct) =>
+            (await s.Send(new AssignReferralCommand(i.GroupId, i.ClientIds ?? []), ct)).ToOk());
     }
 }
 

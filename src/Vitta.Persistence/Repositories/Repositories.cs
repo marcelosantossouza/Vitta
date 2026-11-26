@@ -4,6 +4,7 @@ using Vitta.Domain.Clients;
 using Vitta.Domain.Common;
 using Vitta.Domain.Imports;
 using Vitta.Domain.Insurers;
+using Vitta.Domain.Referrals;
 using Vitta.Domain.Policies;
 using Vitta.Domain.Portfolio;
 using Vitta.Domain.Prospects;
@@ -24,8 +25,25 @@ internal sealed class ClientRepository(VittaDbContext db) : IClientRepository
         var all = await db.Clients.AsNoTracking().Select(c => new { c.Id, c.Cpf }).ToListAsync(ct);
         return all.ToDictionary(c => c.Cpf.Value, c => c.Id);
     }
+    public async Task<IReadOnlyList<Client>> ListByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct = default) =>
+        await db.Clients.Where(c => ids.Contains(c.Id)).ToListAsync(ct);
+
+    public async Task<IReadOnlyList<Client>> ListByReferralAsync(Guid referralGroupId, CancellationToken ct = default) =>
+        await db.Clients.Where(c => c.ReferralGroupId == referralGroupId).ToListAsync(ct);
+
     public void Add(Client client) => db.Clients.Add(client);
     public void Remove(Client client) => db.Clients.Remove(client);
+}
+
+internal sealed class ReferralGroupRepository(VittaDbContext db) : IReferralGroupRepository
+{
+    public Task<ReferralGroup?> GetByIdAsync(Guid id, CancellationToken ct = default) => db.ReferralGroups.FirstOrDefaultAsync(g => g.Id == id, ct);
+
+    public Task<bool> CodeExistsAsync(string code, Guid? exceptId, CancellationToken ct = default) =>
+        db.ReferralGroups.AnyAsync(g => g.Code == code && g.Id != exceptId, ct);
+
+    public void Add(ReferralGroup group) => db.ReferralGroups.Add(group);
+    public void Remove(ReferralGroup group) => db.ReferralGroups.Remove(group);
 }
 
 internal sealed class PolicyRepository(VittaDbContext db) : IPolicyRepository

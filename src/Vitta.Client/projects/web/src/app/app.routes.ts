@@ -44,6 +44,8 @@ export const routes: Routes = [
       { path: 'prospeccao', title: 'Prospecção — Vitta', loadComponent: () => import('./features/prospects/prospect-board').then(m => m.ProspectBoard) },
       { path: 'prospeccao/lista', title: 'Prospecção · Lista — Vitta', loadComponent: () => import('./features/prospects/prospect-list').then(m => m.ProspectList) },
       { path: 'prospeccao/importacoes', title: 'Prospecção · Importações — Vitta', loadComponent: () => import('./features/prospects/prospect-imports').then(m => m.ProspectImports) },
+      { path: 'indicacoes', title: 'Indicações — Vitta', canActivate: [adminGuard], loadComponent: () => import('./features/referrals/referral-list').then(m => m.ReferralList) },
+      { path: 'indicacoes/:id', title: 'Indicação — Vitta', canActivate: [adminGuard], loadComponent: () => import('./features/referrals/referral-report').then(m => m.ReferralReport) },
       { path: 'carteira', title: 'Carteira — Vitta', loadComponent: () => import('./features/portfolio/portfolio-page').then(m => m.PortfolioPage) },
       { path: 'carteira/:id', title: 'Importação — Vitta', loadComponent: () => import('./features/portfolio/import-detail').then(m => m.ImportDetail) },
       { path: 'modelos', title: 'Modelos de planilha — Vitta', loadComponent: () => import('./features/import-templates/template-list').then(m => m.TemplateList) },

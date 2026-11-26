@@ -5,6 +5,7 @@ using Vitta.Domain.Insurers;
 using Vitta.Domain.Policies;
 using Vitta.Domain.Portfolio;
 using Vitta.Domain.Prospects;
+using Vitta.Domain.Referrals;
 using Vitta.Domain.Settings;
 using Vitta.Domain.Users;
 
@@ -20,6 +21,8 @@ public interface IClientRepository
     Task<bool> HasPoliciesAsync(Guid clientId, CancellationToken ct = default);
     /// <summary>Id de cada cliente pelo CPF (so digitos), para ligar linhas importadas ao cadastro.</summary>
     Task<IReadOnlyDictionary<string, Guid>> IdsByCpfAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<Client>> ListByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct = default);
+    Task<IReadOnlyList<Client>> ListByReferralAsync(Guid referralGroupId, CancellationToken ct = default);
     void Add(Client client);
     void Remove(Client client);
 }
@@ -45,6 +48,14 @@ public interface IProspectRepository
     Task<IReadOnlyList<Prospect>> ListByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct = default);
     void Add(Prospect prospect);
     void Remove(Prospect prospect);
+}
+
+public interface IReferralGroupRepository
+{
+    Task<ReferralGroup?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    Task<bool> CodeExistsAsync(string code, Guid? exceptId, CancellationToken ct = default);
+    void Add(ReferralGroup group);
+    void Remove(ReferralGroup group);
 }
 
 public interface IInsurerRepository
