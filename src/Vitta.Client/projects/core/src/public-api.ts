@@ -15,6 +15,7 @@ export * from './lib/models/dashboard';
 export * from './lib/models/import-template';
 export * from './lib/models/settings';
 export * from './lib/models/referral';
+export * from './lib/models/site';
 
 export * from './lib/api/auth-api';
 export * from './lib/api/dashboard-api';

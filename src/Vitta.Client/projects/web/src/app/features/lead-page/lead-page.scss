@@ -8,23 +8,7 @@
   border: 1px solid var(--vt-border); box-shadow: var(--vt-shadow-lg);
   h1 { margin: 0; font-size: clamp(1.4rem, 5vw, 1.8rem); line-height: 1.2; }
   p { margin: 0; }
-  &.center { align-items: center; text-align: center; }
 }
 
+.center { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.5rem; }
 .broker { display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 700; color: var(--vt-primary); }
-
-.ok {
-  display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%;
-  background: var(--vt-primary-soft); color: var(--vt-primary);
-}
-
-.consent {
-  display: flex; gap: 0.6rem; align-items: flex-start; font-size: 0.85rem; line-height: 1.45; cursor: pointer;
-  padding: 0.75rem; border-radius: var(--vt-radius-sm); background: var(--vt-surface-2);
-  input { width: 18px; height: 18px; min-height: 0; margin-top: 0.1rem; flex-shrink: 0; accent-color: var(--vt-primary); }
-}
-
-/* Pote de mel: fora da tela, sem display:none (alguns robos ignoram campos escondidos assim) */
-.hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
-
-.fine { text-align: center; }

@@ -166,3 +166,21 @@ internal sealed class LeadCaptureSettingsRepository(VittaDbContext db) : ILeadCa
         db.LeadCaptureSettings.FirstOrDefaultAsync(x => x.Id == LeadCaptureSettings.SingletonId, ct);
     public void Add(LeadCaptureSettings settings) => db.LeadCaptureSettings.Add(settings);
 }
+
+internal sealed class BrokerSiteRepository(VittaDbContext db) : IBrokerSiteRepository
+{
+    public Task<BrokerSite?> GetAsync(CancellationToken ct = default) => db.BrokerSites.FirstOrDefaultAsync(x => x.Id == BrokerSite.SingletonId, ct);
+    public void Add(BrokerSite site) => db.BrokerSites.Add(site);
+}
+
+internal sealed class SiteImageRepository(VittaDbContext db) : ISiteImageRepository
+{
+    public Task<SiteImage?> GetAsync(string kind, CancellationToken ct = default) => db.SiteImages.FirstOrDefaultAsync(x => x.Kind == kind, ct);
+
+    public async Task<IReadOnlyDictionary<string, DateTimeOffset>> VersionsAsync(CancellationToken ct = default) =>
+        (await db.SiteImages.AsNoTracking().Select(x => new { x.Kind, x.CreatedAt, x.UpdatedAt }).ToListAsync(ct))
+            .ToDictionary(x => x.Kind, x => x.UpdatedAt ?? x.CreatedAt);
+
+    public void Add(SiteImage image) => db.SiteImages.Add(image);
+    public void Remove(SiteImage image) => db.SiteImages.Remove(image);
+}

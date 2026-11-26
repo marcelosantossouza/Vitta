@@ -1,5 +1,7 @@
 # {$VITTA_DOMAIN} vem do .env (ex.: vitta.seudominio.com.br). O Caddy emite e renova o certificado HTTPS sozinho.
-{$VITTA_DOMAIN} {
+# {$VITTA_SITE_DOMAINS} (opcional): enderecos das home pages das corretoras, separados por espaco
+# (ex.: argleidson.usevitta.duckdns.org). Cada um ganha certificado proprio.
+{$VITTA_DOMAIN} {$VITTA_SITE_DOMAINS} {
 	encode gzip
 
 	# API e health check vao para o container da API; o resto e o site Angular.

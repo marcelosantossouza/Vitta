@@ -1,0 +1,105 @@
+@switch (state()) {
+  @case ('loading') {
+    <div class="skeleton" style="height: 60vh; margin: 2rem 1rem"></div>
+  }
+  @case ('off') {
+    <main class="off">
+      <h1>Página indisponível</h1>
+      <p class="muted">Esta página não está ativa no momento.</p>
+      <a routerLink="/entrar">Área do corretor</a>
+    </main>
+  }
+  @case ('on') {
+    @if (site(); as s) {
+      <header class="top">
+        <div class="wrap top__inner">
+          <a class="brand" href="#inicio" (click)="scrollTo('inicio', $event)">
+            @if (logo(); as src) { <img [src]="src" alt="" class="brand__logo" /> } @else { <span class="brand__initial">{{ initial() }}</span> }
+            <span class="brand__name">{{ s.brokerName }}</span>
+          </a>
+          <nav class="top__nav" aria-label="Seções">
+            @if (s.about) { <a href="#sobre" (click)="scrollTo('sobre', $event)">Sobre</a> }
+            @if (s.products.length) { <a href="#produtos" (click)="scrollTo('produtos', $event)">Produtos</a> }
+            <a href="#contato" (click)="scrollTo('contato', $event)">Contato</a>
+          </nav>
+          @if (whatsAppLink(); as wa) {
+            <a class="btn btn--primary btn--sm wa" [href]="wa" target="_blank" rel="noopener"><vt-icon name="phone" [size]="16" /> WhatsApp</a>
+          }
+        </div>
+      </header>
+
+      <section id="inicio" class="hero" [class.hero--image]="cover()" [style.background-image]="cover() ? 'url(' + cover() + ')' : null">
+        <div class="wrap hero__inner">
+          <h1>{{ s.headline }}</h1>
+          <p>Seguro de vida com atendimento próximo: a gente entende sua família e o seu momento e indica a proteção certa, sem complicação.</p>
+          <div class="hero__actions">
+            <a class="btn btn--primary btn--lg" href="#contato" (click)="scrollTo('contato', $event)">Quero uma proposta</a>
+            @if (whatsAppLink(); as wa) {
+              <a class="btn btn--lg btn--light" [href]="wa" target="_blank" rel="noopener"><vt-icon name="phone" [size]="18" /> Falar no WhatsApp</a>
+            }
+          </div>
+        </div>
+      </section>
+
+      @if (s.about) {
+        <section id="sobre" class="section">
+          <div class="wrap">
+            <h2>Sobre</h2>
+            <p class="about">{{ s.about }}</p>
+          </div>
+        </section>
+      }
+
+      @if (s.products.length) {
+        <section id="produtos" class="section section--alt">
+          <div class="wrap">
+            <h2>Produtos</h2>
+            <div class="products">
+              @for (p of s.products; track $index) {
+                <div class="product"><span class="product__icon"><vt-icon [name]="productIcon(p)" [size]="22" /></span><strong>{{ p }}</strong></div>
+              }
+            </div>
+          </div>
+        </section>
+      }
+
+      <section id="contato" class="section">
+        <div class="wrap contact" [class.contact--single]="!s.leadFormEnabled">
+          @if (s.leadFormEnabled) {
+            <div class="card contact__form">
+              <h2>Peça uma proposta</h2>
+              <p class="muted">Deixe seu contato que a gente retorna rapidinho.</p>
+              <vt-lead-form [brokerName]="s.brokerName" [consentText]="s.consentText" [whatsApp]="s.whatsApp" origin="site" />
+            </div>
+          }
+          <div class="contact__info">
+            <h2>Fale com a gente</h2>
+            <ul>
+              @if (whatsAppLink(); as wa) { <li><vt-icon name="phone" [size]="18" /><a [href]="wa" target="_blank" rel="noopener">WhatsApp</a></li> }
+              @if (s.phone) { <li><vt-icon name="phone" [size]="18" /><a [href]="phoneLink()">{{ s.phone }}</a></li> }
+              @if (s.email) { <li><vt-icon name="mail" [size]="18" /><a [href]="'mailto:' + s.email">{{ s.email }}</a></li> }
+              @if (s.address) { <li><vt-icon name="building" [size]="18" /><a [href]="mapsLink()" target="_blank" rel="noopener">{{ s.address }}</a></li> }
+              @if (s.hours) { <li><vt-icon name="calendar" [size]="18" /><span>{{ s.hours }}</span></li> }
+            </ul>
+            @if (s.instagram || s.facebook || s.linkedIn) {
+              <div class="social">
+                @if (s.instagram) { <a [href]="s.instagram" target="_blank" rel="noopener">Instagram</a> }
+                @if (s.facebook) { <a [href]="s.facebook" target="_blank" rel="noopener">Facebook</a> }
+                @if (s.linkedIn) { <a [href]="s.linkedIn" target="_blank" rel="noopener">LinkedIn</a> }
+              </div>
+            }
+          </div>
+        </div>
+      </section>
+
+      <footer class="foot">
+        <div class="wrap foot__inner">
+          <span>© {{ year }} {{ s.brokerName }}</span>
+          @if (s.susep) { <span>Corretor de seguros · SUSEP nº {{ s.susep }}</span> }
+          @if (s.cnpj) { <span>CNPJ {{ s.cnpj }}</span> }
+          <a routerLink="/entrar">Área do corretor</a>
+        </div>
+      </footer>
+    }
+  }
+}

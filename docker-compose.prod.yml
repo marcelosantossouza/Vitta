@@ -84,6 +84,8 @@ services:
       - api
     environment:
       VITTA_DOMAIN: ${VITTA_DOMAIN:?defina VITTA_DOMAIN no .env}
+      # Home pages das corretoras (opcional), ex.: argleidson.usevitta.duckdns.org (varios: separe por espaco)
+      VITTA_SITE_DOMAINS: ${VITTA_SITE_DOMAINS:-}
     ports:
       - "80:80"
       - "443:443"

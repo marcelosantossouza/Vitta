@@ -55,6 +55,8 @@ public static class DependencyInjection
         services.AddScoped<INotificationSettingsRepository, NotificationSettingsRepository>();
         services.AddScoped<ILeadCaptureSettingsRepository, LeadCaptureSettingsRepository>();
         services.AddScoped<IReferralGroupRepository, ReferralGroupRepository>();
+        services.AddScoped<IBrokerSiteRepository, BrokerSiteRepository>();
+        services.AddScoped<ISiteImageRepository, SiteImageRepository>();
 
         // Leitura
         services.AddScoped<IClientQueries, ClientQueries>();

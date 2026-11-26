@@ -58,6 +58,21 @@ public interface IReferralGroupRepository
     void Remove(ReferralGroup group);
 }
 
+public interface IBrokerSiteRepository
+{
+    Task<BrokerSite?> GetAsync(CancellationToken ct = default);
+    void Add(BrokerSite site);
+}
+
+public interface ISiteImageRepository
+{
+    Task<SiteImage?> GetAsync(string kind, CancellationToken ct = default);
+    /// <summary>Versao de cada imagem (para o navegador nao usar a antiga do cache), sem carregar os bytes.</summary>
+    Task<IReadOnlyDictionary<string, DateTimeOffset>> VersionsAsync(CancellationToken ct = default);
+    void Add(SiteImage image);
+    void Remove(SiteImage image);
+}
+
 public interface IInsurerRepository
 {
     Task<IReadOnlyList<Insurer>> ListActiveAsync(CancellationToken ct = default);

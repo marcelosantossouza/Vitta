@@ -13,6 +13,7 @@ using Vitta.Application.Features.Portfolio;
 using Vitta.Application.Features.Prospects;
 using Vitta.Application.Features.Referrals;
 using Vitta.Application.Features.Settings;
+using Vitta.Application.Features.Site;
 using Vitta.Application.Features.Users;
 using Vitta.Domain.Imports;
 using Vitta.Domain.Policies;
@@ -265,6 +266,9 @@ internal static class SettingsEndpoints
     public sealed record AiSettingsInput(AiProvider Provider, string Model, string Effort);
     public sealed record NotificationsInput(bool DailyEmailEnabled, IReadOnlyList<string>? Recipients, string SendAt);
     public sealed record LeadPageInput(bool Enabled, string? BrokerName, string? Headline, string? WhatsApp);
+    public sealed record SiteInput(
+        bool Enabled, string? Host, string? About, string? Address, string? Phone, string? Email, string? Hours,
+        string? Instagram, string? Facebook, string? LinkedIn, string? Susep, string? Cnpj, IReadOnlyList<string>? Products, string? AccentColor);
 
     public static void MapSettingsEndpoints(this IEndpointRouteBuilder app)
     {
@@ -278,6 +282,24 @@ internal static class SettingsEndpoints
         g.MapGet("/lead-page", async (ISender s, CancellationToken ct) => Results.Ok(await s.Send(new GetLeadCaptureSettingsQuery(), ct)));
         g.MapPut("/lead-page", async (LeadPageInput i, ISender s, CancellationToken ct) =>
             (await s.Send(new UpdateLeadCaptureSettingsCommand(i.Enabled, i.BrokerName, i.Headline, i.WhatsApp), ct)).ToNoContent());
+
+        g.MapGet("/site", async (ISender s, CancellationToken ct) => Results.Ok(await s.Send(new GetSiteQuery(), ct)));
+        g.MapPut("/site", async (SiteInput i, ISender s, CancellationToken ct) =>
+            (await s.Send(new UpdateSiteCommand(new(i.Enabled, i.Host, i.About, i.Address, i.Phone, i.Email, i.Hours, i.Instagram, i.Facebook,
+                i.LinkedIn, i.Susep, i.Cnpj, i.Products, i.AccentColor)), ct)).ToNoContent());
+        g.MapPut("/site/images/{kind}", async (string kind, IFormFile file, ISender s, CancellationToken ct) =>
+        {
+            if (file is null || file.Length is 0 or > Domain.Settings.SiteImage.MaxBytes)
+            {
+                return Results.Problem(title: "Site.ImageSize", detail: "Imagem muito grande (máximo 1,5 MB).", statusCode: 400);
+            }
+
+            using var ms = new MemoryStream();
+            await file.CopyToAsync(ms, ct);
+            return (await s.Send(new SaveSiteImageCommand(kind, ms.ToArray()), ct)).ToNoContent();
+        }).DisableAntiforgery();
+        g.MapDelete("/site/images/{kind}", async (string kind, ISender s, CancellationToken ct) =>
+            (await s.Send(new SaveSiteImageCommand(kind, null), ct)).ToNoContent());
 
         g.MapGet("/notifications", async (ISender s, CancellationToken ct) => Results.Ok(await s.Send(new GetNotificationSettingsQuery(), ct)));
         g.MapPut("/notifications", async (NotificationsInput i, ISender s, CancellationToken ct) =>
@@ -349,6 +371,18 @@ internal static class PublicEndpoints
         {
             var page = await s.Send(new GetLeadPageQuery(), ct);
             return page.Enabled ? Results.Ok(page) : Results.NotFound();
+        });
+        g.MapGet("/site", async (ISender s, CancellationToken ct) => Results.Ok(await s.Send(new GetSiteQuery(), ct)));
+        g.MapGet("/site/images/{kind}", async (string kind, HttpContext http, ISender s, CancellationToken ct) =>
+        {
+            if (await s.Send(new GetSiteImageQuery(kind), ct) is not { } image)
+            {
+                return Results.NotFound();
+            }
+
+            // A URL leva ?v=<versao>: pode ficar em cache "para sempre"; trocar a imagem muda a URL.
+            http.Response.Headers.CacheControl = "public, max-age=31536000, immutable";
+            return Results.File(image.Data, image.ContentType);
         });
         g.MapPost("/leads", async (LeadInput i, ISender s, CancellationToken ct) =>
             (await s.Send(new SubmitLeadCommand(i.Name, i.Phone, i.Email, i.City, i.State, i.BirthDate, i.Interest, i.Origin, i.Consent, i.Website), ct))

@@ -43,6 +43,11 @@ percentual de nome livre e PDF.
 1. Acesso do parceiro (login só com o painel dele), se o formato do repasse for confirmado com o contador.
 2. Vincular prospects à indicação e levar o vínculo na conversão em cliente.
 
+### Site da corretora
+
+Feito: home page pública (Configurações → Site da corretora) com logo, capa, sobre, produtos, contato, redes e SUSEP;
+abre na raiz do domínio configurado (`VITTA_SITE_DOMAINS`) ou em `/corretora`.
+
 ## Carteira
 
 1. **Campos personalizados** (catálogo de campos com nome, tipo e descrição + valores em JSONB), para que colunas

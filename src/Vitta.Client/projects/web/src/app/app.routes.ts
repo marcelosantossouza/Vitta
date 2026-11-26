@@ -1,8 +1,16 @@
 import { Routes } from '@angular/router';
 import { adminGuard, authGuard, guestGuard } from '@vitta/core';
+import { siteHostMatch } from './features/broker-home/site-host';
 import { Shell } from './layout/shell';
 
 export const routes: Routes = [
+  // Home da corretora quando o site e aberto pelo endereco dela (ex.: corretora.usevitta.duckdns.org).
+  {
+    path: '',
+    pathMatch: 'full',
+    canMatch: [siteHostMatch],
+    loadComponent: () => import('./features/broker-home/broker-home').then(m => m.BrokerHome),
+  },
   // Tela de abertura (marca + login). Quem ja esta logado vai direto para o painel.
   {
     path: '',
@@ -16,6 +24,11 @@ export const routes: Routes = [
     canActivate: [guestGuard],
     title: 'Entrar — Vitta',
     loadComponent: () => import('./features/landing/landing').then(m => m.Landing),
+  },
+  // Publica: home da corretora em qualquer endereco (e previa para quem esta logado: ?previa=1).
+  {
+    path: 'corretora',
+    loadComponent: () => import('./features/broker-home/broker-home').then(m => m.BrokerHome),
   },
   // Publica (sem login): pagina de captacao da corretora. ?origem=instagram etc.
   {

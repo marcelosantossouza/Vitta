@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_BASE_URL } from '../config/api-config';
 import { LeadCaptureSettings, LeadPageDto, LeadRequest } from '../models/settings';
+import { SiteDto, SiteImageKind, SiteInput } from '../models/site';
 import { AiConnectionTest, AiSettingsDto, AiSettingsInput, NotificationSettingsDto, NotificationSettingsInput } from '../models/settings';
 
 @Injectable({ providedIn: 'root' })
@@ -42,6 +43,24 @@ export class SettingsApi {
   saveLeadPage(input: LeadCaptureSettings): Observable<void> {
     return this.http.put<void>(`${this.baseUrl}/lead-page`, input);
   }
+
+  getSite(): Observable<SiteDto> {
+    return this.http.get<SiteDto>(`${this.baseUrl}/site`);
+  }
+
+  saveSite(input: SiteInput): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/site`, input);
+  }
+
+  uploadSiteImage(kind: SiteImageKind, file: Blob): Observable<void> {
+    const form = new FormData();
+    form.append('file', file, `${kind}.img`);
+    return this.http.put<void>(`${this.baseUrl}/site/images/${kind}`, form);
+  }
+
+  deleteSiteImage(kind: SiteImageKind): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/site/images/${kind}`);
+  }
 }
 
 /** Rotas públicas (sem login): a página de captação. */
@@ -56,5 +75,14 @@ export class PublicApi {
 
   submitLead(request: LeadRequest): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/leads`, request);
+  }
+
+  site(): Observable<SiteDto> {
+    return this.http.get<SiteDto>(`${this.baseUrl}/site`);
+  }
+
+  /** URL da logo/capa (com a versão, para o navegador não usar a antiga). */
+  siteImageUrl(kind: SiteImageKind, version: string | null): string | null {
+    return version ? `${this.baseUrl}/site/images/${kind}?v=${version}` : null;
   }
 }
