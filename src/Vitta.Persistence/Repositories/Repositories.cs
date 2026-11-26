@@ -51,7 +51,11 @@ internal sealed class PolicyRepository(VittaDbContext db) : IPolicyRepository
 internal sealed class ProspectRepository(VittaDbContext db) : IProspectRepository
 {
     public Task<Prospect?> GetByIdAsync(Guid id, CancellationToken ct = default) => db.Prospects.FirstOrDefaultAsync(p => p.Id == id, ct);
-    public async Task<IReadOnlyList<Prospect>> ListAllAsync(CancellationToken ct = default) => await db.Prospects.AsNoTracking().ToListAsync(ct);
+    public async Task<IReadOnlyList<Prospect>> ListAllAsync(CancellationToken ct = default) => await db.Prospects.ToListAsync(ct);
+    public async Task<IReadOnlyList<Prospect>> ListByImportAsync(Guid importId, CancellationToken ct = default) =>
+        await db.Prospects.Where(p => p.ImportId == importId).ToListAsync(ct);
+    public async Task<IReadOnlyList<Prospect>> ListByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct = default) =>
+        await db.Prospects.Where(p => ids.Contains(p.Id)).ToListAsync(ct);
     public void Add(Prospect prospect) => db.Prospects.Add(prospect);
     public void Remove(Prospect prospect) => db.Prospects.Remove(prospect);
 }
@@ -129,4 +133,11 @@ internal sealed class NotificationSettingsRepository(VittaDbContext db) : INotif
     public Task<NotificationSettings?> GetAsync(CancellationToken ct = default) =>
         db.NotificationSettings.FirstOrDefaultAsync(x => x.Id == NotificationSettings.SingletonId, ct);
     public void Add(NotificationSettings settings) => db.NotificationSettings.Add(settings);
+}
+
+internal sealed class ProspectImportRepository(VittaDbContext db) : IProspectImportRepository
+{
+    public Task<ProspectImport?> GetByIdAsync(Guid id, CancellationToken ct = default) => db.ProspectImports.FirstOrDefaultAsync(x => x.Id == id, ct);
+    public void Add(ProspectImport import) => db.ProspectImports.Add(import);
+    public void Remove(ProspectImport import) => db.ProspectImports.Remove(import);
 }

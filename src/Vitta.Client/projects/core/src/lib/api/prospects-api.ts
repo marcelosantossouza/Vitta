@@ -2,9 +2,26 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_BASE_URL } from '../config/api-config';
-import { IdResponse } from '../models/common';
+import { IdResponse, PagedResult } from '../models/common';
 import { ProspectImportResultDto } from '../models/import-template';
-import { ChangeStageRequest, ConvertProspectRequest, ProspectDto, ProspectInput, ProspectStage } from '../models/prospect';
+import {
+  ChangeStageRequest, ConvertProspectRequest, DeleteProspectImportResultDto, ProspectDto, ProspectFilter, ProspectFilterOptionsDto,
+  ProspectInput, ProspectInsightsDto, ProspectSort, ProspectStage,
+} from '../models/prospect';
+
+/** Filtros como query string (?city=...&stage=New&stage=Contacted). Vazios não são enviados. */
+function filterParams(filter: ProspectFilter): HttpParams {
+  let params = new HttpParams();
+  for (const [key, value] of Object.entries(filter)) {
+    if (value === undefined || value === null || value === '' || value === 'Any') continue;
+    if (Array.isArray(value)) {
+      for (const item of value) params = params.append(key, String(item));
+    } else {
+      params = params.set(key, String(value));
+    }
+  }
+  return params;
+}
 
 @Injectable({ providedIn: 'root' })
 export class ProspectsApi {
@@ -34,12 +51,42 @@ export class ProspectsApi {
     return this.http.post<{ clientId: string }>(`${this.baseUrl}/${id}/convert`, request);
   }
 
-  /** Importa prospects de uma planilha usando um modelo (etapa Novo; duplicados sao pulados). */
-  importFile(file: File, templateId: string): Observable<ProspectImportResultDto> {
+  /** Lista paginada com filtros e ordenação (tela de gestão). */
+  search(filter: ProspectFilter, sort: ProspectSort, page: number, pageSize = 50): Observable<PagedResult<ProspectDto>> {
+    const params = filterParams(filter).set('sort', sort).set('page', page).set('pageSize', pageSize);
+    return this.http.get<PagedResult<ProspectDto>>(`${this.baseUrl}/search`, { params });
+  }
+
+  /** Números do dashboard, com os mesmos filtros da lista. */
+  insights(filter: ProspectFilter): Observable<ProspectInsightsDto> {
+    return this.http.get<ProspectInsightsDto>(`${this.baseUrl}/insights`, { params: filterParams(filter) });
+  }
+
+  /** Cidades, UFs, origens e importações existentes (para montar os filtros e o histórico). */
+  filterOptions(): Observable<ProspectFilterOptionsDto> {
+    return this.http.get<ProspectFilterOptionsDto>(`${this.baseUrl}/filter-options`);
+  }
+
+  /** Move vários de uma vez (e opcionalmente agenda o próximo contato). Devolve quantos mudaram. */
+  bulkStage(ids: string[], stage: ProspectStage, nextFollowUpOn: string | null): Observable<number> {
+    return this.http.post<number>(`${this.baseUrl}/bulk-stage`, { ids, stage, nextFollowUpOn });
+  }
+
+  /**
+   * Importa prospects de uma planilha usando um modelo (etapa Novo). Repetidos são pulados ou,
+   * com `updateExisting`, têm só os campos vazios completados.
+   */
+  importFile(file: File, templateId: string, updateExisting = false): Observable<ProspectImportResultDto> {
     const form = new FormData();
     form.append('file', file, file.name);
     form.append('templateId', templateId);
+    form.append('updateExisting', String(updateExisting));
     return this.http.post<ProspectImportResultDto>(`${this.baseUrl}/imports`, form);
+  }
+
+  /** Exclui o lote: remove quem ainda está em "Novo"; quem já foi trabalhado fica. */
+  deleteImport(id: string): Observable<DeleteProspectImportResultDto> {
+    return this.http.delete<DeleteProspectImportResultDto>(`${this.baseUrl}/imports/${id}`);
   }
 
   delete(id: string): Observable<void> {

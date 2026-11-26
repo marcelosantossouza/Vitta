@@ -35,8 +35,20 @@ internal sealed class FakeProspectRepository : IProspectRepository
 
     public Task<Prospect?> GetByIdAsync(Guid id, CancellationToken ct = default) => Task.FromResult(Prospects.FirstOrDefault(p => p.Id == id));
     public Task<IReadOnlyList<Prospect>> ListAllAsync(CancellationToken ct = default) => Task.FromResult<IReadOnlyList<Prospect>>(Prospects.ToList());
+    public Task<IReadOnlyList<Prospect>> ListByImportAsync(Guid importId, CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<Prospect>>(Prospects.Where(p => p.ImportId == importId).ToList());
+    public Task<IReadOnlyList<Prospect>> ListByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<Prospect>>(Prospects.Where(p => ids.Contains(p.Id)).ToList());
     public void Add(Prospect prospect) => Prospects.Add(prospect);
     public void Remove(Prospect prospect) => Prospects.Remove(prospect);
+}
+
+internal sealed class FakeProspectImportRepository : IProspectImportRepository
+{
+    public List<ProspectImport> Imports { get; } = [];
+    public Task<ProspectImport?> GetByIdAsync(Guid id, CancellationToken ct = default) => Task.FromResult(Imports.FirstOrDefault(i => i.Id == id));
+    public void Add(ProspectImport import) => Imports.Add(import);
+    public void Remove(ProspectImport import) => Imports.Remove(import);
 }
 
 internal sealed class FakeImportTemplateRepository : IImportTemplateRepository

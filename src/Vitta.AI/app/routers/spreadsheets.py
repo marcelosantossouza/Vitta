@@ -75,7 +75,10 @@ KIND_CONTEXT = {
     ),
     "Prospects": (
         "lista de POSSIVEIS CLIENTES (prospeccao) de um corretor de seguros de vida. Cada linha e uma pessoa "
-        "a ser contatada."
+        "a ser contatada. Muitas vezes sao listas de servidores/funcionarios com dados de renda: salario bruto, "
+        "total de descontos e emprestimos consignados (valores em reais - mapeie cada um no seu campo; liquido e "
+        "margem NAO sao salario). Mapeie endereco, cidade, UF e CEP separadamente quando vierem em colunas "
+        "diferentes. Use 'notes' (varias colunas) para o que for util e nao tiver campo proprio (matricula, idade...)."
     ),
 }
 

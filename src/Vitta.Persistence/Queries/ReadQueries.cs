@@ -162,6 +162,46 @@ internal sealed class ProspectQueries(VittaDbContext db) : IProspectQueries
             .Select(ProspectDto.From)
             .ToList();
     }
+
+    public async Task<PagedResult<ProspectDto>> SearchAsync(
+        ProspectFilter filter, ProspectSort sort, int page, int pageSize, DateOnly today, CancellationToken ct = default)
+    {
+        var all = await db.Prospects.AsNoTracking().ToListAsync(ct);
+        var filtered = ProspectFiltering.Sort(ProspectFiltering.Apply(all, filter, today), sort).ToList();
+        var items = filtered.Skip((page - 1) * pageSize).Take(pageSize).Select(ProspectDto.From).ToList();
+        return new PagedResult<ProspectDto>(items, page, pageSize, filtered.Count);
+    }
+
+    public async Task<ProspectInsightsDto> InsightsAsync(ProspectFilter filter, DateOnly today, DateTimeOffset now, CancellationToken ct = default)
+    {
+        var all = await db.Prospects.AsNoTracking().ToListAsync(ct);
+        return ProspectFiltering.Insights(ProspectFiltering.Apply(all, filter, today).ToList(), today, now);
+    }
+
+    public async Task<ProspectFilterOptionsDto> FilterOptionsAsync(CancellationToken ct = default)
+    {
+        var values = await db.Prospects.AsNoTracking()
+            .Select(p => new { p.City, p.State, p.Source, p.ImportId, p.Stage, p.ConvertedClientId })
+            .ToListAsync(ct);
+        static List<string> Distinct(IEnumerable<string?> source) =>
+            source.Where(v => !string.IsNullOrWhiteSpace(v)).Select(v => v!.Trim())
+                .GroupBy(TextNormalizer.ForSearch).Select(g => g.First())
+                .OrderBy(TextNormalizer.ForSearch).ToList();
+
+        var imports = await db.ProspectImports.AsNoTracking().OrderByDescending(i => i.CreatedAt).ToListAsync(ct);
+        var byImport = values.Where(v => v.ImportId is not null).GroupBy(v => v.ImportId!.Value)
+            .ToDictionary(g => g.Key, g => (Linked: g.Count(), New: g.Count(v => v.Stage == ProspectStage.New && v.ConvertedClientId is null)));
+
+        return new ProspectFilterOptionsDto(
+            Distinct(values.Select(v => v.City)),
+            Distinct(values.Select(v => v.State)),
+            Distinct(values.Select(v => v.Source)),
+            imports.Select(i =>
+            {
+                var (linked, stillNew) = byImport.GetValueOrDefault(i.Id);
+                return new ProspectImportItemDto(i.Id, i.FileName, i.TemplateName, i.CreatedAt, i.TotalRows, i.Created, i.Updated, i.Skipped, linked, stillNew);
+            }).ToList());
+    }
 }
 
 internal sealed class PortfolioQueries(VittaDbContext db) : IPortfolioQueries

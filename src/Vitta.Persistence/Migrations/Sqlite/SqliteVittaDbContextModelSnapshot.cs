@@ -301,15 +301,41 @@ namespace Vitta.Persistence.Migrations.Sqlite
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Address")
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly?>("BirthDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("City")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
                     b.Property<Guid?>("ConvertedClientId")
                         .HasColumnType("TEXT");
 
                     b.Property<long>("CreatedAt")
                         .HasColumnType("INTEGER");
 
+                    b.Property<double?>("Discounts")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("REAL");
+
                     b.Property<string>("Email")
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
+
+                    b.Property<double?>("EstimatedSalary")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("REAL");
+
+                    b.Property<Guid?>("ImportId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double?>("Loans")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("REAL");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -322,7 +348,15 @@ namespace Vitta.Persistence.Migrations.Sqlite
                     b.Property<string>("Notes")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Occupation")
+                        .HasMaxLength(150)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Phone")
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Phone2")
                         .HasMaxLength(30)
                         .HasColumnType("TEXT");
 
@@ -335,14 +369,67 @@ namespace Vitta.Persistence.Migrations.Sqlite
                         .HasMaxLength(30)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("State")
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("UpdatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ZipCode")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("City");
+
+                    b.HasIndex("ImportId");
+
+                    b.HasIndex("Stage");
+
+                    b.HasIndex("State");
+
+                    b.ToTable("prospects", (string)null);
+                });
+
+            modelBuilder.Entity("Vitta.Domain.Prospects.ProspectImport", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Created")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Skipped")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("TemplateName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TotalRows")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Updated")
+                        .HasColumnType("INTEGER");
+
                     b.Property<long?>("UpdatedAt")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Stage");
-
-                    b.ToTable("prospects", (string)null);
+                    b.ToTable("prospect_imports", (string)null);
                 });
 
             modelBuilder.Entity("Vitta.Domain.Settings.AiSettings", b =>
@@ -622,6 +709,14 @@ namespace Vitta.Persistence.Migrations.Sqlite
                     b.Navigation("Changes");
 
                     b.Navigation("Rows");
+                });
+
+            modelBuilder.Entity("Vitta.Domain.Prospects.Prospect", b =>
+                {
+                    b.HasOne("Vitta.Domain.Prospects.ProspectImport", null)
+                        .WithMany()
+                        .HasForeignKey("ImportId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 #pragma warning restore 612, 618
         }

@@ -131,7 +131,7 @@ public class ImportProspectsHandlerTests
         var prospects = new FakeProspectRepository();
         prospects.Add(Prospect.Create("Thiago Mattos", "11955552222", null, null).Value);
         var uow = new FakeUnitOfWork();
-        var handler = new ImportProspectsHandler(templates, prospects, new FakeSpreadsheetReader(rows), TimeProvider.System, uow);
+        var handler = new ImportProspectsHandler(templates, prospects, new FakeProspectImportRepository(), new FakeSpreadsheetReader(rows), TimeProvider.System, uow);
 
         var result = await handler.Handle(new ImportProspectsCommand(template.Id, "contatos.xlsx", Stream.Null), default);
 

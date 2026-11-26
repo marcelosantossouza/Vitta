@@ -10,10 +10,15 @@ namespace Vitta.Application.Features.Prospects;
 
 public sealed record ProspectDto(
     Guid Id, string Name, string? Phone, string? Email, string? Source, ProspectStage Stage, DateOnly? NextFollowUpOn,
-    string? Notes, Guid? ConvertedClientId, DateTimeOffset CreatedAt)
+    string? Notes, Guid? ConvertedClientId, DateTimeOffset CreatedAt,
+    string? Phone2 = null, string? Address = null, string? City = null, string? State = null, string? ZipCode = null,
+    DateOnly? BirthDate = null, string? Occupation = null, decimal? EstimatedSalary = null, decimal? Discounts = null,
+    decimal? Loans = null, Guid? ImportId = null)
 {
     public static ProspectDto From(Prospect p) =>
-        new(p.Id, p.Name, p.Phone, p.Email, p.Source, p.Stage, p.NextFollowUpOn, p.Notes, p.ConvertedClientId, p.CreatedAt);
+        new(p.Id, p.Name, p.Phone, p.Email, p.Source, p.Stage, p.NextFollowUpOn, p.Notes, p.ConvertedClientId, p.CreatedAt,
+            p.Phone2, p.Address, p.City, p.State, p.ZipCode, p.BirthDate, p.Occupation, p.EstimatedSalary, p.Discounts, p.Loans,
+            p.ImportId);
 }
 
 internal static class ProspectRules
@@ -37,7 +42,8 @@ public sealed class GetProspectsHandler(IProspectQueries queries) : IQueryHandle
 }
 
 // ---- Criar ----
-public sealed record CreateProspectCommand(string Name, string? Phone, string? Email, string? Source, string? Notes, DateOnly? NextFollowUpOn)
+public sealed record CreateProspectCommand(
+    string Name, string? Phone, string? Email, string? Source, string? Notes, DateOnly? NextFollowUpOn, ProspectProfile? Profile = null)
     : ICommand<Result<Guid>>;
 
 internal sealed class CreateProspectValidator : AbstractValidator<CreateProspectCommand>
@@ -55,6 +61,12 @@ public sealed class CreateProspectHandler(IProspectRepository prospects, IUnitOf
             return result.Error;
         }
 
+        var profile = result.Value.SetProfile(c.Profile ?? ProspectProfile.Empty);
+        if (profile.IsFailure)
+        {
+            return profile.Error;
+        }
+
         prospects.Add(result.Value);
         await uow.SaveChangesAsync(ct);
         return result.Value.Id;
@@ -62,7 +74,9 @@ public sealed class CreateProspectHandler(IProspectRepository prospects, IUnitOf
 }
 
 // ---- Atualizar ----
-public sealed record UpdateProspectCommand(Guid Id, string Name, string? Phone, string? Email, string? Source, string? Notes, DateOnly? NextFollowUpOn)
+/// <param name="Profile">Nulo = nao mexe no perfil (cliente antigo da API); preenchido = substitui.</param>
+public sealed record UpdateProspectCommand(
+    Guid Id, string Name, string? Phone, string? Email, string? Source, string? Notes, DateOnly? NextFollowUpOn, ProspectProfile? Profile = null)
     : ICommand<Result>;
 
 internal sealed class UpdateProspectValidator : AbstractValidator<UpdateProspectCommand>
@@ -81,6 +95,11 @@ public sealed class UpdateProspectHandler(IProspectRepository prospects, IUnitOf
         }
 
         var result = prospect.Update(c.Name, c.Phone, c.Email, c.Source, c.Notes, c.NextFollowUpOn);
+        if (result.IsSuccess && c.Profile is not null)
+        {
+            result = prospect.SetProfile(c.Profile);
+        }
+
         if (result.IsSuccess)
         {
             await uow.SaveChangesAsync(ct);
@@ -133,7 +152,7 @@ public sealed class ConvertProspectHandler(IProspectRepository prospects, IClien
             return ProspectErrors.NotFound(c.Id);
         }
 
-        var client = Client.Create(prospect.Name, c.Cpf, c.BirthDate, prospect.Email, prospect.Phone, prospect.Notes);
+        var client = Client.Create(prospect.Name, c.Cpf, c.BirthDate ?? prospect.BirthDate, prospect.Email, prospect.Phone, prospect.Notes);
         if (client.IsFailure)
         {
             return client.Error;

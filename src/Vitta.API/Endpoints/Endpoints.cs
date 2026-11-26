@@ -81,19 +81,46 @@ internal static class PolicyEndpoints
 
 internal static class ProspectEndpoints
 {
-    public sealed record ProspectInput(string Name, string? Phone, string? Email, string? Source, string? Notes, DateOnly? NextFollowUpOn);
+    public sealed record ProspectInput(
+        string Name, string? Phone, string? Email, string? Source, string? Notes, DateOnly? NextFollowUpOn, ProspectProfile? Profile = null);
     public sealed record StageInput(ProspectStage Stage, DateOnly? NextFollowUpOn);
     public sealed record ConvertInput(string Cpf, DateOnly? BirthDate);
+    public sealed record BulkStageInput(IReadOnlyList<Guid> Ids, ProspectStage Stage, DateOnly? NextFollowUpOn);
+
+    /// <summary>Filtros pela URL (?city=...&amp;stage=New&amp;stage=Contacted...). Mesmos para a lista e o dashboard.</summary>
+    public sealed class FilterQuery
+    {
+        public string? Search { get; init; }
+        public ProspectStage[]? Stage { get; init; }
+        public string? City { get; init; }
+        public string? State { get; init; }
+        public string? Source { get; init; }
+        public Guid? ImportId { get; init; }
+        public decimal? SalaryMin { get; init; }
+        public decimal? SalaryMax { get; init; }
+        public FollowUpFilter? FollowUp { get; init; }
+        public bool? HasPhone { get; init; }
+
+        public ProspectFilter ToFilter() =>
+            new(Search, Stage, City, State, Source, ImportId, SalaryMin, SalaryMax, FollowUp ?? FollowUpFilter.Any, HasPhone);
+    }
 
     public static void MapProspectEndpoints(this IEndpointRouteBuilder app)
     {
         var g = app.MapGroup("/prospects").WithTags("Prospeccao");
         g.MapGet("/", async (ProspectStage? stage, string? search, ISender s, CancellationToken ct) =>
             Results.Ok(await s.Send(new GetProspectsQuery(stage, search), ct)));
+        g.MapGet("/search", async ([AsParameters] FilterQuery f, ProspectSort? sort, int? page, int? pageSize, ISender s, CancellationToken ct) =>
+            Results.Ok(await s.Send(new SearchProspectsQuery(f.ToFilter(), sort ?? ProspectSort.FollowUp, page ?? 1, pageSize ?? 50), ct)));
+        g.MapGet("/insights", async ([AsParameters] FilterQuery f, ISender s, CancellationToken ct) =>
+            Results.Ok(await s.Send(new GetProspectInsightsQuery(f.ToFilter()), ct)));
+        g.MapGet("/filter-options", async (ISender s, CancellationToken ct) => Results.Ok(await s.Send(new GetProspectFilterOptionsQuery(), ct)));
+        g.MapPost("/bulk-stage", async (BulkStageInput i, ISender s, CancellationToken ct) =>
+            (await s.Send(new BulkMoveProspectsCommand(i.Ids, i.Stage, i.NextFollowUpOn), ct)).ToOk());
         g.MapPost("/", async (ProspectInput i, ISender s, CancellationToken ct) =>
-            (await s.Send(new CreateProspectCommand(i.Name, i.Phone, i.Email, i.Source, i.Notes, i.NextFollowUpOn), ct)).ToCreated("/api/prospects"));
+            (await s.Send(new CreateProspectCommand(i.Name, i.Phone, i.Email, i.Source, i.Notes, i.NextFollowUpOn, i.Profile), ct)).ToCreated("/api/prospects"));
         g.MapPut("/{id:guid}", async (Guid id, ProspectInput i, ISender s, CancellationToken ct) =>
-            (await s.Send(new UpdateProspectCommand(id, i.Name, i.Phone, i.Email, i.Source, i.Notes, i.NextFollowUpOn), ct)).ToNoContent());
+            (await s.Send(new UpdateProspectCommand(id, i.Name, i.Phone, i.Email, i.Source, i.Notes, i.NextFollowUpOn, i.Profile), ct)).ToNoContent());
         g.MapPost("/{id:guid}/stage", async (Guid id, StageInput i, ISender s, CancellationToken ct) =>
             (await s.Send(new MoveProspectStageCommand(id, i.Stage, i.NextFollowUpOn), ct)).ToNoContent());
         g.MapPost("/{id:guid}/convert", async (Guid id, ConvertInput i, ISender s, CancellationToken ct) =>
@@ -101,7 +128,7 @@ internal static class ProspectEndpoints
         g.MapDelete("/{id:guid}", async (Guid id, ISender s, CancellationToken ct) => (await s.Send(new DeleteProspectCommand(id), ct)).ToNoContent())
             .RequireAuthorization(AuthPolicies.CanDelete);
 
-        g.MapPost("/imports", async ([FromForm] Guid templateId, IFormFile file, ISender s, CancellationToken ct) =>
+        g.MapPost("/imports", async ([FromForm] Guid templateId, [FromForm] bool? updateExisting, IFormFile file, ISender s, CancellationToken ct) =>
         {
             if (Uploads.Check(file) is { } problem)
             {
@@ -109,8 +136,11 @@ internal static class ProspectEndpoints
             }
 
             await using var stream = await Uploads.ToMemoryAsync(file, ct);
-            return (await s.Send(new ImportProspectsCommand(templateId, file.FileName, stream), ct)).ToOk();
+            return (await s.Send(new ImportProspectsCommand(templateId, file.FileName, stream, updateExisting ?? false), ct)).ToOk();
         }).DisableAntiforgery();
+        g.MapDelete("/imports/{id:guid}", async (Guid id, ISender s, CancellationToken ct) =>
+            (await s.Send(new DeleteProspectImportCommand(id), ct)).ToOk())
+            .RequireAuthorization(AuthPolicies.CanDelete);
     }
 }
 

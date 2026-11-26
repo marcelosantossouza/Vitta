@@ -63,6 +63,16 @@ public static class ImportFields
         public const string Source = "source";
         public const string NextFollowUpOn = "nextFollowUpOn";
         public const string Notes = "notes";
+        public const string Phone2 = "phone2";
+        public const string Address = "address";
+        public const string City = "city";
+        public const string State = "state";
+        public const string ZipCode = "zipCode";
+        public const string BirthDate = "birthDate";
+        public const string Occupation = "occupation";
+        public const string EstimatedSalary = "estimatedSalary";
+        public const string Discounts = "discounts";
+        public const string Loans = "loans";
     }
 
     private static readonly IReadOnlyList<ImportField> PortfolioFields =
@@ -131,8 +141,40 @@ public static class ImportFields
         new(Prospects.NextFollowUpOn, "Próximo contato", false, false,
             "Data do próximo contato/retorno agendado.",
             ["proximo contato", "retorno", "data de retorno", "follow up", "follow-up", "agendamento"], ImportValueKind.Date),
-        new(Prospects.Notes, "Observações", false, true,
-            "Qualquer outra informação útil (profissão, idade, filhos, interesse...). Pode receber várias colunas.",
+        new(Prospects.Phone2, "Telefone 2", false, false,
+            "Segundo telefone (fixo, recado, outro celular). Só use se já houver uma coluna para o telefone principal.",
+            ["telefone 2", "telefone2", "celular 2", "fone 2", "telefone residencial", "telefone fixo", "tel 2", "telefone comercial"],
+            ImportValueKind.Phone),
+        new(Prospects.Address, "Endereço", false, false,
+            "Logradouro com número e complemento (rua, avenida...). Bairro pode vir junto. Não é cidade nem CEP.",
+            ["endereco", "logradouro", "rua", "endereco completo", "endereco residencial"], ImportValueKind.Text, ["eletronico", "email"]),
+        new(Prospects.City, "Cidade", false, false,
+            "Cidade/município onde a pessoa mora.",
+            ["cidade", "municipio", "localidade", "cidade residencial"]),
+        new(Prospects.State, "UF", false, false,
+            "Estado (sigla de 2 letras, ex.: SP, MG).",
+            ["uf", "estado", "sigla uf", "uf residencial"]),
+        new(Prospects.ZipCode, "CEP", false, false,
+            "CEP do endereço.",
+            ["cep", "codigo postal"], ImportValueKind.Code),
+        new(Prospects.BirthDate, "Data de nascimento", false, false,
+            "Data de nascimento da pessoa (para calcular idade).",
+            ["nascimento", "data de nascimento", "data nascimento", "dt nascimento", "dt nasc", "nasc"], ImportValueKind.Date),
+        new(Prospects.Occupation, "Profissão / órgão", false, false,
+            "Profissão, cargo, órgão ou empregador (ex.: professor, SEDUC, Prefeitura).",
+            ["profissao", "cargo", "ocupacao", "orgao", "empregador", "empresa", "secretaria", "lotacao", "funcao"]),
+        new(Prospects.EstimatedSalary, "Salário estimado", false, false,
+            "Renda/salário bruto mensal estimado em reais (base para saber quanto a pessoa pode pagar).",
+            ["salario", "salario bruto", "salario base", "renda", "renda mensal", "remuneracao", "vencimentos", "valor bruto", "bruto"],
+            ImportValueKind.Money, ["liquido", "desconto", "emprestimo", "margem"]),
+        new(Prospects.Discounts, "Descontos", false, false,
+            "Total de descontos mensais em reais (impostos, previdência, contribuições).",
+            ["descontos", "total descontos", "total de descontos", "desconto"], ImportValueKind.Money, ["emprestimo", "consignado"]),
+        new(Prospects.Loans, "Empréstimos", false, false,
+            "Valor mensal comprometido com empréstimos/consignados em reais.",
+            ["emprestimos", "emprestimo", "consignado", "consignados", "parcela emprestimo", "valor emprestimo"], ImportValueKind.Money),
+        new(Prospects.Notes, "Outras informações", false, true,
+            "Qualquer outra coluna útil sem campo próprio (matrícula, idade, filhos, interesse...). Pode receber várias colunas; fica visível no prospect mas não é filtrável.",
             ["observacoes", "observacao", "obs", "anotacoes", "comentarios", "notas"]),
     ];
 

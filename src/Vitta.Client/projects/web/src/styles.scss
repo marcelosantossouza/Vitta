@@ -185,7 +185,7 @@ input.ng-invalid.ng-touched, select.ng-invalid.ng-touched { border-color: var(--
 .tabs {
   display: inline-flex; gap: 0.25rem; padding: 0.25rem; background: var(--vt-surface-2);
   border: 1px solid var(--vt-border); border-radius: 12px; flex-wrap: wrap;
-  button {
+  button, a {
     border: 0; background: transparent; padding: 0.4rem 0.8rem; border-radius: 9px; font: inherit;
     font-size: 0.875rem; font-weight: 550; color: var(--vt-muted); cursor: pointer;
     &.active { background: var(--vt-surface); color: var(--vt-text); box-shadow: var(--vt-shadow); }

@@ -13,10 +13,12 @@
     </div>
   </div>
 
+  <vt-prospect-tabs />
+
   <div class="toolbar">
     <label class="search">
       <vt-icon name="search" [size]="18" />
-      <input type="search" placeholder="Buscar por nome, telefone ou origem" (input)="search.set($any($event.target).value)" />
+      <input type="search" placeholder="Buscar por nome, telefone, cidade ou origem" (input)="search.set($any($event.target).value)" />
     </label>
     <label class="toggle">
       <input type="checkbox" [checked]="showClosed()" (change)="showClosed.set($any($event.target).checked)" />
@@ -43,6 +45,9 @@
               <strong>{{ p.name }}</strong>
               @if (p.phone || p.source) {
                 <span class="muted small">{{ p.phone }}{{ p.phone && p.source ? ' · ' : '' }}{{ p.source }}</span>
+              }
+              @if (p.city || p.estimatedSalary !== null) {
+                <span class="muted small">{{ p.city }}{{ p.state ? '/' + p.state : '' }}{{ p.city && p.estimatedSalary !== null ? ' · ' : '' }}@if (p.estimatedSalary !== null) {<strong>{{ p.estimatedSalary | brl }}</strong>}</span>
               }
               @switch (followUpState(p)) {
                 @case ('overdue') { <span class="badge badge--danger"><vt-icon name="calendar" [size]="12" /> Atrasado · {{ p.nextFollowUpOn | isoDate }}</span> }
@@ -87,6 +92,24 @@
         <label class="field">Próximo contato<input type="date" formControlName="nextFollowUpOn" /></label>
         <label class="field span-all">Anotações<textarea formControlName="notes" rows="3"></textarea></label>
       </div>
+
+      <button type="button" class="profile-toggle" (click)="profileOpen.set(!profileOpen())" [attr.aria-expanded]="profileOpen()">
+        <vt-icon [name]="profileOpen() ? 'chevron-down' : 'chevron-right'" [size]="14" /> Perfil, endereço e renda
+      </button>
+      @if (profileOpen()) {
+        <div class="form-grid">
+          <label class="field">Telefone 2<input type="tel" formControlName="phone2" /></label>
+          <label class="field">Profissão / órgão<input formControlName="occupation" placeholder="Ex.: professor, SEDUC" /></label>
+          <label class="field span-all">Endereço<input formControlName="address" /></label>
+          <label class="field">Cidade<input formControlName="city" /></label>
+          <label class="field">UF<input formControlName="state" maxlength="30" placeholder="SP" /></label>
+          <label class="field">CEP<input formControlName="zipCode" inputmode="numeric" /></label>
+          <label class="field">Data de nascimento<input type="date" formControlName="birthDate" /></label>
+          <label class="field">Salário estimado (R$)<input type="number" min="0" step="0.01" inputmode="decimal" formControlName="estimatedSalary" /></label>
+          <label class="field">Descontos (R$)<input type="number" min="0" step="0.01" inputmode="decimal" formControlName="discounts" /></label>
+          <label class="field">Empréstimos (R$)<input type="number" min="0" step="0.01" inputmode="decimal" formControlName="loans" /></label>
+        </div>
+      }
       @if (dialogError(); as message) {
         <div class="alert alert--danger" style="margin-top: 1rem"><vt-icon name="alert" [size]="18" /><span>{{ message }}</span></div>
       }
@@ -141,10 +164,12 @@
       @if (importResult(); as r) {
         <div class="alert alert--success">
           <vt-icon name="check" [size]="18" />
-          <span>Importação concluída: <strong>{{ r.created }}</strong> criado(s) na etapa Novo de {{ r.totalRows }} linha(s).</span>
+          <span>Importação concluída: <strong>{{ r.created }}</strong> criado(s) na etapa Novo de {{ r.totalRows }} linha(s).
+            Ela aparece em <a routerLink="/prospeccao/importacoes" (click)="closeDialog()">Importações</a>, onde pode ser desfeita.</span>
         </div>
         <div class="result">
           <span class="badge badge--success">{{ r.created }} criados</span>
+          @if (r.updated) { <span class="badge badge--info">{{ r.updated }} completados</span> }
           <span class="badge" [class.badge--warning]="r.skipped > 0">{{ r.skipped }} ignorados</span>
           <span class="badge">{{ r.totalRows }} linhas</span>
         </div>
@@ -156,8 +181,8 @@
           <button class="btn btn--primary" type="button" (click)="closeDialog()"><vt-icon name="check" [size]="16" /> Concluir</button>
         </div>
       } @else {
-        <p class="muted small" style="margin-top: -0.5rem">Os contatos entram na etapa <strong>Novo</strong>. Duplicados (mesmo e-mail,
-          telefone, ou mesmo nome sem contato) são ignorados.</p>
+        <p class="muted small" style="margin-top: -0.5rem">Os contatos entram na etapa <strong>Novo</strong>. Repetidos (mesmo e-mail,
+          telefone, ou mesmo nome sem contato) não são duplicados.</p>
 
         @if (importTemplates() === null) {
           <div class="skeleton" style="height: 2.6rem"></div>
@@ -184,6 +209,11 @@
               <span>Planilha (.xlsx, .csv ou .txt) ou texto copiado do site *</span>
               <vt-file-or-paste label="Arraste a planilha aqui" [disabled]="busy()" (fileChange)="onImportFile($event)" />
             </div>
+            <label class="check span-all">
+              <input type="checkbox" [checked]="importUpdateExisting()" (change)="importUpdateExisting.set($any($event.target).checked)" />
+              <span><strong>Completar quem já existe</strong> — para os repetidos, preenche só os campos vazios (salário, endereço…)
+                com os dados desta planilha. Nada do que já está preenchido é trocado.</span>
+            </label>
           </div>
         }
 

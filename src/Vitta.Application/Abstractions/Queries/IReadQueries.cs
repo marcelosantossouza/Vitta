@@ -30,6 +30,9 @@ public sealed record PolicyFilter(Guid? ClientId, Guid? InsurerId, PolicyStatus?
 public interface IProspectQueries
 {
     Task<IReadOnlyList<ProspectDto>> ListAsync(ProspectStage? stage, string? search, CancellationToken ct = default);
+    Task<PagedResult<ProspectDto>> SearchAsync(ProspectFilter filter, ProspectSort sort, int page, int pageSize, DateOnly today, CancellationToken ct = default);
+    Task<ProspectInsightsDto> InsightsAsync(ProspectFilter filter, DateOnly today, DateTimeOffset now, CancellationToken ct = default);
+    Task<ProspectFilterOptionsDto> FilterOptionsAsync(CancellationToken ct = default);
 }
 
 public interface IPortfolioQueries

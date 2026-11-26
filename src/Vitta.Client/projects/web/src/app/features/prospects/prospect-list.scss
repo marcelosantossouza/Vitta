@@ -1,0 +1,33 @@
+.filters { display: flex; flex-direction: column; gap: 0.85rem; margin-bottom: 1rem; }
+.filters__row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;
+  .search { flex: 1; min-width: min(100%, 260px); } }
+.filters__grid { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr)); }
+.filters__foot { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.inline { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.875rem; color: var(--vt-muted); white-space: nowrap; }
+.salary .range { display: flex; align-items: center; gap: 0.35rem; input { min-width: 0; flex: 1; } span { color: var(--vt-muted); } }
+
+.stages { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.chip {
+  border: 1px solid var(--vt-border); background: var(--vt-surface); color: var(--vt-muted); border-radius: 999px;
+  padding: 0.3rem 0.75rem; font: inherit; font-size: 0.82rem; font-weight: 550; cursor: pointer;
+  &.on { background: var(--vt-primary-soft); border-color: var(--vt-primary); color: var(--vt-primary); }
+}
+
+.charts { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); margin: 1rem 0; }
+.chart { display: flex; flex-direction: column; gap: 0.45rem; h3 { margin: 0 0 0.25rem; font-size: 0.95rem; } }
+.bar { display: grid; grid-template-columns: minmax(0, 7.5rem) 1fr 2.5rem; align-items: center; gap: 0.5rem; font-size: 0.82rem;
+  strong { text-align: right; font-variant-numeric: tabular-nums; } }
+.bar__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--vt-muted); }
+.bar__track { height: 8px; border-radius: 99px; background: var(--vt-surface-2); overflow: hidden; }
+.bar__fill { display: block; height: 100%; border-radius: 99px; background: var(--vt-primary); min-width: 2px; }
+
+.bulk {
+  display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem;
+  position: sticky; top: 0.5rem; z-index: 5; border-color: var(--vt-primary); box-shadow: var(--vt-shadow);
+  input[type='date'] { min-height: 0; padding: 0.25rem 0.4rem; }
+}
+
+th.check, td.check { width: 2.25rem; input { width: 16px; height: 16px; min-height: 0; accent-color: var(--vt-primary); } }
+tr.selected td { background: var(--vt-primary-soft); }
+.block { display: block; }
+.empty { padding: 1.5rem; display: flex; gap: 0.75rem; align-items: center; justify-content: center; flex-wrap: wrap; }

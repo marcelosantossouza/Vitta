@@ -1,0 +1,242 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Prospecção</h1>
+      <p class="subtitle">Filtre a lista para escolher quem contatar. O painel abaixo acompanha os filtros.</p>
+    </div>
+  </div>
+
+  <vt-prospect-tabs />
+
+  <!-- Filtros -->
+  <section class="card filters">
+    <div class="filters__row">
+      <label class="search">
+        <vt-icon name="search" [size]="18" />
+        <input type="search" placeholder="Nome, telefone, e-mail, endereço ou profissão" [value]="search()"
+          (input)="set(search, $any($event.target).value)" />
+      </label>
+      <label class="inline">
+        Ordenar por
+        <select (change)="changeSort($any($event.target).value)">
+          @for (s of sorts; track s) { <option [value]="s" [selected]="sort() === s">{{ sortLabels[s] }}</option> }
+        </select>
+      </label>
+    </div>
+
+    <div class="stages" role="group" aria-label="Etapas">
+      @for (s of stages; track s) {
+        <button type="button" class="chip" [class.on]="stageFilter().includes(s)" (click)="toggleStage(s)">{{ stageLabels[s] }}</button>
+      }
+    </div>
+
+    <div class="filters__grid">
+      <label class="field">
+        Cidade
+        <select (change)="set(city, $any($event.target).value)">
+          <option value="" [selected]="!city()">Todas</option>
+          @for (c of options()?.cities ?? []; track c) { <option [value]="c" [selected]="city() === c">{{ c }}</option> }
+        </select>
+      </label>
+      <label class="field">
+        UF
+        <select (change)="set(state, $any($event.target).value)">
+          <option value="" [selected]="!state()">Todas</option>
+          @for (u of options()?.states ?? []; track u) { <option [value]="u" [selected]="state() === u">{{ u }}</option> }
+        </select>
+      </label>
+      <div class="field salary">
+        Salário estimado (R$)
+        <div class="range">
+          <input inputmode="decimal" placeholder="mín." [value]="salaryMin() ?? ''" (input)="salary('min', $any($event.target).value)" />
+          <span>a</span>
+          <input inputmode="decimal" placeholder="máx." [value]="salaryMax() ?? ''" (input)="salary('max', $any($event.target).value)" />
+        </div>
+      </div>
+      <label class="field">
+        Próximo contato
+        <select (change)="set(followUp, $any($event.target).value)">
+          @for (f of followUps; track f) { <option [value]="f" [selected]="followUp() === f">{{ followUpLabels[f] }}</option> }
+        </select>
+      </label>
+      <label class="field">
+        Origem
+        <select (change)="set(source, $any($event.target).value)">
+          <option value="" [selected]="!source()">Todas</option>
+          @for (o of options()?.sources ?? []; track o) { <option [value]="o" [selected]="source() === o">{{ o }}</option> }
+        </select>
+      </label>
+      <label class="field">
+        Importação
+        <select (change)="set(importId, $any($event.target).value)">
+          <option value="" [selected]="!importId()">Todas</option>
+          @for (i of options()?.imports ?? []; track i.id) {
+            <option [value]="i.id" [selected]="importId() === i.id">{{ i.fileName }} · {{ i.createdAt | isoDate }}</option>
+          }
+        </select>
+      </label>
+      <label class="field">
+        Telefone
+        <select (change)="set(hasPhone, $any($event.target).value)">
+          <option value="" [selected]="hasPhone() === ''">Tanto faz</option>
+          <option value="yes" [selected]="hasPhone() === 'yes'">Com telefone</option>
+          <option value="no" [selected]="hasPhone() === 'no'">Sem telefone</option>
+        </select>
+      </label>
+    </div>
+
+    @if (activeFilters() > 0) {
+      <div class="filters__foot">
+        <span class="muted small">{{ activeFilters() }} filtro(s) além do padrão (etapas em aberto)</span>
+        <button class="btn btn--sm btn--ghost" type="button" (click)="clearFilters()"><vt-icon name="x" [size]="14" /> Limpar filtros</button>
+      </div>
+    }
+  </section>
+
+  <!-- Painel com os mesmos filtros -->
+  @if (insights(); as i) {
+    <div class="kpis">
+      <div class="card kpi kpi--highlight">
+        <span class="kpi__icon"><vt-icon name="users" /></span>
+        <div>
+          <span class="kpi__label">Prospects no filtro</span>
+          <strong class="kpi__value">{{ i.total }}</strong>
+          <span class="kpi__hint">{{ i.open }} em aberto · {{ i.newLast7Days }} novos na semana</span>
+        </div>
+      </div>
+      <div class="card kpi">
+        <span class="kpi__icon"><vt-icon name="calendar" /></span>
+        <div>
+          <span class="kpi__label">Contatos pendentes</span>
+          <strong class="kpi__value">{{ i.overdue + i.dueToday }}</strong>
+          <span class="kpi__hint">{{ i.overdue }} atrasado(s) · {{ i.dueToday }} para hoje</span>
+        </div>
+      </div>
+      <div class="card kpi">
+        <span class="kpi__icon"><vt-icon name="money" /></span>
+        <div>
+          <span class="kpi__label">Salário médio</span>
+          <strong class="kpi__value">{{ i.averageSalary === null ? '—' : (i.averageSalary | brl) }}</strong>
+          <span class="kpi__hint">de {{ i.withSalary }} com salário informado</span>
+        </div>
+      </div>
+      <div class="card kpi">
+        <span class="kpi__icon"><vt-icon name="trending-up" /></span>
+        <div>
+          <span class="kpi__label">Conversão</span>
+          <strong class="kpi__value">{{ i.conversionRate | pct }}</strong>
+          <span class="kpi__hint">{{ i.won }} ganho(s) · {{ i.lost }} perdido(s)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="charts">
+      <section class="card chart">
+        <h3>Funil</h3>
+        @for (s of i.byStage; track s.label) {
+          <div class="bar"><span class="bar__label">{{ stageLabel(s.label) }}</span>
+            <span class="bar__track"><span class="bar__fill" [style.width.%]="bar(s, i.byStage)"></span></span><strong>{{ s.count }}</strong></div>
+        }
+      </section>
+      <section class="card chart">
+        <h3>Cidades</h3>
+        @for (c of i.topCities; track c.label) {
+          <div class="bar"><span class="bar__label">{{ c.label }}</span>
+            <span class="bar__track"><span class="bar__fill" [style.width.%]="bar(c, i.topCities)"></span></span><strong>{{ c.count }}</strong></div>
+        } @empty { <p class="muted small">Sem cidades.</p> }
+      </section>
+      <section class="card chart">
+        <h3>Faixa de salário</h3>
+        @for (b of i.salaryBands; track b.label) {
+          <div class="bar"><span class="bar__label">{{ b.label }}</span>
+            <span class="bar__track"><span class="bar__fill" [style.width.%]="bar(b, i.salaryBands)"></span></span><strong>{{ b.count }}</strong></div>
+        }
+      </section>
+    </div>
+  }
+
+  <!-- Acao em lote -->
+  @if (selected().size > 0) {
+    <div class="bulk card">
+      <strong>{{ selected().size }} selecionado(s)</strong>
+      <label class="inline">Mover para
+        <select (change)="bulkStage.set($any($event.target).value)">
+          @for (s of stages; track s) { <option [value]="s" [selected]="bulkStage() === s">{{ stageLabels[s] }}</option> }
+        </select>
+      </label>
+      <label class="inline">Próximo contato <input type="date" [value]="bulkDate()" (input)="bulkDate.set($any($event.target).value)" /></label>
+      <button class="btn btn--primary btn--sm" type="button" (click)="applyBulk()" [disabled]="bulkBusy()">
+        <vt-icon name="check" [size]="14" /> {{ bulkBusy() ? 'Aplicando…' : 'Aplicar' }}
+      </button>
+      <button class="btn btn--ghost btn--sm" type="button" (click)="clearSelection()">Limpar seleção</button>
+    </div>
+  }
+
+  <!-- Lista -->
+  <div class="card card--flush">
+    @if (loading() && !result()) {
+      <div style="padding: 1rem; display: grid; gap: 0.75rem">@for (n of [1, 2, 3]; track n) { <div class="skeleton" style="height: 2.2rem"></div> }</div>
+    } @else if (result(); as r) {
+      @if (r.items.length === 0) {
+        <p class="empty muted">Nenhum prospect com esses filtros.
+          @if (activeFilters() > 0) { <button class="btn btn--sm" type="button" (click)="clearFilters()">Limpar filtros</button> }
+        </p>
+      } @else {
+        <div class="table-wrap">
+          <table class="responsive">
+            <thead>
+              <tr>
+                <th class="check"><input type="checkbox" aria-label="Selecionar a página" [checked]="allOnPageSelected()"
+                  (change)="togglePage($any($event.target).checked)" /></th>
+                <th>Nome</th>
+                <th>Telefone</th>
+                <th>Cidade / UF</th>
+                <th class="num">Salário</th>
+                <th class="num">Desc. / Empr.</th>
+                <th>Etapa</th>
+                <th>Próximo contato</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (p of r.items; track p.id) {
+                <tr class="clickable" [class.selected]="selected().has(p.id)" (click)="open(p)">
+                  <td class="check" (click)="$event.stopPropagation()">
+                    <input type="checkbox" [attr.aria-label]="'Selecionar ' + p.name" [checked]="selected().has(p.id)"
+                      (change)="toggle(p.id, $any($event.target).checked)" />
+                  </td>
+                  <td data-label="Nome">
+                    <strong>{{ p.name }}</strong>
+                    @if (p.occupation) { <span class="muted small block">{{ p.occupation }}</span> }
+                  </td>
+                  <td data-label="Telefone" class="nowrap">{{ p.phone || p.phone2 || '—' }}</td>
+                  <td data-label="Cidade / UF">{{ p.city || '—' }}{{ p.state ? ' / ' + p.state : '' }}</td>
+                  <td data-label="Salário" class="num nowrap">{{ p.estimatedSalary === null ? '—' : (p.estimatedSalary | brl) }}</td>
+                  <td data-label="Desc. / Empr." class="num nowrap muted small">
+                    {{ p.discounts === null ? '—' : (p.discounts | brl) }} / {{ p.loans === null ? '—' : (p.loans | brl) }}
+                  </td>
+                  <td data-label="Etapa"><span class="badge" [class.badge--primary]="p.stage === 'New'">{{ stageLabels[p.stage] }}</span></td>
+                  <td data-label="Próximo contato" class="nowrap">
+                    @switch (followUpState(p)) {
+                      @case ('overdue') { <span class="badge badge--danger">Atrasado · {{ p.nextFollowUpOn | isoDate }}</span> }
+                      @case ('today') { <span class="badge badge--warning">Hoje</span> }
+                      @default { {{ p.nextFollowUpOn | isoDate }} }
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <span>{{ r.totalCount }} prospect(s){{ r.totalPages > 1 ? ' · página ' + r.page + ' de ' + r.totalPages : '' }}</span>
+          @if (r.totalPages > 1) {
+            <div class="pages">
+              <button class="btn btn--sm" type="button" [disabled]="r.page <= 1 || loading()" (click)="goTo(r.page - 1)"><vt-icon name="chevron-left" [size]="16" /> Anterior</button>
+              <button class="btn btn--sm" type="button" [disabled]="r.page >= r.totalPages || loading()" (click)="goTo(r.page + 1)">Próxima <vt-icon name="chevron-right" [size]="16" /></button>
+            </div>
+          }
+        </div>
+      }
+    }
+  </div>
+</div>

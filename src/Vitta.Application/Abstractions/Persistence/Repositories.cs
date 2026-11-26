@@ -39,8 +39,10 @@ public sealed record PolicySyncCandidate(Policy Policy, string ClientCpf);
 public interface IProspectRepository
 {
     Task<Prospect?> GetByIdAsync(Guid id, CancellationToken ct = default);
-    /// <summary>Todos os prospects (sem tracking) - usado para evitar duplicados na importacao.</summary>
+    /// <summary>Todos os prospects - usado para achar duplicados na importacao (com tracking para poder atualizar).</summary>
     Task<IReadOnlyList<Prospect>> ListAllAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<Prospect>> ListByImportAsync(Guid importId, CancellationToken ct = default);
+    Task<IReadOnlyList<Prospect>> ListByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct = default);
     void Add(Prospect prospect);
     void Remove(Prospect prospect);
 }
@@ -97,4 +99,11 @@ public interface INotificationSettingsRepository
     /// <summary>Configuracao do e-mail diario (nula = ninguem configurou ainda).</summary>
     Task<NotificationSettings?> GetAsync(CancellationToken ct = default);
     void Add(NotificationSettings settings);
+}
+
+public interface IProspectImportRepository
+{
+    Task<ProspectImport?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    void Add(ProspectImport import);
+    void Remove(ProspectImport import);
 }

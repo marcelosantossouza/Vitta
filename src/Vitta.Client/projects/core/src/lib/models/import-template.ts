@@ -67,4 +67,8 @@ export interface ProspectImportResultDto {
   created: number;
   skipped: number;
   messages: string[];
+  /** Já existiam e tiveram campos vazios completados (opção "atualizar quem já existe"). */
+  updated: number;
+  /** Lote criado (aparece no histórico e pode ser excluído). */
+  importId: string | null;
 }

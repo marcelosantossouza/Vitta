@@ -307,15 +307,41 @@ namespace Vitta.Persistence.Migrations.Postgres
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Address")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<DateOnly?>("BirthDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("City")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<Guid?>("ConvertedClientId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<decimal?>("Discounts")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
+
                     b.Property<string>("Email")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<decimal?>("EstimatedSalary")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
+
+                    b.Property<Guid?>("ImportId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal?>("Loans")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -328,7 +354,15 @@ namespace Vitta.Persistence.Migrations.Postgres
                     b.Property<string>("Notes")
                         .HasColumnType("text");
 
+                    b.Property<string>("Occupation")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
                     b.Property<string>("Phone")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Phone2")
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
 
@@ -341,14 +375,67 @@ namespace Vitta.Persistence.Migrations.Postgres
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
 
+                    b.Property<string>("State")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ZipCode")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("City");
+
+                    b.HasIndex("ImportId");
+
+                    b.HasIndex("Stage");
+
+                    b.HasIndex("State");
+
+                    b.ToTable("prospects", "vitta");
+                });
+
+            modelBuilder.Entity("Vitta.Domain.Prospects.ProspectImport", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Created")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("Skipped")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TemplateName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<int>("TotalRows")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Updated")
+                        .HasColumnType("integer");
+
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Stage");
-
-                    b.ToTable("prospects", "vitta");
+                    b.ToTable("prospect_imports", "vitta");
                 });
 
             modelBuilder.Entity("Vitta.Domain.Settings.AiSettings", b =>
@@ -628,6 +715,14 @@ namespace Vitta.Persistence.Migrations.Postgres
                     b.Navigation("Changes");
 
                     b.Navigation("Rows");
+                });
+
+            modelBuilder.Entity("Vitta.Domain.Prospects.Prospect", b =>
+                {
+                    b.HasOne("Vitta.Domain.Prospects.ProspectImport", null)
+                        .WithMany()
+                        .HasForeignKey("ImportId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 #pragma warning restore 612, 618
         }

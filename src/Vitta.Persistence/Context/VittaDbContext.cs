@@ -22,6 +22,7 @@ public abstract class VittaDbContext(DbContextOptions options) : DbContext(optio
     public DbSet<Insurer> Insurers => Set<Insurer>();
     public DbSet<Policy> Policies => Set<Policy>();
     public DbSet<Prospect> Prospects => Set<Prospect>();
+    public DbSet<ProspectImport> ProspectImports => Set<ProspectImport>();
     public DbSet<PortfolioImport> PortfolioImports => Set<PortfolioImport>();
     public DbSet<User> Users => Set<User>();
     public DbSet<ImportTemplate> ImportTemplates => Set<ImportTemplate>();

@@ -9,8 +9,9 @@ import {
 import { Observable } from 'rxjs';
 import { FileOrPaste } from '../../shared/file-or-paste';
 import { Icon } from '../../shared/icon';
-import { IsoDatePipe } from '../../shared/pipes';
+import { BrlPipe, IsoDatePipe } from '../../shared/pipes';
 import { ToastService } from '../../shared/toast.service';
+import { ProspectTabs } from './prospect-tabs';
 
 interface Column {
   stage: ProspectStage;
@@ -20,7 +21,7 @@ interface Column {
 
 @Component({
   selector: 'vt-prospect-board',
-  imports: [ReactiveFormsModule, RouterLink, CdkDropListGroup, CdkDropList, CdkDrag, Icon, IsoDatePipe, FileOrPaste],
+  imports: [ReactiveFormsModule, RouterLink, CdkDropListGroup, CdkDropList, CdkDrag, Icon, IsoDatePipe, BrlPipe, FileOrPaste, ProspectTabs],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './prospect-board.html',
   styleUrl: './prospect-board.scss',
@@ -50,7 +51,12 @@ export class ProspectBoard {
   protected readonly columns = computed<Column[]>(() => {
     const term = this.search().trim().toLowerCase();
     const list = this.prospects().filter(
-      p => !term || p.name.toLowerCase().includes(term) || (p.phone ?? '').includes(term) || (p.source ?? '').toLowerCase().includes(term),
+      p =>
+        !term ||
+        p.name.toLowerCase().includes(term) ||
+        (p.phone ?? '').includes(term) ||
+        (p.source ?? '').toLowerCase().includes(term) ||
+        (p.city ?? '').toLowerCase().includes(term),
     );
     return this.stages
       .filter(stage => this.showClosed() || (stage !== 'Won' && stage !== 'Lost'))
@@ -73,6 +79,8 @@ export class ProspectBoard {
   protected readonly importTemplateId = signal('');
   protected readonly importFile = signal<File | null>(null);
   protected readonly importResult = signal<ProspectImportResultDto | null>(null);
+  /** Repetidos: completar os campos vazios com os dados da planilha (em vez de so ignorar). */
+  protected readonly importUpdateExisting = signal(false);
   protected readonly wizardParams = { kind: 'Prospects', returnUrl: '/prospeccao' };
 
   protected readonly form = this.fb.group({
@@ -82,7 +90,21 @@ export class ProspectBoard {
     source: [''],
     nextFollowUpOn: [''],
     notes: [''],
+    // Perfil (listas de prospeccao)
+    phone2: [''],
+    occupation: [''],
+    address: [''],
+    city: [''],
+    state: ['', Validators.maxLength(30)],
+    zipCode: [''],
+    birthDate: [''],
+    estimatedSalary: [null as number | null, Validators.min(0)],
+    discounts: [null as number | null, Validators.min(0)],
+    loans: [null as number | null, Validators.min(0)],
   });
+
+  /** Painel "Perfil e renda" do formulario: aberto quando o prospect ja tem algum desses dados. */
+  protected readonly profileOpen = signal(false);
 
   protected readonly convertForm = this.fb.group({
     cpf: ['', [Validators.required, Validators.pattern(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/)]],
@@ -98,6 +120,7 @@ export class ProspectBoard {
       // Voltando do assistente de modelos: abre a importacao com o modelo recem-criado.
       const templateId = params.get('templateId');
       if (templateId) this.openImport(templateId);
+      else if (params.get('importar')) this.openImport();
     });
   }
 
@@ -158,9 +181,15 @@ export class ProspectBoard {
     });
   }
 
+  private readonly emptyProfile = {
+    phone2: '', occupation: '', address: '', city: '', state: '', zipCode: '', birthDate: '',
+    estimatedSalary: null, discounts: null, loans: null,
+  };
+
   protected openNew(): void {
     this.editing.set(null);
-    this.form.reset({ name: '', phone: '', email: '', source: '', nextFollowUpOn: '', notes: '' });
+    this.profileOpen.set(false);
+    this.form.reset({ name: '', phone: '', email: '', source: '', nextFollowUpOn: '', notes: '', ...this.emptyProfile });
     this.dialogError.set(null);
     this.dialog.set('edit');
   }
@@ -174,7 +203,20 @@ export class ProspectBoard {
       source: p.source ?? '',
       nextFollowUpOn: p.nextFollowUpOn ?? '',
       notes: p.notes ?? '',
+      phone2: p.phone2 ?? '',
+      occupation: p.occupation ?? '',
+      address: p.address ?? '',
+      city: p.city ?? '',
+      state: p.state ?? '',
+      zipCode: p.zipCode ?? '',
+      birthDate: p.birthDate ?? '',
+      estimatedSalary: p.estimatedSalary,
+      discounts: p.discounts,
+      loans: p.loans,
     });
+    this.profileOpen.set(
+      [p.phone2, p.occupation, p.address, p.city, p.state, p.zipCode, p.birthDate, p.estimatedSalary, p.discounts, p.loans].some(v => v != null && v !== ''),
+    );
     this.dialogError.set(null);
     this.dialog.set('edit');
   }
@@ -192,6 +234,18 @@ export class ProspectBoard {
       source: v.source.trim() || null,
       notes: v.notes.trim() || null,
       nextFollowUpOn: v.nextFollowUpOn || null,
+      profile: {
+        phone2: v.phone2.trim() || null,
+        occupation: v.occupation.trim() || null,
+        address: v.address.trim() || null,
+        city: v.city.trim() || null,
+        state: v.state.trim() || null,
+        zipCode: v.zipCode.trim() || null,
+        birthDate: v.birthDate || null,
+        estimatedSalary: this.amount(v.estimatedSalary),
+        discounts: this.amount(v.discounts),
+        loans: this.amount(v.loans),
+      },
     };
     const current = this.editing();
     this.busy.set(true);
@@ -207,6 +261,12 @@ export class ProspectBoard {
         this.dialogError.set(problemMessage(err, 'Erro ao salvar prospect.'));
       },
     });
+  }
+
+  private amount(value: number | string | null): number | null {
+    if (value === null || value === '') return null;
+    const n = Number(value);
+    return Number.isNaN(n) ? null : n;
   }
 
   protected remove(): void {
@@ -258,6 +318,7 @@ export class ProspectBoard {
   protected openImport(preselectId?: string): void {
     this.importFile.set(null);
     this.importResult.set(null);
+    this.importUpdateExisting.set(false);
     this.importTemplates.set(null);
     this.dialogError.set(null);
     this.busy.set(false);
@@ -290,11 +351,11 @@ export class ProspectBoard {
     }
     this.busy.set(true);
     this.dialogError.set(null);
-    this.api.importFile(file, templateId).subscribe({
+    this.api.importFile(file, templateId, this.importUpdateExisting()).subscribe({
       next: result => {
         this.busy.set(false);
         this.importResult.set(result);
-        this.toast.success(`${result.created} prospect(s) importado(s).`);
+        this.toast.success(`${result.created} prospect(s) importado(s)${result.updated ? `, ${result.updated} completado(s)` : ''}.`);
         this.load();
       },
       error: err => {
@@ -308,7 +369,7 @@ export class ProspectBoard {
     this.dialog.set(null);
     this.busy.set(false);
     const query = this.route.snapshot.queryParamMap;
-    if (query.has('abrir') || query.has('templateId')) {
+    if (query.has('abrir') || query.has('templateId') || query.has('importar')) {
       void this.router.navigate([], { queryParams: {}, replaceUrl: true });
     }
   }
