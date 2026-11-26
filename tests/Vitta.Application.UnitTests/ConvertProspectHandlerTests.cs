@@ -15,7 +15,7 @@ public class ConvertProspectHandlerTests
         var prospect = Prospect.Create("Carla Souza", "(21) 90000-0000", "carla@ex.com", "Indicacao").Value;
         _prospects.Add(prospect);
 
-        var result = await new ConvertProspectHandler(_prospects, _clients, _uow).Handle(new ConvertProspectCommand(prospect.Id, "529.982.247-25", null), default);
+        var result = await new ConvertProspectHandler(_prospects, _clients, new FakeContactLogRepository(), _uow).Handle(new ConvertProspectCommand(prospect.Id, "529.982.247-25", null), default);
 
         Assert.True(result.IsSuccess);
         var client = Assert.Single(_clients.Clients);
@@ -30,7 +30,7 @@ public class ConvertProspectHandlerTests
     {
         var prospect = Prospect.Create("Carla", null, null, null).Value;
         _prospects.Add(prospect);
-        var handler = new ConvertProspectHandler(_prospects, _clients, _uow);
+        var handler = new ConvertProspectHandler(_prospects, _clients, new FakeContactLogRepository(), _uow);
         await handler.Handle(new ConvertProspectCommand(prospect.Id, "52998224725", null), default);
 
         var second = await handler.Handle(new ConvertProspectCommand(prospect.Id, "11144477735", null), default);

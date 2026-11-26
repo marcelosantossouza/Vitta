@@ -4,6 +4,7 @@ using Vitta.Application.Abstractions.Imports;
 using Vitta.Application.Abstractions.Persistence;
 using Vitta.Domain.Clients;
 using Vitta.Domain.Common;
+using Vitta.Domain.Contacts;
 using Vitta.Domain.Imports;
 using Vitta.Domain.Prospects;
 
@@ -114,4 +115,14 @@ internal sealed class FakeAiSettingsRepository(AiSettings? saved = null) : IAiSe
     public AiSettings? Saved { get; private set; } = saved;
     public Task<AiSettings?> GetAsync(CancellationToken ct = default) => Task.FromResult(Saved);
     public void Add(AiSettings settings) => Saved = settings;
+}
+
+internal sealed class FakeContactLogRepository : IContactLogRepository
+{
+    public List<ContactLog> Logs { get; } = [];
+    public Task<ContactLog?> GetByIdAsync(Guid id, CancellationToken ct = default) => Task.FromResult(Logs.FirstOrDefault(l => l.Id == id));
+    public Task<IReadOnlyList<ContactLog>> ListByProspectAsync(Guid prospectId, CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<ContactLog>>(Logs.Where(l => l.ProspectId == prospectId).ToList());
+    public void Add(ContactLog log) => Logs.Add(log);
+    public void Remove(ContactLog log) => Logs.Remove(log);
 }

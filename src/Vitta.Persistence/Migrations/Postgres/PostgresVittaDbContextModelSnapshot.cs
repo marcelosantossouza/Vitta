@@ -79,6 +79,51 @@ namespace Vitta.Persistence.Migrations.Postgres
                     b.ToTable("clients", "vitta");
                 });
 
+            modelBuilder.Entity("Vitta.Domain.Contacts.ContactLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Channel")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("ClientId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ProspectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("UserName")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClientId", "OccurredAt");
+
+                    b.HasIndex("ProspectId", "OccurredAt");
+
+                    b.ToTable("contact_logs", "vitta");
+                });
+
             modelBuilder.Entity("Vitta.Domain.Imports.ImportTemplate", b =>
                 {
                     b.Property<Guid>("Id")
@@ -776,6 +821,19 @@ namespace Vitta.Persistence.Migrations.Postgres
                         .IsUnique();
 
                     b.ToTable("users", "vitta");
+                });
+
+            modelBuilder.Entity("Vitta.Domain.Contacts.ContactLog", b =>
+                {
+                    b.HasOne("Vitta.Domain.Clients.Client", null)
+                        .WithMany()
+                        .HasForeignKey("ClientId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Vitta.Domain.Prospects.Prospect", null)
+                        .WithMany()
+                        .HasForeignKey("ProspectId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Vitta.Domain.Imports.ImportTemplate", b =>

@@ -179,14 +179,32 @@
 
 @if (dialog() === 'edit') {
   <div class="dialog-backdrop" (click)="closeDialog()">
-    <form class="dialog" [formGroup]="form" (ngSubmit)="save()" (click)="$event.stopPropagation()" novalidate>
+    <form class="dialog prospect-dialog" [formGroup]="form" (ngSubmit)="save()" (click)="$event.stopPropagation()" novalidate>
       <div class="dialog__header">
-        <h2>{{ editing() ? 'Editar prospect' : 'Novo prospect' }}</h2>
+        <h2>{{ editing()?.name ?? 'Novo prospect' }}</h2>
         <button class="btn btn--ghost btn--icon" type="button" (click)="closeDialog()" aria-label="Fechar"><vt-icon name="x" /></button>
       </div>
       @if (editing(); as p) {
         <p class="muted small" style="margin-top: -0.5rem">Etapa atual: <span class="badge badge--primary">{{ stageLabels[p.stage] }}</span>
+          @if (p.nextFollowUpOn) { · próximo contato {{ p.nextFollowUpOn | isoDate }} }
           @if (p.consentAt) { <span class="badge badge--success">Pediu contato em {{ p.consentAt | isoDate }}</span> }</p>
+      }
+      <nav class="tabs dialog-tabs" role="tablist" aria-label="Seções do prospect">
+        <button type="button" role="tab" [class.active]="tab() === 'summary'" [attr.aria-selected]="tab() === 'summary'" (click)="tab.set('summary')">Resumo</button>
+        @if (editing()) {
+          <button type="button" role="tab" [class.active]="tab() === 'history'" [attr.aria-selected]="tab() === 'history'" (click)="tab.set('history')">
+            Histórico @if (historyCount()) { <span class="count-pill">{{ historyCount() }}</span> }</button>
+        }
+        <button type="button" role="tab" [class.active]="tab() === 'profile'" [attr.aria-selected]="tab() === 'profile'" (click)="tab.set('profile')">Perfil</button>
+      </nav>
+
+      @if (tab() === 'summary') {
+      @if (editing(); as p) {
+        <div class="contact-actions">
+          @if (telLink(p); as tel) { <a class="btn btn--sm" [href]="tel"><vt-icon name="phone" [size]="15" /> Ligar</a> }
+          @if (waLink(p); as wa) { <a class="btn btn--sm" [href]="wa" target="_blank" rel="noopener"><vt-icon name="message" [size]="15" /> WhatsApp</a> }
+          <button class="btn btn--sm btn--ghost" type="button" (click)="tab.set('history')"><vt-icon name="edit" [size]="15" /> Registrar contato</button>
+        </div>
       }
       <div class="form-grid">
         <label class="field span-all">
@@ -198,13 +216,16 @@
         <label class="field">E-mail<input type="email" formControlName="email" /></label>
         <label class="field">Origem<input formControlName="source" placeholder="Indicação, Instagram, evento…" /></label>
         <label class="field">Próximo contato<input type="date" formControlName="nextFollowUpOn" /></label>
-        <label class="field span-all">Anotações<textarea formControlName="notes" rows="3"></textarea></label>
+        <label class="field span-all">Anotações fixas<textarea formControlName="notes" rows="3" placeholder="Ex.: prefere ligação à tarde, tem 2 filhos"></textarea>
+          <span class="hint">Cada conversa vai na aba Histórico.</span></label>
       </div>
+      }
 
-      <button type="button" class="profile-toggle" (click)="profileOpen.set(!profileOpen())" [attr.aria-expanded]="profileOpen()">
-        <vt-icon [name]="profileOpen() ? 'chevron-down' : 'chevron-right'" [size]="14" /> Perfil, endereço e renda
-      </button>
-      @if (profileOpen()) {
+      @if (tab() === 'history' && editing(); as p) {
+        <vt-contact-history [prospectId]="p.id" [stage]="p.stage" (registered)="onContactRegistered($event)" (count)="historyCount.set($event)" />
+      }
+
+      @if (tab() === 'profile') {
         <div class="form-grid">
           <label class="field">Telefone 2<input type="tel" formControlName="phone2" /></label>
           <label class="field">Profissão / órgão<input formControlName="occupation" placeholder="Ex.: professor, SEDUC" /></label>
@@ -233,6 +254,7 @@
       @if (dialogError(); as message) {
         <div class="alert alert--danger" style="margin-top: 1rem"><vt-icon name="alert" [size]="18" /><span>{{ message }}</span></div>
       }
+      @if (tab() !== 'history') {
       <div class="form-actions">
         @if (editing(); as p) {
           @if (canDelete()) { <button class="btn btn--danger" type="button" (click)="remove()" style="margin-right: auto"><vt-icon name="trash" [size]="16" /> Excluir</button> }
@@ -242,6 +264,7 @@
         }
         <button class="btn btn--primary" type="submit" [disabled]="busy()">{{ busy() ? 'Salvando…' : 'Salvar' }}</button>
       </div>
+      }
     </form>
   </div>
 }

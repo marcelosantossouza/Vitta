@@ -1,5 +1,6 @@
 using Vitta.Domain.Clients;
 using Vitta.Domain.Common;
+using Vitta.Domain.Contacts;
 using Vitta.Domain.Imports;
 using Vitta.Domain.Insurers;
 using Vitta.Domain.Policies;
@@ -56,6 +57,14 @@ public interface IReferralGroupRepository
     Task<bool> CodeExistsAsync(string code, Guid? exceptId, CancellationToken ct = default);
     void Add(ReferralGroup group);
     void Remove(ReferralGroup group);
+}
+
+public interface IContactLogRepository
+{
+    Task<ContactLog?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    Task<IReadOnlyList<ContactLog>> ListByProspectAsync(Guid prospectId, CancellationToken ct = default);
+    void Add(ContactLog log);
+    void Remove(ContactLog log);
 }
 
 public interface IBrokerSiteRepository

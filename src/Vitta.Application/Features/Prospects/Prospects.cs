@@ -149,7 +149,7 @@ internal sealed class ConvertProspectValidator : AbstractValidator<ConvertProspe
     public ConvertProspectValidator() => RuleFor(x => x.Cpf).NotEmpty().WithName("CPF");
 }
 
-public sealed class ConvertProspectHandler(IProspectRepository prospects, IClientRepository clients, IUnitOfWork uow)
+public sealed class ConvertProspectHandler(IProspectRepository prospects, IClientRepository clients, IContactLogRepository contacts, IUnitOfWork uow)
     : ICommandHandler<ConvertProspectCommand, Result<Guid>>
 {
     public async ValueTask<Result<Guid>> Handle(ConvertProspectCommand c, CancellationToken ct)
@@ -178,6 +178,12 @@ public sealed class ConvertProspectHandler(IProspectRepository prospects, IClien
         }
 
         clients.Add(client.Value);
+        // O historico de contatos vai junto para o cliente.
+        foreach (var log in await contacts.ListByProspectAsync(prospect.Id, ct))
+        {
+            log.MoveToClient(client.Value.Id);
+        }
+
         await uow.SaveChangesAsync(ct);
         return client.Value.Id;
     }

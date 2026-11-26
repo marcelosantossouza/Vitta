@@ -3,6 +3,7 @@ using Vitta.Application.Abstractions.Persistence;
 using Vitta.Domain.Clients;
 using Vitta.Domain.Common;
 using Vitta.Domain.Imports;
+using Vitta.Domain.Contacts;
 using Vitta.Domain.Insurers;
 using Vitta.Domain.Referrals;
 using Vitta.Domain.Policies;
@@ -183,4 +184,15 @@ internal sealed class SiteImageRepository(VittaDbContext db) : ISiteImageReposit
 
     public void Add(SiteImage image) => db.SiteImages.Add(image);
     public void Remove(SiteImage image) => db.SiteImages.Remove(image);
+}
+
+internal sealed class ContactLogRepository(VittaDbContext db) : IContactLogRepository
+{
+    public Task<ContactLog?> GetByIdAsync(Guid id, CancellationToken ct = default) => db.ContactLogs.FirstOrDefaultAsync(x => x.Id == id, ct);
+
+    public async Task<IReadOnlyList<ContactLog>> ListByProspectAsync(Guid prospectId, CancellationToken ct = default) =>
+        await db.ContactLogs.Where(x => x.ProspectId == prospectId).ToListAsync(ct);
+
+    public void Add(ContactLog log) => db.ContactLogs.Add(log);
+    public void Remove(ContactLog log) => db.ContactLogs.Remove(log);
 }

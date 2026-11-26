@@ -15,6 +15,7 @@ import { mediaQuery, MOBILE_QUERY } from '../../shared/media';
 import { Sheet } from '../../shared/sheet';
 import { BrlPipe, IsoDatePipe } from '../../shared/pipes';
 import { ToastService } from '../../shared/toast.service';
+import { ContactHistory, ContactRegistered } from '../contacts/contact-history';
 import { ProspectTabs } from './prospect-tabs';
 
 interface Column {
@@ -31,7 +32,7 @@ const PAGE = 30;
 
 @Component({
   selector: 'vt-prospect-board',
-  imports: [ReactiveFormsModule, RouterLink, NgTemplateOutlet, CdkDropListGroup, CdkDropList, CdkDrag, Icon, IsoDatePipe, BrlPipe, FileOrPaste, ProspectTabs, Sheet],
+  imports: [ReactiveFormsModule, RouterLink, NgTemplateOutlet, CdkDropListGroup, CdkDropList, CdkDrag, Icon, IsoDatePipe, BrlPipe, FileOrPaste, ProspectTabs, Sheet, ContactHistory],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './prospect-board.html',
   styleUrl: './prospect-board.scss',
@@ -178,8 +179,9 @@ export class ProspectBoard {
     openedOn: [''],
   });
 
-  /** Painel "Perfil e renda" do formulario: aberto quando o prospect ja tem algum desses dados. */
-  protected readonly profileOpen = signal(false);
+  /** Abas da janela do prospect. */
+  protected readonly tab = signal<'summary' | 'history' | 'profile'>('summary');
+  protected readonly historyCount = signal(0);
 
   protected readonly convertForm = this.fb.group({
     cpf: ['', [Validators.required, Validators.pattern(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/)]],
@@ -326,7 +328,8 @@ export class ProspectBoard {
 
   protected openNew(): void {
     this.editing.set(null);
-    this.profileOpen.set(false);
+    this.tab.set('summary');
+    this.historyCount.set(0);
     this.form.reset({ name: '', phone: '', email: '', source: '', nextFollowUpOn: '', notes: '', ...this.emptyProfile });
     this.dialogError.set(null);
     this.dialog.set('edit');
@@ -358,10 +361,8 @@ export class ProspectBoard {
       companySize: p.companySize ?? '',
       openedOn: p.openedOn ?? '',
     });
-    this.profileOpen.set(
-      [p.phone2, p.occupation, p.address, p.city, p.state, p.zipCode, p.birthDate, p.cpf, p.estimatedSalary, p.discounts, p.loans, p.cnpj]
-        .some(v => v != null && v !== ''),
-    );
+    this.tab.set('summary');
+    this.historyCount.set(0);
     this.dialogError.set(null);
     this.dialog.set('edit');
   }
@@ -444,6 +445,15 @@ export class ProspectBoard {
     const el = event.target as HTMLInputElement;
     el.value = maskCpf(el.value);
     this.convertForm.controls.cpf.setValue(el.value);
+  }
+
+  /** Contato registrado no historico: atualiza etapa/proximo contato na janela e no funil. */
+  protected onContactRegistered(e: ContactRegistered): void {
+    const p = this.editing();
+    if (!p) return;
+    this.editing.set({ ...p, stage: e.advanced ? 'Contacted' : p.stage, nextFollowUpOn: e.nextFollowUpOn ?? p.nextFollowUpOn });
+    if (e.nextFollowUpOn) this.form.controls.nextFollowUpOn.setValue(e.nextFollowUpOn);
+    if (e.advanced || e.nextFollowUpOn) this.load();
   }
 
   protected onProfileCpf(event: Event): void {

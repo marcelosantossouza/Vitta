@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Vitta.Application.Abstractions.Persistence;
 using Vitta.Domain.Clients;
 using Vitta.Domain.Imports;
+using Vitta.Domain.Contacts;
 using Vitta.Domain.Insurers;
 using Vitta.Domain.Referrals;
 using Vitta.Domain.Policies;
@@ -23,6 +24,7 @@ public abstract class VittaDbContext(DbContextOptions options) : DbContext(optio
     public DbSet<Insurer> Insurers => Set<Insurer>();
     public DbSet<ReferralGroup> ReferralGroups => Set<ReferralGroup>();
     public DbSet<BrokerSite> BrokerSites => Set<BrokerSite>();
+    public DbSet<ContactLog> ContactLogs => Set<ContactLog>();
     public DbSet<SiteImage> SiteImages => Set<SiteImage>();
     public DbSet<Policy> Policies => Set<Policy>();
     public DbSet<Prospect> Prospects => Set<Prospect>();

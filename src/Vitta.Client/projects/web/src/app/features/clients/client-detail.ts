@@ -6,13 +6,14 @@ import {
   POLICY_STATUS_LABELS, problemMessage, todayIso, AuthService } from '@vitta/core';
 import { EmptyState } from '../../shared/empty-state';
 import { Icon } from '../../shared/icon';
+import { ContactHistory } from '../contacts/contact-history';
 import { BrlPipe, IsoDatePipe, PercentPipe, PolicyStatusPipe } from '../../shared/pipes';
 import { ToastService } from '../../shared/toast.service';
 import { Observable } from 'rxjs';
 
 @Component({
   selector: 'vt-client-detail',
-  imports: [RouterLink, ReactiveFormsModule, Icon, EmptyState, BrlPipe, IsoDatePipe, PercentPipe, PolicyStatusPipe],
+  imports: [RouterLink, ReactiveFormsModule, Icon, EmptyState, BrlPipe, IsoDatePipe, PercentPipe, PolicyStatusPipe, ContactHistory],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './client-detail.html',
   styleUrl: './client-detail.scss',

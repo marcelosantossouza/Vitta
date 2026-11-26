@@ -124,6 +124,7 @@ secured.MapImportTemplateEndpoints();
 secured.MapSettingsEndpoints();
 secured.MapUserEndpoints();
 secured.MapReferralEndpoints();
+secured.MapContactEndpoints();
 
 app.Run();
 

@@ -7,7 +7,8 @@ Melhorias combinadas e ainda não feitas. Ordem dentro de cada bloco = prioridad
 Feito: importação como lote (histórico + excluir), repetidos com opção de completar, campos de perfil e renda
 (endereço, cidade, UF, CEP, telefone 2, nascimento, profissão/órgão, salário, descontos, empréstimos), lista com
 filtros e ações em lote, dashboard com os mesmos filtros, CPF no prospect, filtro por CPF/CNPJ, funil paginado
-(30 cards por etapa + "Mostrar mais", filtros aplicados no servidor).
+(30 cards por etapa + "Mostrar mais", filtros aplicados no servidor), funil no celular, histórico de contatos
+(prospect e cliente, passa junto na conversão) e janela do prospect com abas.
 
 1. **Cuidado LGPD:** salário, descontos e empréstimos são dados pessoais financeiros. Registrar a origem de cada lista
    (base legal) e limitar quem vê esses campos (ex.: perfil Assistente sem acesso a dados financeiros).

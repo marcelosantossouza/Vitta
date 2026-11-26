@@ -56,6 +56,8 @@ public static class DependencyInjection
         services.AddScoped<ILeadCaptureSettingsRepository, LeadCaptureSettingsRepository>();
         services.AddScoped<IReferralGroupRepository, ReferralGroupRepository>();
         services.AddScoped<IBrokerSiteRepository, BrokerSiteRepository>();
+        services.AddScoped<IContactLogRepository, ContactLogRepository>();
+        services.AddScoped<Vitta.Application.Features.Contacts.IContactQueries, ContactQueries>();
         services.AddScoped<ISiteImageRepository, SiteImageRepository>();
 
         // Leitura

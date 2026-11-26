@@ -3,6 +3,7 @@ using Mediator;
 using Vitta.Application.Abstractions.Persistence;
 using Vitta.Application.Common;
 using Vitta.Domain.Common;
+using Vitta.Domain.Contacts;
 using Vitta.Domain.Prospects;
 using Vitta.Domain.Settings;
 
@@ -51,7 +52,7 @@ internal sealed class SubmitLeadValidator : AbstractValidator<SubmitLeadCommand>
 }
 
 public sealed class SubmitLeadHandler(
-    ILeadCaptureSettingsRepository settings, IProspectRepository prospects, IUnitOfWork uow, TimeProvider time)
+    ILeadCaptureSettingsRepository settings, IProspectRepository prospects, IContactLogRepository contacts, IUnitOfWork uow, TimeProvider time)
     : ICommandHandler<SubmitLeadCommand, Result>
 {
     public async ValueTask<Result> Handle(SubmitLeadCommand c, CancellationToken ct)
@@ -71,7 +72,7 @@ public sealed class SubmitLeadHandler(
         var now = time.GetUtcNow();
         var source = Clip("Página de captação" + (string.IsNullOrWhiteSpace(c.Origin) ? string.Empty : " · " + c.Origin.Trim()), 100);
         var profile = new ProspectProfile(City: c.City, State: c.State, BirthDate: c.BirthDate);
-        var request = $"{time.LocalNow():dd/MM/yyyy HH:mm} - pediu contato pela página"
+        var request = "Pediu contato pela página"
                       + (string.IsNullOrWhiteSpace(c.Interest) ? string.Empty : $" (interesse: {c.Interest.Trim()})")
                       + (string.IsNullOrWhiteSpace(c.Origin) ? string.Empty : $" [origem: {c.Origin.Trim()}]");
 
@@ -83,13 +84,13 @@ public sealed class SubmitLeadHandler(
         if (existing is not null)
         {
             existing.FillMissing(c.Phone, c.Email, source, profile);
-            existing.AppendNote(request);
             existing.RecordConsent(now, page.ConsentText);
+            AddRequestToHistory(existing.Id, request, now);
             await uow.SaveChangesAsync(ct);
             return Result.Success();
         }
 
-        var created = Prospect.Create(c.Name, c.Phone, c.Email, source, request, NextBusinessDay(time.LocalNow()));
+        var created = Prospect.Create(c.Name, c.Phone, c.Email, source, null, NextBusinessDay(time.LocalNow()));
         if (created.IsFailure)
         {
             return created.Error;
@@ -98,8 +99,18 @@ public sealed class SubmitLeadHandler(
         created.Value.SetProfile(profile);
         created.Value.RecordConsent(now, page.ConsentText);
         prospects.Add(created.Value);
+        AddRequestToHistory(created.Value.Id, request, now);
         await uow.SaveChangesAsync(ct);
         return Result.Success();
+    }
+
+    /// <summary>O pedido entra no historico de contatos do prospect (canal: formulario).</summary>
+    private void AddRequestToHistory(Guid prospectId, string request, DateTimeOffset now)
+    {
+        if (ContactLog.Create(prospectId, null, now, ContactChannel.Form, request, null, "Página de captação") is { IsSuccess: true } log)
+        {
+            contacts.Add(log.Value);
+        }
     }
 
     /// <summary>Quem pediu contato deve ser procurado logo: agenda para hoje (ou o proximo dia util se for fim de semana).</summary>

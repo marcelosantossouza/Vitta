@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Vitta.API.Infrastructure;
 using Vitta.Application.Features.Auth;
 using Vitta.Application.Features.Clients;
+using Vitta.Application.Features.Contacts;
 using Vitta.Application.Features.Dashboard;
 using Vitta.Application.Features.Imports;
 using Vitta.Application.Features.Insurers;
@@ -15,6 +16,7 @@ using Vitta.Application.Features.Referrals;
 using Vitta.Application.Features.Settings;
 using Vitta.Application.Features.Site;
 using Vitta.Application.Features.Users;
+using Vitta.Domain.Contacts;
 using Vitta.Domain.Imports;
 using Vitta.Domain.Policies;
 using Vitta.Domain.Prospects;
@@ -306,6 +308,24 @@ internal static class SettingsEndpoints
             (await s.Send(new UpdateNotificationSettingsCommand(i.DailyEmailEnabled, i.Recipients ?? [], i.SendAt), ct)).ToNoContent());
         g.MapPost("/notifications/send-now", async (ISender s, CancellationToken ct) =>
             (await s.Send(new SendDailyDigestCommand(Scheduled: false), ct)).ToOk());
+    }
+}
+
+internal static class ContactEndpoints
+{
+    public sealed record ContactInput(
+        Guid? ProspectId, Guid? ClientId, ContactChannel Channel, string Summary, DateTimeOffset? OccurredAt, DateOnly? NextFollowUpOn, bool? AdvanceStage);
+
+    public static void MapContactEndpoints(this IEndpointRouteBuilder app)
+    {
+        var g = app.MapGroup("/contacts").WithTags("Contatos");
+        g.MapGet("/", async (Guid? prospectId, Guid? clientId, ISender s, CancellationToken ct) =>
+            Results.Ok(await s.Send(new GetContactsQuery(prospectId, clientId), ct)));
+        g.MapPost("/", async (ContactInput i, ISender s, CancellationToken ct) =>
+            (await s.Send(new RegisterContactCommand(i.ProspectId, i.ClientId, i.Channel, i.Summary, i.OccurredAt, i.NextFollowUpOn, i.AdvanceStage ?? false), ct))
+                .ToCreated("/api/contacts"));
+        g.MapDelete("/{id:guid}", async (Guid id, ISender s, CancellationToken ct) => (await s.Send(new DeleteContactCommand(id), ct)).ToNoContent())
+            .RequireAuthorization(AuthPolicies.CanDelete);
     }
 }
 

@@ -123,10 +123,6 @@
   }
 }
 
-.profile-toggle {
-  display: inline-flex; align-items: center; gap: 0.35rem; margin: 1rem 0 0.5rem; padding: 0; border: 0; background: none;
-  font: inherit; font-weight: 600; color: var(--vt-primary); cursor: pointer;
-}
 .check { display: flex; gap: 0.6rem; align-items: flex-start; font-size: 0.875rem; cursor: pointer;
   input { width: 16px; height: 16px; min-height: 0; margin-top: 0.15rem; accent-color: var(--vt-primary); flex-shrink: 0; } }
 .section-title { margin: 0.5rem 0 0; font-weight: 600; font-size: 0.85rem; color: var(--vt-muted); }
@@ -140,3 +136,9 @@
 .column__more {
   display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.25rem 0.15rem 0;
 }
+
+.prospect-dialog { width: min(680px, 100%); }
+.dialog-tabs { display: flex; margin: 0 0 1rem; width: 100%;
+  button { flex: 1; justify-content: center; display: inline-flex; align-items: center; gap: 0.35rem; } }
+.count-pill { font-size: 0.7rem; font-weight: 700; background: var(--vt-primary-soft); color: var(--vt-primary); border-radius: 999px; padding: 0 0.4rem; }
+.contact-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
