@@ -3,13 +3,13 @@
     <div>
       <h1>Prospecção</h1>
       <p class="subtitle">
-        Arraste os cartões entre as colunas para avançar no funil.
+        <span class="hide-mobile">Arraste os cartões entre as colunas para avançar no funil.</span>
         @if (overdueCount() > 0) { <span class="badge badge--warning">{{ overdueCount() }} follow-up(s) para hoje ou atrasados</span> }
       </p>
     </div>
     <div class="actions">
-      <button class="btn" type="button" (click)="openImport()"><vt-icon name="upload" [size]="18" /> Importar planilha</button>
-      <button class="btn btn--primary" type="button" (click)="openNew()"><vt-icon name="plus" [size]="18" /> Novo prospect</button>
+      <button class="btn" type="button" (click)="openImport()" aria-label="Importar planilha"><vt-icon name="upload" [size]="18" /> <span class="hide-mobile">Importar planilha</span></button>
+      <button class="btn btn--primary hide-mobile" type="button" (click)="openNew()"><vt-icon name="plus" [size]="18" /> Novo prospect</button>
     </div>
   </div>
 
@@ -33,8 +33,7 @@
     </label>
   </div>
 
-  @if (filtersOpen()) {
-    <div class="filters card">
+  <ng-template #filterFields>
       <label class="field">Tipo
         <select (change)="setFilter(kind, $any($event.target).value)">
           <option value="Any" [selected]="kind() === 'Any'">Pessoas e empresas</option>
@@ -67,7 +66,22 @@
         </select>
       </label>
       <button class="btn btn--ghost" type="button" (click)="clearFilters()" [disabled]="!activeFilters()"><vt-icon name="x" [size]="16" /> Limpar</button>
-    </div>
+    </ng-template>
+
+  @if (filtersOpen() && !isMobile()) {
+    <div class="filters card"><ng-container *ngTemplateOutlet="filterFields" /></div>
+  }
+  @if (filtersOpen() && isMobile()) {
+    <vt-sheet title="Filtros" (closed)="filtersOpen.set(false)">
+      <div class="filters filters--sheet">
+        <ng-container *ngTemplateOutlet="filterFields" />
+        <label class="toggle">
+          <input type="checkbox" [checked]="showClosed()" (change)="showClosed.set($any($event.target).checked)" />
+          Mostrar ganhos e perdidos
+        </label>
+      </div>
+      <div class="form-actions"><button class="btn btn--primary" type="button" (click)="filtersOpen.set(false)">Ver {{ totalShown() }} resultado(s)</button></div>
+    </vt-sheet>
   }
 
   @if (!loading() && activeFilters()) {
@@ -80,7 +94,17 @@
       @for (s of stages; track s) { <div class="column"><div class="skeleton" style="height: 6rem"></div></div> }
     </div>
   } @else {
-    <div class="board" cdkDropListGroup>
+    @if (isMobile()) {
+      <div class="stage-tabs" role="tablist" aria-label="Etapas" #tabsEl>
+        @for (col of columns(); track col.stage; let i = $index) {
+          <button type="button" role="tab" class="stage-tab" [class]="'stage-tab stage-' + col.stage" [class.on]="i === activeIndex()"
+            [attr.aria-selected]="i === activeIndex()" (click)="goToStage(i)">
+            <span class="dot"></span>{{ col.label }} <b>{{ col.total }}</b>
+          </button>
+        }
+      </div>
+    }
+    <div class="board" cdkDropListGroup #boardEl (scroll)="onBoardScroll()">
       @for (col of columns(); track col.stage) {
         <section class="column" [class]="'column stage-' + col.stage" cdkDropList [cdkDropListData]="col" (cdkDropListDropped)="drop($event)">
           <header class="column__header">
@@ -90,7 +114,7 @@
           </header>
 
           @for (p of col.items; track p.id) {
-            <article class="prospect" cdkDrag [cdkDragData]="p" (click)="openEdit(p)" tabindex="0" (keydown.enter)="openEdit(p)">
+            <article class="prospect" cdkDrag [cdkDragData]="p" [cdkDragDisabled]="isMobile()" (click)="openEdit(p)" tabindex="0" (keydown.enter)="openEdit(p)">
               <strong>{{ p.name }}</strong>
               @if (p.consentAt) { <span class="badge badge--success" title="Pediu contato pela página de captação"><vt-icon name="check" [size]="12" /> Pediu contato</span> }
               @if (p.cnpj) { <span class="muted small"><span class="badge badge--info">Empresa{{ p.companySize ? ' · ' + p.companySize : '' }}</span></span> }
@@ -108,12 +132,20 @@
               @if (p.convertedClientId) {
                 <a class="badge badge--success" [routerLink]="['/clientes', p.convertedClientId]" (click)="$event.stopPropagation()">Ver cliente</a>
               }
-              <select class="move" aria-label="Mover para" (click)="$event.stopPropagation()" (change)="moveTo(p, $any($event.target).value)">
-                @for (s of stages; track s) { <option [value]="s" [selected]="s === p.stage">{{ stageLabels[s] }}</option> }
-              </select>
+              @if (isMobile()) {
+                <div class="quick" (click)="$event.stopPropagation()">
+                  @if (telLink(p); as tel) { <a class="btn btn--sm btn--ghost btn--icon" [href]="tel" aria-label="Ligar"><vt-icon name="phone" [size]="16" /></a> }
+                  @if (waLink(p); as wa) { <a class="btn btn--sm btn--ghost btn--icon" [href]="wa" target="_blank" rel="noopener" aria-label="WhatsApp"><vt-icon name="message" [size]="16" /></a> }
+                  <button class="btn btn--sm move-btn" type="button" (click)="moveSheetFor.set(p)">Mover <vt-icon name="chevron-right" [size]="14" /></button>
+                </div>
+              } @else {
+                <select class="move" aria-label="Mover para" (click)="$event.stopPropagation()" (change)="moveTo(p, $any($event.target).value)">
+                  @for (s of stages; track s) { <option [value]="s" [selected]="s === p.stage">{{ stageLabels[s] }}</option> }
+                </select>
+              }
             </article>
           } @empty {
-            <p class="column__empty">Arraste cartões para cá</p>
+            <p class="column__empty">{{ isMobile() ? 'Nenhum prospect nesta etapa' : 'Arraste cartões para cá' }}</p>
           }
           @if (col.items.length < col.total) {
             <div class="column__more">
@@ -128,6 +160,22 @@
     </div>
   }
 </div>
+
+<button class="fab" type="button" (click)="openNew()" aria-label="Novo prospect"><vt-icon name="plus" [size]="26" /></button>
+
+@if (moveSheetFor(); as p) {
+  <vt-sheet [title]="'Mover ' + p.name" (closed)="moveSheetFor.set(null)">
+    <div class="move-list">
+      @for (s of stages; track s) {
+        <button type="button" class="move-opt" [class]="'move-opt stage-' + s" [disabled]="s === p.stage" (click)="moveFromSheet(p, s)">
+          <span class="dot"></span> {{ stageLabels[s] }}
+          @if (s === p.stage) { <small class="muted">etapa atual</small> }
+          @if (s === nextStage(p)) { <span class="badge badge--primary">próxima</span> }
+        </button>
+      }
+    </div>
+  </vt-sheet>
+}
 
 @if (dialog() === 'edit') {
   <div class="dialog-backdrop" (click)="closeDialog()">

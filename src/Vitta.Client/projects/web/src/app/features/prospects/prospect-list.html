@@ -29,6 +29,16 @@
       </label>
     </div>
 
+    @if (isMobile()) {
+      <button class="btn more-filters" type="button" (click)="filtersOpen.set(true)">
+        <vt-icon name="filter" [size]="16" /> Filtros @if (activeFilters()) { <span class="badge badge--primary">{{ activeFilters() }}</span> }
+      </button>
+    } @else {
+      <ng-container *ngTemplateOutlet="moreFilters" />
+    }
+  </section>
+
+  <ng-template #moreFilters>
     <div class="stages" role="group" aria-label="Etapas">
       @for (s of stages; track s) {
         <button type="button" class="chip" [class.on]="stageFilter().includes(s)" (click)="toggleStage(s)">{{ stageLabels[s] }}</button>
@@ -114,11 +124,18 @@
         <button class="btn btn--sm btn--ghost" type="button" (click)="clearFilters()"><vt-icon name="x" [size]="14" /> Limpar filtros</button>
       </div>
     }
-  </section>
+  </ng-template>
+
+  @if (filtersOpen() && isMobile()) {
+    <vt-sheet title="Filtros" (closed)="filtersOpen.set(false)">
+      <div class="filters filters--sheet"><ng-container *ngTemplateOutlet="moreFilters" /></div>
+      <div class="form-actions"><button class="btn btn--primary" type="button" (click)="filtersOpen.set(false)">Ver resultados</button></div>
+    </vt-sheet>
+  }
 
   <!-- Painel com os mesmos filtros -->
   @if (insights(); as i) {
-    <div class="kpis">
+    <div class="kpis list-kpis">
       <div class="card kpi kpi--highlight">
         <span class="kpi__icon"><vt-icon name="users" /></span>
         <div>
@@ -153,6 +170,12 @@
       </div>
     </div>
 
+    @if (isMobile()) {
+      <button class="btn btn--ghost btn--sm charts-toggle" type="button" (click)="chartsOpen.set(!chartsOpen())" [attr.aria-expanded]="chartsOpen()">
+        <vt-icon [name]="chartsOpen() ? 'chevron-down' : 'chevron-right'" [size]="14" /> {{ chartsOpen() ? 'Esconder gráficos' : 'Ver gráficos' }}
+      </button>
+    }
+    @if (!isMobile() || chartsOpen()) {
     <div class="charts">
       <section class="card chart">
         <h3>Funil</h3>
@@ -176,6 +199,7 @@
         }
       </section>
     </div>
+    }
   }
 
   <!-- Acao em lote -->
@@ -216,7 +240,7 @@
         </p>
       } @else {
         <div class="table-wrap">
-          <table class="responsive">
+          <table class="responsive compact-rows">
             <thead>
               <tr>
                 <th class="check"><input type="checkbox" aria-label="Selecionar a página" [checked]="allOnPageSelected()"

@@ -1,5 +1,6 @@
 import { CdkDrag, CdkDragDrop, CdkDropList, CdkDropListGroup } from '@angular/cdk/drag-drop';
-import { ChangeDetectionStrategy, Component, computed, inject, signal, WritableSignal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, signal, viewChild, WritableSignal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -10,6 +11,8 @@ import {
 import { Observable } from 'rxjs';
 import { FileOrPaste } from '../../shared/file-or-paste';
 import { Icon } from '../../shared/icon';
+import { mediaQuery, MOBILE_QUERY } from '../../shared/media';
+import { Sheet } from '../../shared/sheet';
 import { BrlPipe, IsoDatePipe } from '../../shared/pipes';
 import { ToastService } from '../../shared/toast.service';
 import { ProspectTabs } from './prospect-tabs';
@@ -28,7 +31,7 @@ const PAGE = 30;
 
 @Component({
   selector: 'vt-prospect-board',
-  imports: [ReactiveFormsModule, RouterLink, CdkDropListGroup, CdkDropList, CdkDrag, Icon, IsoDatePipe, BrlPipe, FileOrPaste, ProspectTabs],
+  imports: [ReactiveFormsModule, RouterLink, NgTemplateOutlet, CdkDropListGroup, CdkDropList, CdkDrag, Icon, IsoDatePipe, BrlPipe, FileOrPaste, ProspectTabs, Sheet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './prospect-board.html',
   styleUrl: './prospect-board.scss',
@@ -83,6 +86,56 @@ export class ProspectBoard {
   );
 
   protected readonly totalShown = computed(() => this.columns().reduce((n, c) => n + c.total, 0));
+
+  // ---------- Celular: uma etapa por tela (deslizar), abas das etapas e "Mover" em painel ----------
+  protected readonly isMobile = mediaQuery(MOBILE_QUERY);
+  protected readonly activeIndex = signal(0);
+  protected readonly moveSheetFor = signal<ProspectDto | null>(null);
+  private readonly boardEl = viewChild<ElementRef<HTMLElement>>('boardEl');
+  private readonly tabsEl = viewChild<ElementRef<HTMLElement>>('tabsEl');
+
+  /** Ao deslizar o quadro, marca a aba da etapa que esta na tela. */
+  protected onBoardScroll(): void {
+    const board = this.boardEl()?.nativeElement;
+    if (!board || !this.isMobile()) return;
+    const cols = Array.from(board.children) as HTMLElement[];
+    let best = 0;
+    cols.forEach((c, i) => {
+      if (Math.abs(c.offsetLeft - board.scrollLeft) < Math.abs(cols[best]!.offsetLeft - board.scrollLeft)) best = i;
+    });
+    if (best !== this.activeIndex()) {
+      this.activeIndex.set(best);
+      (this.tabsEl()?.nativeElement.children[best] as HTMLElement | undefined)?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+    }
+  }
+
+  protected goToStage(index: number): void {
+    const board = this.boardEl()?.nativeElement;
+    const col = board?.children[index] as HTMLElement | undefined;
+    if (!board || !col) return;
+    this.activeIndex.set(index);
+    board.scrollTo({ left: col.offsetLeft, behavior: 'smooth' });
+  }
+
+  protected nextStage(p: ProspectDto): ProspectStage | null {
+    const i = this.stages.indexOf(p.stage);
+    return p.stage === 'Won' || p.stage === 'Lost' || i < 0 || i >= this.stages.length - 2 ? null : this.stages[i + 1]!;
+  }
+
+  protected moveFromSheet(p: ProspectDto, stage: ProspectStage): void {
+    this.moveSheetFor.set(null);
+    this.moveTo(p, stage);
+  }
+
+  protected telLink(p: ProspectDto): string | null {
+    const d = (p.phone ?? p.phone2 ?? '').replace(/\D/g, '');
+    return d.length >= 10 ? `tel:+55${d.slice(-11)}` : null;
+  }
+
+  protected waLink(p: ProspectDto): string | null {
+    const d = (p.phone ?? p.phone2 ?? '').replace(/\D/g, '');
+    return d.length >= 10 ? `https://wa.me/55${d.slice(-11)}` : null;
+  }
 
   // ---------- Importacao de planilha ----------
   private readonly templatesApi = inject(ImportTemplatesApi);

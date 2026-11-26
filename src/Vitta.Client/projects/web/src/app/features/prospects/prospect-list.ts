@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -8,6 +9,8 @@ import {
 } from '@vitta/core';
 import { debounceTime, Subject } from 'rxjs';
 import { Icon } from '../../shared/icon';
+import { mediaQuery, MOBILE_QUERY } from '../../shared/media';
+import { Sheet } from '../../shared/sheet';
 import { BrlPipe, IsoDatePipe, PercentPipe } from '../../shared/pipes';
 import { ToastService } from '../../shared/toast.service';
 import { ProspectTabs } from './prospect-tabs';
@@ -21,7 +24,7 @@ const OPEN_STAGES: ProspectStage[] = ['New', 'Contacted', 'MeetingScheduled', 'P
  */
 @Component({
   selector: 'vt-prospect-list',
-  imports: [Icon, BrlPipe, IsoDatePipe, PercentPipe, ProspectTabs],
+  imports: [Icon, BrlPipe, IsoDatePipe, PercentPipe, ProspectTabs, NgTemplateOutlet, Sheet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './prospect-list.html',
   styleUrl: './prospect-list.scss',
@@ -43,6 +46,9 @@ export class ProspectList {
   protected readonly today = todayIso();
 
   // ---- filtros ----
+  protected readonly isMobile = mediaQuery(MOBILE_QUERY);
+  protected readonly filtersOpen = signal(false);
+  protected readonly chartsOpen = signal(false);
   protected readonly search = signal('');
   /** CPF ou CNPJ (começo). */
   protected readonly document = signal('');

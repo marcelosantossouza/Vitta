@@ -305,6 +305,14 @@ a.kpi__hint { color: var(--vt-primary); font-weight: 550; }
 .kpi__hint a { color: var(--vt-primary); font-weight: 550; text-decoration: none; }
 .kpi--highlight .kpi__hint a { color: #fff; }
 
+/* Quem pediu menos movimento no sistema nao ve animacoes */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+
+/* Some no celular (ex.: texto de botao que vira so icone) */
+@media (max-width: 720px) { .hide-mobile { display: none !important; } }
+
 /* ---------- Impressao / PDF: so o conteudo da pagina ---------- */
 @media print {
   vt-shell { display: block !important; }
