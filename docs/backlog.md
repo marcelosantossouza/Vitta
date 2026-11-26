@@ -4,24 +4,15 @@ Melhorias combinadas e ainda não feitas. Ordem dentro de cada bloco = prioridad
 
 ## Prospecção
 
-1. **Importação como lote (histórico + desfazer).** Hoje os prospects importados não guardam de qual arquivo vieram,
-   então não há como apagar uma importação. Criar o registro da importação (arquivo, modelo, data, quem importou,
-   criados/ignorados), listar o histórico e permitir **excluir a importação**, removendo os prospects criados por ela.
-   Decidir: prospect que já foi trabalhado (mudou de etapa, ganhou anotação ou virou cliente) sai junto ou fica?
-   Sugestão: fica, e a tela avisa quantos foram mantidos.
-2. **Repetidos: pular ou atualizar.** Hoje o repetido (mesmo e-mail, mesmo telefone ou mesmo nome sem contato) é só
-   ignorado; dados novos da planilha se perdem. Dar a opção, na importação, de **atualizar os campos vazios/antigos** do
-   prospect existente, e mostrar a lista de quem foi ignorado ou atualizado.
-3. **Mais informações por prospect.** As planilhas costumam trazer: cidade, UF, endereço, telefones, salário base
-   estimado, descontos, empréstimos (margem), entre outros. Campos fixos para os comuns (cidade, UF, endereço,
-   telefone 2, data de nascimento, salário, descontos, empréstimos) + **campos personalizados** para o resto (mesma
-   ideia do catálogo de campos com tipo da carteira, abaixo).
-4. **Tela de gestão em lista** (além do quadro por etapa): filtros por cidade, UF, faixa de salário, etapa, origem,
-   próxima data de contato e importação; ordenação; seleção em lote (mudar etapa, agendar contato); exportar o filtro.
-5. **Dashboard da prospecção:** funil por etapa, taxa de conversão, prospects por origem/cidade/importação, contatos
-   atrasados, novos e convertidos por semana.
-6. **Cuidado LGPD:** salário, descontos e empréstimos são dados pessoais financeiros. Registrar a origem de cada lista
+Feito: importação como lote (histórico + excluir), repetidos com opção de completar, campos de perfil e renda
+(endereço, cidade, UF, CEP, telefone 2, nascimento, profissão/órgão, salário, descontos, empréstimos), lista com
+filtros e ações em lote, dashboard com os mesmos filtros.
+
+1. **Cuidado LGPD:** salário, descontos e empréstimos são dados pessoais financeiros. Registrar a origem de cada lista
    (base legal) e limitar quem vê esses campos (ex.: perfil Assistente sem acesso a dados financeiros).
+2. **Campos personalizados** também na prospecção (colunas sem campo próprio hoje vão para "Outras informações",
+   visíveis mas não filtráveis).
+3. Exportar a lista filtrada (planilha) e filtros salvos ("minhas listas").
 
 ## Carteira
 
