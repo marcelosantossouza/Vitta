@@ -70,3 +70,29 @@ export interface NotificationSettingsInput {
   recipients: string[];
   sendAt: string;
 }
+
+/** Página pública de captação (/simular). */
+export interface LeadCaptureSettings {
+  enabled: boolean;
+  brokerName: string;
+  headline: string;
+  whatsApp: string | null;
+}
+
+export interface LeadPageDto extends LeadCaptureSettings {
+  consentText: string;
+}
+
+export interface LeadRequest {
+  name: string;
+  phone: string;
+  email: string | null;
+  city: string | null;
+  state: string | null;
+  birthDate: string | null;
+  interest: string | null;
+  origin: string | null;
+  consent: boolean;
+  /** Campo invisível anti-robô: sempre vazio. */
+  website: string | null;
+}

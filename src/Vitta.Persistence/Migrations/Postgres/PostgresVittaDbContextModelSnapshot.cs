@@ -330,8 +330,19 @@ namespace Vitta.Persistence.Migrations.Postgres
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
 
+                    b.Property<DateTimeOffset?>("ConsentAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ConsentText")
+                        .HasMaxLength(600)
+                        .HasColumnType("character varying(600)");
+
                     b.Property<Guid?>("ConvertedClientId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Cpf")
+                        .HasMaxLength(11)
+                        .HasColumnType("character varying(11)");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -411,6 +422,8 @@ namespace Vitta.Persistence.Migrations.Postgres
 
                     b.HasIndex("Cnpj");
 
+                    b.HasIndex("Cpf");
+
                     b.HasIndex("ImportId");
 
                     b.HasIndex("Stage");
@@ -489,6 +502,40 @@ namespace Vitta.Persistence.Migrations.Postgres
                     b.HasKey("Id");
 
                     b.ToTable("ai_settings", "vitta");
+                });
+
+            modelBuilder.Entity("Vitta.Domain.Settings.LeadCaptureSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BrokerName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Headline")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("WhatsApp")
+                        .HasMaxLength(13)
+                        .HasColumnType("character varying(13)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("lead_capture_settings", "vitta");
                 });
 
             modelBuilder.Entity("Vitta.Domain.Settings.NotificationSettings", b =>

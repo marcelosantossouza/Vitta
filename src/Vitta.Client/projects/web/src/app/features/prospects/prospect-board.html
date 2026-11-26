@@ -18,13 +18,62 @@
   <div class="toolbar">
     <label class="search">
       <vt-icon name="search" [size]="18" />
-      <input type="search" placeholder="Buscar por nome, telefone, cidade ou origem" (input)="search.set($any($event.target).value)" />
+      <input type="search" placeholder="Buscar por nome, telefone, cidade ou origem" [value]="search()" (input)="typed('search', $any($event.target).value)" />
     </label>
+    <label class="search doc">
+      <vt-icon name="id-card" [size]="18" />
+      <input type="search" inputmode="numeric" placeholder="CPF ou CNPJ" aria-label="Filtrar por CPF ou CNPJ" [value]="document()" (input)="typed('document', $any($event.target).value)" />
+    </label>
+    <button class="btn" type="button" (click)="filtersOpen.set(!filtersOpen())" [attr.aria-expanded]="filtersOpen()">
+      <vt-icon name="filter" [size]="16" /> Filtros @if (activeFilters()) { <span class="badge badge--primary">{{ activeFilters() }}</span> }
+    </button>
     <label class="toggle">
       <input type="checkbox" [checked]="showClosed()" (change)="showClosed.set($any($event.target).checked)" />
       Mostrar ganhos e perdidos
     </label>
   </div>
+
+  @if (filtersOpen()) {
+    <div class="filters card">
+      <label class="field">Tipo
+        <select (change)="setFilter(kind, $any($event.target).value)">
+          <option value="Any" [selected]="kind() === 'Any'">Pessoas e empresas</option>
+          <option value="Person" [selected]="kind() === 'Person'">Só pessoas</option>
+          <option value="Company" [selected]="kind() === 'Company'">Só empresas</option>
+        </select>
+      </label>
+      <label class="field">Cidade
+        <select (change)="setFilter(city, $any($event.target).value)">
+          <option value="">Todas</option>
+          @for (c of options()?.cities ?? []; track c) { <option [value]="c" [selected]="c === city()">{{ c }}</option> }
+        </select>
+      </label>
+      <label class="field">UF
+        <select (change)="setFilter(state, $any($event.target).value)">
+          <option value="">Todas</option>
+          @for (u of options()?.states ?? []; track u) { <option [value]="u" [selected]="u === state()">{{ u }}</option> }
+        </select>
+      </label>
+      <label class="field">Importação
+        <select (change)="setFilter(importId, $any($event.target).value)">
+          <option value="">Todas</option>
+          <option value="none" [selected]="importId() === 'none'">Sem importação (manuais e antigas)</option>
+          @for (i of options()?.imports ?? []; track i.id) { <option [value]="i.id" [selected]="i.id === importId()">{{ i.fileName }} · {{ i.createdAt | isoDate }}</option> }
+        </select>
+      </label>
+      <label class="field">Próximo contato
+        <select (change)="setFilter(followUp, $any($event.target).value)">
+          @for (f of followUpOptions; track f) { <option [value]="f" [selected]="f === followUp()">{{ followUpLabels[f] }}</option> }
+        </select>
+      </label>
+      <button class="btn btn--ghost" type="button" (click)="clearFilters()" [disabled]="!activeFilters()"><vt-icon name="x" [size]="16" /> Limpar</button>
+    </div>
+  }
+
+  @if (!loading() && activeFilters()) {
+    <p class="muted small filter-summary">{{ totalShown() }} prospect(s) com estes filtros.
+      <a routerLink="/prospeccao/lista">Ver na lista</a> para selecionar em lote.</p>
+  }
 
   @if (loading()) {
     <div class="board">
@@ -37,12 +86,13 @@
           <header class="column__header">
             <span class="dot"></span>
             <h3>{{ col.label }}</h3>
-            <span class="count">{{ col.items.length }}</span>
+            <span class="count" [title]="col.items.length + ' de ' + col.total + ' carregados'">{{ col.total }}</span>
           </header>
 
           @for (p of col.items; track p.id) {
             <article class="prospect" cdkDrag [cdkDragData]="p" (click)="openEdit(p)" tabindex="0" (keydown.enter)="openEdit(p)">
               <strong>{{ p.name }}</strong>
+              @if (p.consentAt) { <span class="badge badge--success" title="Pediu contato pela página de captação"><vt-icon name="check" [size]="12" /> Pediu contato</span> }
               @if (p.cnpj) { <span class="muted small"><span class="badge badge--info">Empresa{{ p.companySize ? ' · ' + p.companySize : '' }}</span></span> }
               @if (p.phone || p.source) {
                 <span class="muted small">{{ p.phone }}{{ p.phone && p.source ? ' · ' : '' }}{{ p.source }}</span>
@@ -65,6 +115,14 @@
           } @empty {
             <p class="column__empty">Arraste cartões para cá</p>
           }
+          @if (col.items.length < col.total) {
+            <div class="column__more">
+              <span class="muted small">{{ col.items.length }} de {{ col.total }}</span>
+              <button class="btn btn--sm" type="button" (click)="loadMore(col)" [disabled]="col.loadingMore">
+                {{ col.loadingMore ? 'Carregando…' : 'Mostrar mais' }}
+              </button>
+            </div>
+          }
         </section>
       }
     </div>
@@ -79,7 +137,8 @@
         <button class="btn btn--ghost btn--icon" type="button" (click)="closeDialog()" aria-label="Fechar"><vt-icon name="x" /></button>
       </div>
       @if (editing(); as p) {
-        <p class="muted small" style="margin-top: -0.5rem">Etapa atual: <span class="badge badge--primary">{{ stageLabels[p.stage] }}</span></p>
+        <p class="muted small" style="margin-top: -0.5rem">Etapa atual: <span class="badge badge--primary">{{ stageLabels[p.stage] }}</span>
+          @if (p.consentAt) { <span class="badge badge--success">Pediu contato em {{ p.consentAt | isoDate }}</span> }</p>
       }
       <div class="form-grid">
         <label class="field span-all">
@@ -106,6 +165,7 @@
           <label class="field">UF<input formControlName="state" maxlength="30" placeholder="SP" /></label>
           <label class="field">CEP<input formControlName="zipCode" inputmode="numeric" /></label>
           <label class="field">Data de nascimento<input type="date" formControlName="birthDate" /></label>
+          <label class="field">CPF<input formControlName="cpf" inputmode="numeric" placeholder="000.000.000-00" maxlength="14" (input)="onProfileCpf($event)" /></label>
           <label class="field">Salário estimado (R$)<input type="number" min="0" step="0.01" inputmode="decimal" formControlName="estimatedSalary" /></label>
           <label class="field">Descontos (R$)<input type="number" min="0" step="0.01" inputmode="decimal" formControlName="discounts" /></label>
           <label class="field">Empréstimos (R$)<input type="number" min="0" step="0.01" inputmode="decimal" formControlName="loans" /></label>

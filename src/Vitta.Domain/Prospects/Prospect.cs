@@ -23,7 +23,7 @@ public sealed record ProspectProfile(
     string? Phone2 = null, string? Address = null, string? City = null, string? State = null, string? ZipCode = null,
     DateOnly? BirthDate = null, string? Occupation = null, decimal? EstimatedSalary = null, decimal? Discounts = null,
     decimal? Loans = null, string? Cnpj = null, string? LegalName = null, string? Activity = null, string? CompanySize = null,
-    DateOnly? OpenedOn = null)
+    DateOnly? OpenedOn = null, string? Cpf = null)
 {
     public static readonly ProspectProfile Empty = new();
 }
@@ -67,12 +67,36 @@ public sealed class Prospect : AggregateRoot
     public DateOnly? OpenedOn { get; private set; }
     public bool IsCompany => Cnpj is not null;
 
+    /// <summary>Quando a pessoa aceitou ser contatada (pagina de captacao). Nulo = lead de lista/importacao/cadastro manual.</summary>
+    public DateTimeOffset? ConsentAt { get; private set; }
+
+    /// <summary>Texto exato que a pessoa aceitou (prova do consentimento, LGPD art. 8).</summary>
+    public string? ConsentText { get; private set; }
+
+    public void RecordConsent(DateTimeOffset at, string text)
+    {
+        ConsentAt = at;
+        ConsentText = text.Length > 600 ? text[..600] : text;
+        Touch();
+    }
+
+    /// <summary>Acrescenta uma linha nas anotacoes (ex.: novo pedido de contato pela pagina).</summary>
+    public void AppendNote(string line)
+    {
+        var notes = string.IsNullOrWhiteSpace(Notes) ? line : $"{Notes}\n{line}";
+        Notes = notes.Length > 2000 ? notes[^2000..] : notes;
+        Touch();
+    }
+
+    /// <summary>CPF da pessoa (so digitos, validado). Opcional: muitos leads chegam so com nome e telefone.</summary>
+    public string? Cpf { get; private set; }
+
     /// <summary>Importacao de planilha que criou o prospect (nulo = cadastrado a mao ou importacao ja excluida).</summary>
     public Guid? ImportId { get; private set; }
 
     public ProspectProfile Profile =>
         new(Phone2, Address, City, State, ZipCode, BirthDate, Occupation, EstimatedSalary, Discounts, Loans,
-            Cnpj, LegalName, Activity, CompanySize, OpenedOn);
+            Cnpj, LegalName, Activity, CompanySize, OpenedOn, Cpf);
 
     /// <summary>Ainda nao foi trabalhado: continua em "Novo" e nao virou cliente (pode sair junto com a importacao).</summary>
     public bool IsUntouchedLead => Stage == ProspectStage.New && ConvertedClientId is null;
@@ -116,6 +140,18 @@ public sealed class Prospect : AggregateRoot
             return ProspectErrors.NegativeAmount;
         }
 
+        string? cpf = null;
+        if (!string.IsNullOrWhiteSpace(profile.Cpf))
+        {
+            var valid = Common.Cpf.Create(profile.Cpf);
+            if (valid.IsFailure)
+            {
+                return valid.Error;
+            }
+
+            cpf = valid.Value.Value;
+        }
+
         Phone2 = Clip(profile.Phone2, 30);
         Address = Clip(profile.Address, 300);
         City = Clip(profile.City, 100);
@@ -131,6 +167,7 @@ public sealed class Prospect : AggregateRoot
         Activity = Clip(profile.Activity, 250);
         CompanySize = Clip(profile.CompanySize, 30);
         OpenedOn = profile.OpenedOn;
+        Cpf = cpf;
         Touch();
         return Result.Success();
     }
@@ -160,6 +197,7 @@ public sealed class Prospect : AggregateRoot
         Activity ??= Clip(p.Activity, 250);
         CompanySize ??= Clip(p.CompanySize, 30);
         OpenedOn ??= p.OpenedOn;
+        Cpf ??= Common.Cpf.Create(p.Cpf).IsSuccess ? Common.Cpf.Create(p.Cpf).Value.Value : null;
         var changed = before != (Phone, Email, Source, Profile);
         if (changed)
         {

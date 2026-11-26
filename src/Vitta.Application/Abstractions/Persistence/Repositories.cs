@@ -107,3 +107,9 @@ public interface IProspectImportRepository
     void Add(ProspectImport import);
     void Remove(ProspectImport import);
 }
+
+public interface ILeadCaptureSettingsRepository
+{
+    Task<LeadCaptureSettings?> GetAsync(CancellationToken ct = default);
+    void Add(LeadCaptureSettings settings);
+}

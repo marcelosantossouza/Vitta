@@ -6,6 +6,7 @@ using Vitta.Application.Features.Clients;
 using Vitta.Application.Features.Dashboard;
 using Vitta.Application.Features.Imports;
 using Vitta.Application.Features.Insurers;
+using Vitta.Application.Features.LeadCapture;
 using Vitta.Application.Features.Notifications;
 using Vitta.Application.Features.Policies;
 using Vitta.Application.Features.Portfolio;
@@ -106,10 +107,13 @@ internal static class ProspectEndpoints
         public LeadKind? Kind { get; init; }
         public string? CompanySize { get; init; }
 
+        /// <summary>CPF ou CNPJ (comeca com estes digitos).</summary>
+        public string? Document { get; init; }
+
         public ProspectFilter ToFilter() =>
             new(Search, Stage, City, State, Source, Guid.TryParse(ImportId, out var id) ? id : null, SalaryMin, SalaryMax,
                 FollowUp ?? FollowUpFilter.Any, HasPhone, WithoutImport: ImportId == "none", Kind: Kind ?? LeadKind.Any,
-                CompanySize: CompanySize);
+                CompanySize: CompanySize, Document: Document);
     }
 
     public static void MapProspectEndpoints(this IEndpointRouteBuilder app)
@@ -119,8 +123,12 @@ internal static class ProspectEndpoints
             Results.Ok(await s.Send(new GetProspectsQuery(stage, search), ct)));
         g.MapGet("/search", async ([AsParameters] FilterQuery f, ProspectSort? sort, int? page, int? pageSize, ISender s, CancellationToken ct) =>
             Results.Ok(await s.Send(new SearchProspectsQuery(f.ToFilter(), sort ?? ProspectSort.FollowUp, page ?? 1, pageSize ?? 50), ct)));
+        g.MapGet("/board", async ([AsParameters] FilterQuery f, int? take, ISender s, CancellationToken ct) =>
+            Results.Ok(await s.Send(new GetProspectBoardQuery(f.ToFilter(), take ?? 30), ct)));
         g.MapGet("/insights", async ([AsParameters] FilterQuery f, ISender s, CancellationToken ct) =>
             Results.Ok(await s.Send(new GetProspectInsightsQuery(f.ToFilter()), ct)));
+        g.MapGet("/{id:guid}", async (Guid id, ISender s, CancellationToken ct) =>
+            await s.Send(new GetProspectQuery(id), ct) is { } p ? Results.Ok(p) : Results.NotFound());
         g.MapGet("/filter-options", async (ISender s, CancellationToken ct) => Results.Ok(await s.Send(new GetProspectFilterOptionsQuery(), ct)));
         g.MapGet("/ids", async ([AsParameters] FilterQuery f, ISender s, CancellationToken ct) =>
             Results.Ok(await s.Send(new GetProspectIdsQuery(f.ToFilter()), ct)));
@@ -255,6 +263,7 @@ internal static class SettingsEndpoints
 {
     public sealed record AiSettingsInput(AiProvider Provider, string Model, string Effort);
     public sealed record NotificationsInput(bool DailyEmailEnabled, IReadOnlyList<string>? Recipients, string SendAt);
+    public sealed record LeadPageInput(bool Enabled, string? BrokerName, string? Headline, string? WhatsApp);
 
     public static void MapSettingsEndpoints(this IEndpointRouteBuilder app)
     {
@@ -264,6 +273,10 @@ internal static class SettingsEndpoints
             (await s.Send(new UpdateAiSettingsCommand(i.Provider, i.Model, i.Effort), ct)).ToNoContent());
         g.MapPost("/ai/test", async (AiSettingsInput i, ISender s, CancellationToken ct) =>
             Results.Ok(await s.Send(new TestAiConnectionCommand(i.Provider, i.Model, i.Effort), ct)));
+
+        g.MapGet("/lead-page", async (ISender s, CancellationToken ct) => Results.Ok(await s.Send(new GetLeadCaptureSettingsQuery(), ct)));
+        g.MapPut("/lead-page", async (LeadPageInput i, ISender s, CancellationToken ct) =>
+            (await s.Send(new UpdateLeadCaptureSettingsCommand(i.Enabled, i.BrokerName, i.Headline, i.WhatsApp), ct)).ToNoContent());
 
         g.MapGet("/notifications", async (ISender s, CancellationToken ct) => Results.Ok(await s.Send(new GetNotificationSettingsQuery(), ct)));
         g.MapPut("/notifications", async (NotificationsInput i, ISender s, CancellationToken ct) =>
@@ -293,5 +306,29 @@ internal static class UserEndpoints
             (await s.Send(new SetUserActiveCommand(id, false), ct)).ToNoContent());
         g.MapPost("/{id:guid}/reset-password", async (Guid id, PasswordInput i, ISender s, CancellationToken ct) =>
             (await s.Send(new ResetUserPasswordCommand(id, i.TemporaryPassword), ct)).ToNoContent());
+    }
+}
+
+/// <summary>Rotas publicas (sem login): pagina de captacao. Limitadas por IP contra spam.</summary>
+internal static class PublicEndpoints
+{
+    public const string RateLimitPolicy = "public-leads";
+
+    public sealed record LeadInput(
+        string Name, string Phone, string? Email, string? City, string? State, DateOnly? BirthDate, string? Interest,
+        string? Origin, bool Consent, string? Website);
+
+    public static void MapPublicEndpoints(this IEndpointRouteBuilder app)
+    {
+        var g = app.MapGroup("/public").WithTags("Publico").AllowAnonymous();
+        g.MapGet("/lead-page", async (ISender s, CancellationToken ct) =>
+        {
+            var page = await s.Send(new GetLeadPageQuery(), ct);
+            return page.Enabled ? Results.Ok(page) : Results.NotFound();
+        });
+        g.MapPost("/leads", async (LeadInput i, ISender s, CancellationToken ct) =>
+            (await s.Send(new SubmitLeadCommand(i.Name, i.Phone, i.Email, i.City, i.State, i.BirthDate, i.Interest, i.Origin, i.Consent, i.Website), ct))
+                .ToNoContent())
+            .RequireRateLimiting(RateLimitPolicy);
     }
 }

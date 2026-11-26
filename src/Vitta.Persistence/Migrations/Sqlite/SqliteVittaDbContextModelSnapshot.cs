@@ -324,7 +324,18 @@ namespace Vitta.Persistence.Migrations.Sqlite
                         .HasMaxLength(30)
                         .HasColumnType("TEXT");
 
+                    b.Property<long?>("ConsentAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ConsentText")
+                        .HasMaxLength(600)
+                        .HasColumnType("TEXT");
+
                     b.Property<Guid?>("ConvertedClientId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Cpf")
+                        .HasMaxLength(11)
                         .HasColumnType("TEXT");
 
                     b.Property<long>("CreatedAt")
@@ -405,6 +416,8 @@ namespace Vitta.Persistence.Migrations.Sqlite
 
                     b.HasIndex("Cnpj");
 
+                    b.HasIndex("Cpf");
+
                     b.HasIndex("ImportId");
 
                     b.HasIndex("Stage");
@@ -483,6 +496,40 @@ namespace Vitta.Persistence.Migrations.Sqlite
                     b.HasKey("Id");
 
                     b.ToTable("ai_settings", (string)null);
+                });
+
+            modelBuilder.Entity("Vitta.Domain.Settings.LeadCaptureSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("BrokerName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Headline")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("UpdatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("WhatsApp")
+                        .HasMaxLength(13)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("lead_capture_settings", (string)null);
                 });
 
             modelBuilder.Entity("Vitta.Domain.Settings.NotificationSettings", b =>

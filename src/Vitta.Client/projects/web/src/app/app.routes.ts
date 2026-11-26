@@ -17,6 +17,12 @@ export const routes: Routes = [
     title: 'Entrar — Vitta',
     loadComponent: () => import('./features/landing/landing').then(m => m.Landing),
   },
+  // Publica (sem login): pagina de captacao da corretora. ?origem=instagram etc.
+  {
+    path: 'simular',
+    title: 'Seguro de vida — fale com um corretor',
+    loadComponent: () => import('./features/lead-page/lead-page').then(m => m.LeadPage),
+  },
   // Fora do menu: troca obrigatoria de senha (senha provisoria) e troca voluntaria pelo menu do usuario.
   {
     path: 'trocar-senha',

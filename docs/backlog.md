@@ -6,7 +6,8 @@ Melhorias combinadas e ainda não feitas. Ordem dentro de cada bloco = prioridad
 
 Feito: importação como lote (histórico + excluir), repetidos com opção de completar, campos de perfil e renda
 (endereço, cidade, UF, CEP, telefone 2, nascimento, profissão/órgão, salário, descontos, empréstimos), lista com
-filtros e ações em lote, dashboard com os mesmos filtros.
+filtros e ações em lote, dashboard com os mesmos filtros, CPF no prospect, filtro por CPF/CNPJ, funil paginado
+(30 cards por etapa + "Mostrar mais", filtros aplicados no servidor).
 
 1. **Cuidado LGPD:** salário, descontos e empréstimos são dados pessoais financeiros. Registrar a origem de cada lista
    (base legal) e limitar quem vê esses campos (ex.: perfil Assistente sem acesso a dados financeiros).
@@ -23,6 +24,16 @@ individual, gera planilha que o Vitta importa sozinho) + campos de empresa e fil
    vigilância, limpeza, transporte...) em vez de digitar códigos CNAE.
 2. Consulta avulsa de CNPJ no formulário do prospect (completar os dados de uma empresa na hora).
 3. Rodar a busca pela tela do Vitta (hoje é um script no computador, por causa do tamanho da base: ~7,6 GB).
+
+### Leads de pessoas (com consentimento)
+
+Feito: página pública `/simular` (liga em Configurações → Página de captação). A pessoa pede contato e autoriza;
+entra no funil com origem (`?origem=`), autorização registrada e contato no próximo dia útil. Anti-robô e limite de envios.
+
+1. **Formulários de anúncio (Meta Lead Ads):** receber os leads do Facebook/Instagram direto no funil (webhook).
+2. **Link de indicação:** cada cliente com um link próprio (`?origem=indicacao-nome`) e relatório de quem mais indica.
+3. Simulação de preço na página (precisa da tabela de produtos MAG).
+4. Pedido de exclusão de dados pelo próprio lead (LGPD art. 18).
 
 ## Carteira
 

@@ -27,6 +27,8 @@ export interface ProspectProfile {
   activity?: string | null;
   companySize?: string | null;
   openedOn?: string | null;
+  /** CPF da pessoa (só dígitos). */
+  cpf?: string | null;
 }
 
 export interface ProspectInput {
@@ -70,6 +72,10 @@ export interface ProspectDto {
   /** ME, EPP ou Demais. */
   companySize: string | null;
   openedOn: string | null;
+  /** CPF (só dígitos). */
+  cpf: string | null;
+  /** Quando a pessoa pediu contato pela página de captação (consentimento). */
+  consentAt: string | null;
 }
 
 export type LeadKind = 'Any' | 'Person' | 'Company';
@@ -98,6 +104,15 @@ export interface ProspectFilter {
   hasPhone?: boolean | null;
   kind?: LeadKind;
   companySize?: string;
+  /** CPF ou CNPJ (começo, só dígitos). */
+  document?: string;
+}
+
+/** Coluna do funil: os primeiros cards e o total da etapa. */
+export interface BoardColumnDto {
+  stage: ProspectStage;
+  total: number;
+  items: ProspectDto[];
 }
 
 export interface LabelCount {

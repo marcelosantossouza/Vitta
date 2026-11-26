@@ -37,7 +37,8 @@ public sealed record ProspectFilter(
     bool? HasPhone = null,
     bool WithoutImport = false,
     LeadKind Kind = LeadKind.Any,
-    string? CompanySize = null);
+    string? CompanySize = null,
+    string? Document = null);
 
 /// <summary>Pessoa ou empresa (empresa = tem CNPJ).</summary>
 public enum LeadKind
@@ -86,6 +87,20 @@ public sealed class SearchProspectsHandler(IProspectQueries queries, TimeProvide
         var (page, size) = Paging.Normalize(q.Page, q.PageSize);
         return await queries.SearchAsync(q.Filter, q.Sort, page, size, time.Today(), ct);
     }
+}
+
+// ---------- Funil (quadro) paginado ----------
+
+/// <summary>Uma coluna do funil: total da etapa (com os filtros) e so os primeiros cartoes.</summary>
+public sealed record BoardColumnDto(ProspectStage Stage, int Total, IReadOnlyList<ProspectDto> Items);
+
+/// <param name="Take">Cartoes por coluna; o resto vem pelo "Mostrar mais" (busca paginada com a etapa).</param>
+public sealed record GetProspectBoardQuery(ProspectFilter Filter, int Take = 30) : IQuery<IReadOnlyList<BoardColumnDto>>;
+
+public sealed class GetProspectBoardHandler(IProspectQueries queries, TimeProvider time) : IQueryHandler<GetProspectBoardQuery, IReadOnlyList<BoardColumnDto>>
+{
+    public async ValueTask<IReadOnlyList<BoardColumnDto>> Handle(GetProspectBoardQuery q, CancellationToken ct) =>
+        await queries.BoardAsync(q.Filter with { Stages = null }, Math.Clamp(q.Take, 5, 100), time.Today(), ct);
 }
 
 // ---------- Dashboard ----------
@@ -227,6 +242,7 @@ public static class ProspectFiltering
         var city = Norm(f.City);
         var state = Norm(f.State);
         var sourceName = Norm(f.Source);
+        var document = new string((f.Document ?? string.Empty).Where(char.IsDigit).ToArray());
 
         foreach (var p in source)
         {
@@ -239,6 +255,7 @@ public static class ProspectFiltering
             if (f.Kind == LeadKind.Person && p.IsCompany) continue;
             if (f.Kind == LeadKind.Company && !p.IsCompany) continue;
             if (Norm(f.CompanySize) is { } size && Norm(p.CompanySize) != size) continue;
+            if (document.Length > 0 && !(p.Cpf ?? string.Empty).StartsWith(document) && !(p.Cnpj ?? string.Empty).StartsWith(document)) continue;
             if (f.SalaryMin is { } min && !(p.EstimatedSalary >= min)) continue;
             if (f.SalaryMax is { } max && !(p.EstimatedSalary <= max)) continue;
             var anyPhone = !string.IsNullOrWhiteSpace(p.Phone) || !string.IsNullOrWhiteSpace(p.Phone2);
@@ -323,7 +340,7 @@ public static class ProspectFiltering
         || (p.Address is { } a && TextNormalizer.ForSearch(a).Contains(term))
         || (p.Activity is { } act && TextNormalizer.ForSearch(act).Contains(term))
         || (p.LegalName is { } legal && TextNormalizer.ForSearch(legal).Contains(term))
-        || (digits.Length >= 8 && (p.Cnpj ?? string.Empty).Contains(digits))
+        || (digits.Length >= 8 && ((p.Cnpj ?? string.Empty).Contains(digits) || (p.Cpf ?? string.Empty).Contains(digits)))
         || (digits.Length >= 4 && (Digits(p.Phone).Contains(digits) || Digits(p.Phone2).Contains(digits)));
 
     private static string Digits(string? value) => new((value ?? string.Empty).Where(char.IsDigit).ToArray());

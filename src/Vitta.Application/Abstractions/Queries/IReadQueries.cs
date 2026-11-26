@@ -33,6 +33,8 @@ public interface IProspectQueries
     Task<PagedResult<ProspectDto>> SearchAsync(ProspectFilter filter, ProspectSort sort, int page, int pageSize, DateOnly today, CancellationToken ct = default);
     Task<ProspectInsightsDto> InsightsAsync(ProspectFilter filter, DateOnly today, DateTimeOffset now, CancellationToken ct = default);
     Task<ProspectFilterOptionsDto> FilterOptionsAsync(CancellationToken ct = default);
+    Task<ProspectDto?> GetAsync(Guid id, CancellationToken ct = default);
+    Task<IReadOnlyList<BoardColumnDto>> BoardAsync(ProspectFilter filter, int take, DateOnly today, CancellationToken ct = default);
 }
 
 public interface IPortfolioQueries

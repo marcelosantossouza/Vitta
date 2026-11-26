@@ -85,3 +85,13 @@
 .check { display: flex; gap: 0.6rem; align-items: flex-start; font-size: 0.875rem; cursor: pointer;
   input { width: 16px; height: 16px; min-height: 0; margin-top: 0.15rem; accent-color: var(--vt-primary); flex-shrink: 0; } }
 .section-title { margin: 0.5rem 0 0; font-weight: 600; font-size: 0.85rem; color: var(--vt-muted); }
+
+.doc { flex: 0 1 200px !important; }
+.filters {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 0.75rem; align-items: end;
+  padding: 0.9rem; margin-bottom: 1rem;
+}
+.filter-summary { margin: -0.25rem 0 0.75rem; }
+.column__more {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.25rem 0.15rem 0;
+}

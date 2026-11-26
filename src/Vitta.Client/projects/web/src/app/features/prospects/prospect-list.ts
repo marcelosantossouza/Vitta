@@ -4,7 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import {
   AuthService, FOLLOW_UP_FILTER_LABELS, FollowUpFilter, LabelCount, PagedResult, problemMessage, PROSPECT_SORT_LABELS, PROSPECT_STAGE_LABELS,
   PROSPECT_STAGES, ProspectDto, ProspectFilter, ProspectFilterOptionsDto, ProspectInsightsDto, ProspectsApi, ProspectSort, ProspectStage,
-  formatCnpj, LeadKind, todayIso,
+  formatCnpj, formatCpf, LeadKind, todayIso,
 } from '@vitta/core';
 import { debounceTime, Subject } from 'rxjs';
 import { Icon } from '../../shared/icon';
@@ -44,6 +44,8 @@ export class ProspectList {
 
   // ---- filtros ----
   protected readonly search = signal('');
+  /** CPF ou CNPJ (começo). */
+  protected readonly document = signal('');
   protected readonly stageFilter = signal<ProspectStage[]>([...OPEN_STAGES]);
   protected readonly city = signal('');
   protected readonly state = signal('');
@@ -56,11 +58,13 @@ export class ProspectList {
   protected readonly kind = signal<LeadKind>('Any');
   protected readonly companySize = signal('');
   protected readonly formatCnpj = formatCnpj;
+  protected readonly formatCpf = formatCpf;
   protected readonly sort = signal<ProspectSort>('FollowUp');
   protected readonly page = signal(1);
 
   protected readonly filter = computed<ProspectFilter>(() => ({
     search: this.search().trim() || undefined,
+    document: this.document().replace(/\D/g, '') || undefined,
     stage: this.stageFilter().length === this.stages.length ? undefined : this.stageFilter(),
     city: this.city() || undefined,
     state: this.state() || undefined,
@@ -78,6 +82,7 @@ export class ProspectList {
     const f = this.filter();
     let n = 0;
     if (f.search) n++;
+    if (f.document) n++;
     if (f.stage && !this.sameStages(f.stage, OPEN_STAGES)) n++;
     for (const v of [f.city, f.state, f.source, f.importId]) if (v) n++;
     if (f.salaryMin != null || f.salaryMax != null) n++;
@@ -140,6 +145,7 @@ export class ProspectList {
 
   protected clearFilters(): void {
     this.search.set('');
+    this.document.set('');
     this.stageFilter.set([...OPEN_STAGES]);
     this.city.set('');
     this.state.set('');

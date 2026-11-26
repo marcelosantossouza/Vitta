@@ -14,12 +14,12 @@ public sealed record ProspectDto(
     string? Phone2 = null, string? Address = null, string? City = null, string? State = null, string? ZipCode = null,
     DateOnly? BirthDate = null, string? Occupation = null, decimal? EstimatedSalary = null, decimal? Discounts = null,
     decimal? Loans = null, Guid? ImportId = null, string? Cnpj = null, string? LegalName = null, string? Activity = null,
-    string? CompanySize = null, DateOnly? OpenedOn = null)
+    string? CompanySize = null, DateOnly? OpenedOn = null, string? Cpf = null, DateTimeOffset? ConsentAt = null)
 {
     public static ProspectDto From(Prospect p) =>
         new(p.Id, p.Name, p.Phone, p.Email, p.Source, p.Stage, p.NextFollowUpOn, p.Notes, p.ConvertedClientId, p.CreatedAt,
             p.Phone2, p.Address, p.City, p.State, p.ZipCode, p.BirthDate, p.Occupation, p.EstimatedSalary, p.Discounts, p.Loans,
-            p.ImportId, p.Cnpj, p.LegalName, p.Activity, p.CompanySize, p.OpenedOn);
+            p.ImportId, p.Cnpj, p.LegalName, p.Activity, p.CompanySize, p.OpenedOn, p.Cpf, p.ConsentAt);
 }
 
 internal static class ProspectRules
@@ -40,6 +40,13 @@ public sealed class GetProspectsHandler(IProspectQueries queries) : IQueryHandle
 {
     public async ValueTask<IReadOnlyList<ProspectDto>> Handle(GetProspectsQuery q, CancellationToken ct) =>
         await queries.ListAsync(q.Stage, q.Search, ct);
+}
+
+public sealed record GetProspectQuery(Guid Id) : IQuery<ProspectDto?>;
+
+public sealed class GetProspectHandler(IProspectQueries queries) : IQueryHandler<GetProspectQuery, ProspectDto?>
+{
+    public async ValueTask<ProspectDto?> Handle(GetProspectQuery q, CancellationToken ct) => await queries.GetAsync(q.Id, ct);
 }
 
 // ---- Criar ----

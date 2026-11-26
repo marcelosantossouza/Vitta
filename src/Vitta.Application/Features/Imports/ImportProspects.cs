@@ -154,7 +154,8 @@ public sealed class ImportProspectsHandler(
             LegalName: Limit(row.Get(F.LegalName), 200),
             Activity: Limit(row.Get(F.Activity), 250),
             CompanySize: Limit(row.Get(F.CompanySize), 30),
-            OpenedOn: SpreadsheetMapper.ParseDate(row.Get(F.OpenedOn)));
+            OpenedOn: SpreadsheetMapper.ParseDate(row.Get(F.OpenedOn)),
+            Cpf: Cpf.Create(row.Get(F.Cpf)) is { IsSuccess: true } cpf ? cpf.Value.Value : null);
     }
 
     private static string? Limit(string? value, int max) =>

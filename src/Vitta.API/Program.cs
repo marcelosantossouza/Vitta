@@ -52,6 +52,23 @@ builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationSc
         bearer.Events = new JwtBearerEvents { OnTokenValidated = AuthPolicies.OnTokenValidated };
     });
 builder.Services.AddVittaAuthorization();
+
+// Pagina publica de captacao: no maximo 5 envios por minuto por IP (contra spam).
+builder.Services.AddRateLimiter(o =>
+{
+    o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    o.AddPolicy(PublicEndpoints.RateLimitPolicy, http => System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+        http.Connection.RemoteIpAddress?.ToString() ?? "desconhecido",
+        _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromMinutes(1) }));
+});
+
+// Atras do Caddy (rede interna do Docker): o IP real do visitante vem no X-Forwarded-For.
+builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>(o =>
+{
+    o.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto;
+    o.KnownIPNetworks.Clear(); // a API so e alcancavel pelo proxy (porta nao exposta), entao confia no cabecalho dele
+    o.KnownProxies.Clear();
+});
 builder.Services.Configure<SeedAdminOptions>(builder.Configuration.GetSection(SeedAdminOptions.SectionName));
 builder.Services.AddScoped<AdminUserSeeder>();
 builder.Services.AddHostedService<Vitta.API.Infrastructure.DailyDigestScheduler>();
@@ -77,9 +94,11 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference(o => o.WithTitle("Vitta API")); // /scalar
 }
 
+app.UseForwardedHeaders();
 app.UseCors(ClientCorsPolicy);
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 await app.Services.MigrateIfConfiguredAsync();
 await using (var scope = app.Services.CreateAsyncScope())
@@ -92,6 +111,7 @@ app.MapHealthChecks("/health");
 
 var api = app.MapGroup("/api");
 api.MapAuthEndpoints(); // login e publico; o restante exige token
+api.MapPublicEndpoints(); // pagina de captacao (sem login, com limite por IP)
 
 var secured = api.MapGroup("").RequireAuthorization();
 secured.MapDashboardEndpoints();

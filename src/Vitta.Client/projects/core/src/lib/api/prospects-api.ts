@@ -5,7 +5,7 @@ import { API_BASE_URL } from '../config/api-config';
 import { IdResponse, PagedResult } from '../models/common';
 import { ProspectImportResultDto } from '../models/import-template';
 import {
-  ChangeStageRequest, ConvertProspectRequest, DeleteProspectImportResultDto, ProspectDto, ProspectFilter, ProspectFilterOptionsDto,
+  BoardColumnDto, ChangeStageRequest, ConvertProspectRequest, DeleteProspectImportResultDto, ProspectDto, ProspectFilter, ProspectFilterOptionsDto,
   ProspectInput, ProspectInsightsDto, ProspectSort, ProspectStage,
 } from '../models/prospect';
 
@@ -35,6 +35,10 @@ export class ProspectsApi {
     return this.http.get<ProspectDto[]>(this.baseUrl, { params });
   }
 
+  get(id: string): Observable<ProspectDto> {
+    return this.http.get<ProspectDto>(`${this.baseUrl}/${id}`);
+  }
+
   create(request: ProspectInput): Observable<IdResponse> {
     return this.http.post<IdResponse>(this.baseUrl, request);
   }
@@ -55,6 +59,11 @@ export class ProspectsApi {
   search(filter: ProspectFilter, sort: ProspectSort, page: number, pageSize = 50): Observable<PagedResult<ProspectDto>> {
     const params = filterParams(filter).set('sort', sort).set('page', page).set('pageSize', pageSize);
     return this.http.get<PagedResult<ProspectDto>>(`${this.baseUrl}/search`, { params });
+  }
+
+  /** Funil: por etapa, os `take` primeiros cards (por próximo contato) e o total. */
+  board(filter: ProspectFilter, take = 30): Observable<BoardColumnDto[]> {
+    return this.http.get<BoardColumnDto[]>(`${this.baseUrl}/board`, { params: filterParams(filter).set('take', take) });
   }
 
   /** Números do dashboard, com os mesmos filtros da lista. */

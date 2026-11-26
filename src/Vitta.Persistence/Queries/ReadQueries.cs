@@ -163,6 +163,9 @@ internal sealed class ProspectQueries(VittaDbContext db) : IProspectQueries
             .ToList();
     }
 
+    public async Task<ProspectDto?> GetAsync(Guid id, CancellationToken ct = default) =>
+        await db.Prospects.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id, ct) is { } p ? ProspectDto.From(p) : null;
+
     public async Task<PagedResult<ProspectDto>> SearchAsync(
         ProspectFilter filter, ProspectSort sort, int page, int pageSize, DateOnly today, CancellationToken ct = default)
     {
@@ -176,6 +179,20 @@ internal sealed class ProspectQueries(VittaDbContext db) : IProspectQueries
     {
         var all = await db.Prospects.AsNoTracking().ToListAsync(ct);
         return ProspectFiltering.Insights(ProspectFiltering.Apply(all, filter, today).ToList(), today, now);
+    }
+
+    public async Task<IReadOnlyList<BoardColumnDto>> BoardAsync(ProspectFilter filter, int take, DateOnly today, CancellationToken ct = default)
+    {
+        var all = await db.Prospects.AsNoTracking().ToListAsync(ct);
+        var filtered = ProspectFiltering.Apply(all, filter, today).ToList();
+        return Enum.GetValues<ProspectStage>()
+            .Select(stage =>
+            {
+                var inStage = filtered.Where(p => p.Stage == stage).ToList();
+                var first = ProspectFiltering.Sort(inStage, ProspectSort.FollowUp).Take(take).Select(ProspectDto.From).ToList();
+                return new BoardColumnDto(stage, inStage.Count, first);
+            })
+            .ToList();
     }
 
     public async Task<ProspectFilterOptionsDto> FilterOptionsAsync(CancellationToken ct = default)

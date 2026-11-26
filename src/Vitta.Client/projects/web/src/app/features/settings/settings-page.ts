@@ -4,6 +4,7 @@ import {
   problemMessage, SettingsApi, toAiProviderEnum,
 } from '@vitta/core';
 import { Icon } from '../../shared/icon';
+import { LeadPageSettings } from './lead-page-settings';
 import { NotificationSettings } from './notification-settings';
 import { ToastService } from '../../shared/toast.service';
 
@@ -11,7 +12,7 @@ const CUSTOM = '__custom__';
 
 @Component({
   selector: 'vt-settings-page',
-  imports: [Icon, NotificationSettings],
+  imports: [Icon, NotificationSettings, LeadPageSettings],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './settings-page.html',
   styleUrl: './settings-page.scss',

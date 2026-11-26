@@ -16,6 +16,11 @@
         <input type="search" placeholder="Nome, telefone, e-mail, endereço ou profissão" [value]="search()"
           (input)="set(search, $any($event.target).value)" />
       </label>
+      <label class="search doc">
+        <vt-icon name="id-card" [size]="18" />
+        <input type="search" inputmode="numeric" placeholder="CPF ou CNPJ" aria-label="Filtrar por CPF ou CNPJ" [value]="document()"
+          (input)="set(document, $any($event.target).value)" />
+      </label>
       <label class="inline">
         Ordenar por
         <select (change)="changeSort($any($event.target).value)">
@@ -237,7 +242,8 @@
                     @if (p.cnpj) {
                       <span class="muted small block"><span class="badge badge--info">Empresa{{ p.companySize ? ' · ' + p.companySize : '' }}</span>
                         {{ p.activity || formatCnpj(p.cnpj) }}</span>
-                    } @else if (p.occupation) { <span class="muted small block">{{ p.occupation }}</span> }
+                    } @else if (p.occupation || p.cpf) { <span class="muted small block">{{ p.occupation }}{{ p.occupation && p.cpf ? ' · ' : '' }}{{ p.cpf ? 'CPF ' + formatCpf(p.cpf) : '' }}</span> }
+                    @if (p.consentAt) { <span class="badge badge--success">Pediu contato</span> }
                   </td>
                   <td data-label="Telefone" class="nowrap">{{ p.phone || p.phone2 || '—' }}</td>
                   <td data-label="Cidade / UF">{{ p.city || '—' }}{{ p.state ? ' / ' + p.state : '' }}</td>

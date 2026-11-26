@@ -32,3 +32,5 @@ tr.selected td { background: var(--vt-primary-soft); }
 .block { display: block; }
 .empty { padding: 1.5rem; display: flex; gap: 0.75rem; align-items: center; justify-content: center; flex-wrap: wrap; }
 .push-right { margin-left: auto; }
+
+.doc { flex: 0 1 200px !important; }

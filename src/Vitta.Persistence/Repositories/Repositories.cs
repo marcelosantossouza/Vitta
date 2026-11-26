@@ -141,3 +141,10 @@ internal sealed class ProspectImportRepository(VittaDbContext db) : IProspectImp
     public void Add(ProspectImport import) => db.ProspectImports.Add(import);
     public void Remove(ProspectImport import) => db.ProspectImports.Remove(import);
 }
+
+internal sealed class LeadCaptureSettingsRepository(VittaDbContext db) : ILeadCaptureSettingsRepository
+{
+    public Task<LeadCaptureSettings?> GetAsync(CancellationToken ct = default) =>
+        db.LeadCaptureSettings.FirstOrDefaultAsync(x => x.Id == LeadCaptureSettings.SingletonId, ct);
+    public void Add(LeadCaptureSettings settings) => db.LeadCaptureSettings.Add(settings);
+}

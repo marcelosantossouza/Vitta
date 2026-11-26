@@ -161,6 +161,22 @@ public class ProspectManagementTests
     }
 
     [Fact]
+    public void Cpf_IsValidated_AndFilterByDocumentFindsCpfAndCnpj()
+    {
+        var person = Prospect.Create("Ana", null, null, null).Value;
+        Assert.True(person.SetProfile(new ProspectProfile(Cpf: "529.982.247-25")).IsSuccess);
+        Assert.Equal("52998224725", person.Cpf);
+        Assert.Equal("Cpf.Invalid", Prospect.Create("X", null, null, null).Value.SetProfile(new ProspectProfile(Cpf: "111.111.111-11")).Error.Code);
+
+        var company = Prospect.Create("Clinica", null, null, null).Value;
+        company.SetProfile(new ProspectProfile(Cnpj: "11.111.111/0001-00"));
+        var list = new[] { person, company };
+
+        Assert.Equal([person], ProspectFiltering.Apply(list, new ProspectFilter(Document: "529.982"), Today).ToArray());
+        Assert.Equal([company], ProspectFiltering.Apply(list, new ProspectFilter(Document: "11.111.111"), Today).ToArray());
+    }
+
+    [Fact]
     public void Insights_CountsFunnelCitiesAndSalaryBands()
     {
         var a = Prospect.Create("Ana", null, null, null).Value; a.SetProfile(new ProspectProfile(City: "Campinas", EstimatedSalary: 2500m));

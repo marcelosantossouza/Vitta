@@ -78,6 +78,7 @@ public static class ImportFields
         public const string Activity = "activity";
         public const string CompanySize = "companySize";
         public const string OpenedOn = "openedOn";
+        public const string Cpf = "cpf";
     }
 
     private static readonly IReadOnlyList<ImportField> PortfolioFields =
@@ -178,6 +179,9 @@ public static class ImportFields
         new(Prospects.Loans, "Empréstimos", false, false,
             "Valor mensal comprometido com empréstimos/consignados em reais.",
             ["emprestimos", "emprestimo", "consignado", "consignados", "parcela emprestimo", "valor emprestimo"], ImportValueKind.Money),
+        new(Prospects.Cpf, "CPF", false, false,
+            "CPF da pessoa. CPF inválido é ignorado (o prospect entra sem CPF).",
+            ["cpf", "cpf do cliente", "cpf do prospect", "documento"], ImportValueKind.Cpf, ["cnpj", "produtor", "corretor"]),
         new(Prospects.Cnpj, "CNPJ", false, false,
             "CNPJ da empresa (leads de empresas, ex.: seguro de vida em grupo). Não é CPF.",
             ["cnpj", "cnpj da empresa", "numero cnpj"], ImportValueKind.Code),

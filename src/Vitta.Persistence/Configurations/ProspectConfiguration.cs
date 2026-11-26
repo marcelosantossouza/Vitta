@@ -30,6 +30,9 @@ internal sealed class ProspectConfiguration : IEntityTypeConfiguration<Prospect>
         b.Property(x => x.Activity).HasMaxLength(250);
         b.Property(x => x.CompanySize).HasMaxLength(30);
         b.HasIndex(x => x.Cnpj);
+        b.Property(x => x.Cpf).HasMaxLength(11);
+        b.Property(x => x.ConsentText).HasMaxLength(600);
+        b.HasIndex(x => x.Cpf);
         b.Ignore(x => x.IsCompany);
         b.HasIndex(x => x.City);
         b.HasIndex(x => x.State);
