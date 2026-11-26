@@ -5,8 +5,7 @@ import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angula
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   ImportTemplateDto, ImportTemplatesApi, maskCpf, problemMessage, ProspectDto, ProspectImportResultDto, ProspectsApi,
-  ProspectStage, PROSPECT_STAGES, PROSPECT_STAGE_LABELS, todayIso,
-} from '@vitta/core';
+  ProspectStage, PROSPECT_STAGES, PROSPECT_STAGE_LABELS, todayIso, AuthService } from '@vitta/core';
 import { Observable } from 'rxjs';
 import { FileOrPaste } from '../../shared/file-or-paste';
 import { Icon } from '../../shared/icon';
@@ -27,6 +26,8 @@ interface Column {
   styleUrl: './prospect-board.scss',
 })
 export class ProspectBoard {
+  /** Assistentes nao excluem (a API tambem bloqueia). */
+  protected readonly canDelete = inject(AuthService).canDelete;
   private readonly api = inject(ProspectsApi);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);

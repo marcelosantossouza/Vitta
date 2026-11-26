@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { AuthService } from '@vitta/core';
+import { AuthService, USER_ROLE_LABELS } from '@vitta/core';
 import { Icon, IconName } from '../shared/icon';
 import { Logo } from '../shared/logo';
 
@@ -57,7 +57,21 @@ export class Shell {
       ],
     },
   ];
-  protected readonly settings: NavItem = { path: '/configuracoes', label: 'Configurações', icon: 'settings' };
+  /** Rodape: so para administradores (a API tambem exige o perfil). */
+  protected readonly adminItems: NavItem[] = [
+    { path: '/usuarios', label: 'Usuários', icon: 'shield' },
+    { path: '/configuracoes', label: 'Configurações', icon: 'settings' },
+  ];
+  protected readonly isAdmin = this.auth.isAdmin;
+  protected readonly roleLabel = computed(() => {
+    const role = this.auth.role();
+    return role ? USER_ROLE_LABELS[role] : '';
+  });
+
+  constructor() {
+    // O perfil pode ter mudado desde o login (outro admin editou): busca o atual.
+    this.auth.refreshUser();
+  }
 
   protected toggleMenu(): void {
     this.menuOpen.update(open => !open);

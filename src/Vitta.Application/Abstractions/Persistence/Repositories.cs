@@ -70,6 +70,9 @@ public interface IUserRepository
     Task<User?> GetByEmailAsync(string email, CancellationToken ct = default);
     Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<bool> AnyAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<User>> ListAsync(CancellationToken ct = default);
+    /// <summary>Administradores ativos (para nao deixar o sistema sem nenhum).</summary>
+    Task<int> CountActiveAdminsAsync(CancellationToken ct = default);
     void Add(User user);
 }
 

@@ -93,6 +93,10 @@ internal sealed class UserRepository(VittaDbContext db) : IUserRepository
     public Task<User?> GetByEmailAsync(string email, CancellationToken ct = default) => db.Users.FirstOrDefaultAsync(u => u.Email == email, ct);
     public Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default) => db.Users.FirstOrDefaultAsync(u => u.Id == id, ct);
     public Task<bool> AnyAsync(CancellationToken ct = default) => db.Users.AnyAsync(ct);
+    public async Task<IReadOnlyList<User>> ListAsync(CancellationToken ct = default) =>
+        await db.Users.AsNoTracking().OrderBy(u => u.Name).ToListAsync(ct);
+    public Task<int> CountActiveAdminsAsync(CancellationToken ct = default) =>
+        db.Users.CountAsync(u => u.IsActive && u.Role == UserRole.Admin, ct);
     public void Add(User user) => db.Users.Add(user);
 }
 

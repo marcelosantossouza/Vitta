@@ -3,8 +3,7 @@ import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angula
 import { Router, RouterLink } from '@angular/router';
 import {
   ClientDetailDto, ClientsApi, InsurerDto, InsurersApi, PoliciesApi, PolicyDto, PolicyEndStatus,
-  POLICY_STATUS_LABELS, problemMessage, todayIso,
-} from '@vitta/core';
+  POLICY_STATUS_LABELS, problemMessage, todayIso, AuthService } from '@vitta/core';
 import { EmptyState } from '../../shared/empty-state';
 import { Icon } from '../../shared/icon';
 import { BrlPipe, IsoDatePipe, PercentPipe, PolicyStatusPipe } from '../../shared/pipes';
@@ -19,6 +18,8 @@ import { Observable } from 'rxjs';
   styleUrl: './client-detail.scss',
 })
 export class ClientDetail implements OnInit {
+  /** Assistentes nao excluem (a API tambem bloqueia). */
+  protected readonly canDelete = inject(AuthService).canDelete;
   private readonly clientsApi = inject(ClientsApi);
   private readonly policiesApi = inject(PoliciesApi);
   private readonly insurersApi = inject(InsurersApi);

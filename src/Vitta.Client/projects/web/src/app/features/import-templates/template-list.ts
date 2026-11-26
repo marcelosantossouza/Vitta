@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { IMPORT_TEMPLATE_KIND_LABELS, ImportTemplateDto, ImportTemplateKind, ImportTemplatesApi } from '@vitta/core';
+import { IMPORT_TEMPLATE_KIND_LABELS, ImportTemplateDto, ImportTemplateKind, ImportTemplatesApi, AuthService } from '@vitta/core';
 import { EmptyState } from '../../shared/empty-state';
 import { Icon } from '../../shared/icon';
 import { ToastService } from '../../shared/toast.service';
@@ -63,9 +63,11 @@ import { ToastService } from '../../shared/toast.service';
                         (click)="$event.stopPropagation(); router.navigate(['/modelos', t.id])">
                         <vt-icon name="edit" [size]="16" />
                       </button>
+                      @if (canDelete()) {
                       <button class="btn btn--ghost btn--icon" type="button" title="Excluir" aria-label="Excluir modelo" (click)="remove(t, $event)">
                         <vt-icon name="trash" [size]="16" />
                       </button>
+                      }
                     </td>
                   </tr>
                 }
@@ -89,6 +91,8 @@ import { ToastService } from '../../shared/toast.service';
   `,
 })
 export class TemplateList {
+  /** Assistentes nao excluem (a API tambem bloqueia). */
+  protected readonly canDelete = inject(AuthService).canDelete;
   private readonly api = inject(ImportTemplatesApi);
   private readonly toast = inject(ToastService);
   protected readonly router = inject(Router);

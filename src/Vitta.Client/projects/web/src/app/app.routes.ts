@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard } from '@vitta/core';
+import { adminGuard, authGuard, guestGuard } from '@vitta/core';
 import { Shell } from './layout/shell';
 
 export const routes: Routes = [
@@ -16,6 +16,13 @@ export const routes: Routes = [
     canActivate: [guestGuard],
     title: 'Entrar — Vitta',
     loadComponent: () => import('./features/landing/landing').then(m => m.Landing),
+  },
+  // Fora do menu: troca obrigatoria de senha (senha provisoria) e troca voluntaria pelo menu do usuario.
+  {
+    path: 'trocar-senha',
+    canActivate: [authGuard],
+    title: 'Trocar senha — Vitta',
+    loadComponent: () => import('./features/account/change-password').then(m => m.ChangePassword),
   },
   {
     path: '',
@@ -35,7 +42,8 @@ export const routes: Routes = [
       { path: 'modelos/novo', title: 'Novo modelo — Vitta', loadComponent: () => import('./features/import-templates/template-wizard').then(m => m.TemplateWizard) },
       { path: 'modelos/:id', title: 'Editar modelo — Vitta', loadComponent: () => import('./features/import-templates/template-wizard').then(m => m.TemplateWizard) },
       { path: 'seguradoras', title: 'Seguradoras — Vitta', loadComponent: () => import('./features/insurers/insurers').then(m => m.Insurers) },
-      { path: 'configuracoes', title: 'Configurações — Vitta', loadComponent: () => import('./features/settings/settings-page').then(m => m.SettingsPage) },
+      { path: 'configuracoes', title: 'Configurações — Vitta', canActivate: [adminGuard], loadComponent: () => import('./features/settings/settings-page').then(m => m.SettingsPage) },
+      { path: 'usuarios', title: 'Usuários — Vitta', canActivate: [adminGuard], loadComponent: () => import('./features/users/users-page').then(m => m.UsersPage) },
     ],
   },
   { path: '**', redirectTo: '' },

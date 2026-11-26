@@ -29,17 +29,26 @@
   </nav>
 
   <div class="sidebar__footer">
-    <a class="settings" [routerLink]="settings.path" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMenu()">
-      <vt-icon [name]="settings.icon" [size]="18" />
-      <span>{{ settings.label }}</span>
-    </a>
+    @if (isAdmin()) {
+      <div class="admin-links">
+        @for (item of adminItems; track item.path) {
+          <a class="settings" [routerLink]="item.path" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMenu()">
+            <vt-icon [name]="item.icon" [size]="18" />
+            <span>{{ item.label }}</span>
+          </a>
+        }
+      </div>
+    }
 
   <div class="sidebar__user">
     <span class="avatar">{{ initials() }}</span>
     <div class="who">
       <strong>{{ user()?.name }}</strong>
-      <small>{{ user()?.email }}</small>
+      <small>{{ roleLabel() }} · {{ user()?.email }}</small>
     </div>
+    <a class="icon-btn" routerLink="/trocar-senha" title="Trocar senha" aria-label="Trocar senha" (click)="closeMenu()">
+      <vt-icon name="key" [size]="18" />
+    </a>
     <button class="icon-btn" type="button" (click)="logout()" title="Sair" aria-label="Sair">
       <vt-icon name="logout" [size]="19" />
     </button>

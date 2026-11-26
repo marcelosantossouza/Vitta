@@ -24,7 +24,7 @@ public sealed class AdminUserSeeder(IUserRepository users, IPasswordHasher hashe
             return;
         }
 
-        var user = User.Create(options.Name ?? "Administrador", options.Email).Value;
+        var user = User.Create(options.Name ?? "Administrador", options.Email, UserRole.Admin).Value;
         user.SetPasswordHash(hasher.Hash(user, options.Password));
         users.Add(user);
         await uow.SaveChangesAsync(ct);

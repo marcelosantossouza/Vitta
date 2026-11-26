@@ -92,7 +92,7 @@
       }
       <div class="form-actions">
         @if (editing(); as p) {
-          <button class="btn btn--danger" type="button" (click)="remove()" style="margin-right: auto"><vt-icon name="trash" [size]="16" /> Excluir</button>
+          @if (canDelete()) { <button class="btn btn--danger" type="button" (click)="remove()" style="margin-right: auto"><vt-icon name="trash" [size]="16" /> Excluir</button> }
           @if (!p.convertedClientId) {
             <button class="btn" type="button" (click)="openConvert()"><vt-icon name="user-plus" [size]="16" /> Converter em cliente</button>
           }

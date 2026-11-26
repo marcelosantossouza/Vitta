@@ -109,9 +109,11 @@
                     <td data-label="Mudaram" class="num"><span class="badge" [class.badge--warning]="item.changed > 0">{{ item.changed }}</span></td>
                   }
                   <td class="actions">
+                    @if (canDelete()) {
                     <button class="btn btn--ghost btn--icon" type="button" title="Excluir" aria-label="Excluir importação" (click)="remove(item, $event)">
                       <vt-icon name="trash" [size]="16" />
                     </button>
+                    }
                   </td>
                 </tr>
               }

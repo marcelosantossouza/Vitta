@@ -15,7 +15,7 @@
         </div>
         <div class="actions">
           <a class="btn" [routerLink]="['/clientes', c.id, 'editar']"><vt-icon name="edit" [size]="16" /> Editar</a>
-          <button class="btn btn--danger" type="button" (click)="deleteClient()"><vt-icon name="trash" [size]="16" /> Excluir</button>
+          @if (canDelete()) { <button class="btn btn--danger" type="button" (click)="deleteClient()"><vt-icon name="trash" [size]="16" /> Excluir</button> }
         </div>
       </div>
 

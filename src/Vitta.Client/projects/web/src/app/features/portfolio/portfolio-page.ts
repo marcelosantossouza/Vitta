@@ -1,8 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
-  ImportTemplateDto, ImportTemplatesApi, InsurerDto, InsurersApi, PortfolioApi, PortfolioImportDto, problemMessage,
-} from '@vitta/core';
+  ImportTemplateDto, ImportTemplatesApi, InsurerDto, InsurersApi, PortfolioApi, PortfolioImportDto, problemMessage, AuthService } from '@vitta/core';
 import { catchError, forkJoin, of } from 'rxjs';
 import { EmptyState } from '../../shared/empty-state';
 import { FileOrPaste } from '../../shared/file-or-paste';
@@ -30,6 +29,8 @@ function previousMonth(): string {
   styleUrl: './portfolio-page.scss',
 })
 export class PortfolioPage {
+  /** Assistentes nao excluem (a API tambem bloqueia). */
+  protected readonly canDelete = inject(AuthService).canDelete;
   private readonly api = inject(PortfolioApi);
   private readonly toast = inject(ToastService);
   protected readonly router = inject(Router);

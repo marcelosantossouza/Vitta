@@ -46,10 +46,12 @@ builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationSc
             ValidAudience = jwt.Value.Audience,
             IssuerSigningKey = jwt.Value.SigningKey(),
             NameClaimType = "name",
+            RoleClaimType = AuthPolicies.RoleClaim,
             ClockSkew = TimeSpan.FromMinutes(1),
         };
+        bearer.Events = new JwtBearerEvents { OnTokenValidated = AuthPolicies.OnTokenValidated };
     });
-builder.Services.AddAuthorization();
+builder.Services.AddVittaAuthorization();
 builder.Services.Configure<SeedAdminOptions>(builder.Configuration.GetSection(SeedAdminOptions.SectionName));
 builder.Services.AddScoped<AdminUserSeeder>();
 builder.Services.AddHostedService<Vitta.API.Infrastructure.DailyDigestScheduler>();
@@ -100,6 +102,7 @@ secured.MapPortfolioEndpoints();
 secured.MapInsurerEndpoints();
 secured.MapImportTemplateEndpoints();
 secured.MapSettingsEndpoints();
+secured.MapUserEndpoints();
 
 app.Run();
 

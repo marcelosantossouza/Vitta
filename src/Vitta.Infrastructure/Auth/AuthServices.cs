@@ -36,6 +36,7 @@ internal sealed class JwtTokenService(IOptions<JwtOptions> options, TimeProvider
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
                 new Claim(JwtRegisteredClaimNames.Name, user.Name),
+                new Claim("role", user.Role.ToString()),
             ]),
             SigningCredentials = new SigningCredentials(o.SigningKey(), SecurityAlgorithms.HmacSha256),
         };

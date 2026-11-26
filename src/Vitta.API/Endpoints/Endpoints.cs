@@ -11,10 +11,12 @@ using Vitta.Application.Features.Policies;
 using Vitta.Application.Features.Portfolio;
 using Vitta.Application.Features.Prospects;
 using Vitta.Application.Features.Settings;
+using Vitta.Application.Features.Users;
 using Vitta.Domain.Imports;
 using Vitta.Domain.Policies;
 using Vitta.Domain.Prospects;
 using Vitta.Domain.Settings;
+using Vitta.Domain.Users;
 
 namespace Vitta.API.Endpoints;
 
@@ -27,6 +29,8 @@ internal static class AuthEndpoints
         var g = app.MapGroup("/auth").WithTags("Autenticacao");
         g.MapPost("/login", async (LoginCommand cmd, ISender s, CancellationToken ct) => (await s.Send(cmd, ct)).ToOk()).AllowAnonymous();
         g.MapGet("/me", async (ISender s, CancellationToken ct) => (await s.Send(new GetCurrentUserQuery(), ct)).ToOk()).RequireAuthorization();
+        g.MapPost("/change-password", async (ChangePasswordCommand cmd, ISender s, CancellationToken ct) => (await s.Send(cmd, ct)).ToNoContent())
+            .RequireAuthorization();
     }
 }
 
@@ -49,7 +53,8 @@ internal static class ClientEndpoints
         g.MapPost("/", async (CreateClientCommand cmd, ISender s, CancellationToken ct) => (await s.Send(cmd, ct)).ToCreated("/api/clients"));
         g.MapPut("/{id:guid}", async (Guid id, ClientInput i, ISender s, CancellationToken ct) =>
             (await s.Send(new UpdateClientCommand(id, i.FullName, i.BirthDate, i.Email, i.Phone, i.Notes), ct)).ToNoContent());
-        g.MapDelete("/{id:guid}", async (Guid id, ISender s, CancellationToken ct) => (await s.Send(new DeleteClientCommand(id), ct)).ToNoContent());
+        g.MapDelete("/{id:guid}", async (Guid id, ISender s, CancellationToken ct) => (await s.Send(new DeleteClientCommand(id), ct)).ToNoContent())
+            .RequireAuthorization(AuthPolicies.CanDelete);
     }
 }
 
@@ -93,7 +98,8 @@ internal static class ProspectEndpoints
             (await s.Send(new MoveProspectStageCommand(id, i.Stage, i.NextFollowUpOn), ct)).ToNoContent());
         g.MapPost("/{id:guid}/convert", async (Guid id, ConvertInput i, ISender s, CancellationToken ct) =>
             (await s.Send(new ConvertProspectCommand(id, i.Cpf, i.BirthDate), ct)).ToCreated("/api/clients", "clientId"));
-        g.MapDelete("/{id:guid}", async (Guid id, ISender s, CancellationToken ct) => (await s.Send(new DeleteProspectCommand(id), ct)).ToNoContent());
+        g.MapDelete("/{id:guid}", async (Guid id, ISender s, CancellationToken ct) => (await s.Send(new DeleteProspectCommand(id), ct)).ToNoContent())
+            .RequireAuthorization(AuthPolicies.CanDelete);
 
         g.MapPost("/imports", async ([FromForm] Guid templateId, IFormFile file, ISender s, CancellationToken ct) =>
         {
@@ -135,7 +141,8 @@ internal static class PortfolioEndpoints
         g.MapGet("/{id:guid}", async (Guid id, ISender s, CancellationToken ct) => (await s.Send(new GetPortfolioImportQuery(id), ct)).ToOk());
         g.MapGet("/{id:guid}/rows", async (Guid id, ISender s, CancellationToken ct) => (await s.Send(new GetPortfolioImportRowsQuery(id), ct)).ToOk());
         g.MapPost("/{id:guid}/sync-book", async (Guid id, ISender s, CancellationToken ct) => (await s.Send(new SyncBookFromImportCommand(id), ct)).ToOk());
-        g.MapDelete("/{id:guid}", async (Guid id, ISender s, CancellationToken ct) => (await s.Send(new DeletePortfolioImportCommand(id), ct)).ToNoContent());
+        g.MapDelete("/{id:guid}", async (Guid id, ISender s, CancellationToken ct) => (await s.Send(new DeletePortfolioImportCommand(id), ct)).ToNoContent())
+            .RequireAuthorization(AuthPolicies.CanDelete);
 
         g.MapPost("/", async ([FromForm] Guid? insurerId, [FromForm] string referenceMonth, [FromForm] Guid? templateId, IFormFile file, ISender s, CancellationToken ct) =>
         {
@@ -182,7 +189,8 @@ internal static class ImportTemplateEndpoints
             (await s.Send(ToCommand(null, i), ct)).ToCreated("/api/import-templates"));
         g.MapPut("/{id:guid}", async (Guid id, ImportTemplateInput i, ISender s, CancellationToken ct) =>
             (await s.Send(ToCommand(id, i), ct)).ToNoContent());
-        g.MapDelete("/{id:guid}", async (Guid id, ISender s, CancellationToken ct) => (await s.Send(new DeleteImportTemplateCommand(id), ct)).ToNoContent());
+        g.MapDelete("/{id:guid}", async (Guid id, ISender s, CancellationToken ct) => (await s.Send(new DeleteImportTemplateCommand(id), ct)).ToNoContent())
+            .RequireAuthorization(AuthPolicies.CanDelete);
 
         // Le uma planilha de exemplo e pede para a camada de IA sugerir o modelo (nada e gravado aqui).
         g.MapPost("/analyze", async ([FromForm] ImportTemplateKind kind, [FromForm] string? sheetName, IFormFile file, ISender s, CancellationToken ct) =>
@@ -208,7 +216,7 @@ internal static class SettingsEndpoints
 
     public static void MapSettingsEndpoints(this IEndpointRouteBuilder app)
     {
-        var g = app.MapGroup("/settings").WithTags("Configuracoes");
+        var g = app.MapGroup("/settings").WithTags("Configuracoes").RequireAuthorization(AuthPolicies.Admin);
         g.MapGet("/ai", async (ISender s, CancellationToken ct) => Results.Ok(await s.Send(new GetAiSettingsQuery(), ct)));
         g.MapPut("/ai", async (AiSettingsInput i, ISender s, CancellationToken ct) =>
             (await s.Send(new UpdateAiSettingsCommand(i.Provider, i.Model, i.Effort), ct)).ToNoContent());
@@ -220,5 +228,28 @@ internal static class SettingsEndpoints
             (await s.Send(new UpdateNotificationSettingsCommand(i.DailyEmailEnabled, i.Recipients ?? [], i.SendAt), ct)).ToNoContent());
         g.MapPost("/notifications/send-now", async (ISender s, CancellationToken ct) =>
             (await s.Send(new SendDailyDigestCommand(Scheduled: false), ct)).ToOk());
+    }
+}
+
+internal static class UserEndpoints
+{
+    public sealed record CreateUserInput(string Name, string Email, UserRole Role, string TemporaryPassword);
+    public sealed record UpdateUserInput(string Name, UserRole Role);
+    public sealed record PasswordInput(string TemporaryPassword);
+
+    public static void MapUserEndpoints(this IEndpointRouteBuilder app)
+    {
+        var g = app.MapGroup("/users").WithTags("Usuarios").RequireAuthorization(AuthPolicies.Admin);
+        g.MapGet("/", async (ISender s, CancellationToken ct) => Results.Ok(await s.Send(new GetUsersQuery(), ct)));
+        g.MapPost("/", async (CreateUserInput i, ISender s, CancellationToken ct) =>
+            (await s.Send(new CreateUserCommand(i.Name, i.Email, i.Role, i.TemporaryPassword), ct)).ToCreated("/api/users"));
+        g.MapPut("/{id:guid}", async (Guid id, UpdateUserInput i, ISender s, CancellationToken ct) =>
+            (await s.Send(new UpdateUserCommand(id, i.Name, i.Role), ct)).ToNoContent());
+        g.MapPost("/{id:guid}/activate", async (Guid id, ISender s, CancellationToken ct) =>
+            (await s.Send(new SetUserActiveCommand(id, true), ct)).ToNoContent());
+        g.MapPost("/{id:guid}/deactivate", async (Guid id, ISender s, CancellationToken ct) =>
+            (await s.Send(new SetUserActiveCommand(id, false), ct)).ToNoContent());
+        g.MapPost("/{id:guid}/reset-password", async (Guid id, PasswordInput i, ISender s, CancellationToken ct) =>
+            (await s.Send(new ResetUserPasswordCommand(id, i.TemporaryPassword), ct)).ToNoContent());
     }
 }

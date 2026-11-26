@@ -1,0 +1,133 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Usuários</h1>
+      <p class="subtitle">Quem acessa a Vitta e com qual perfil.</p>
+    </div>
+    <button class="btn btn--primary" type="button" (click)="openCreate()"><vt-icon name="user-plus" [size]="18" /> Novo usuário</button>
+  </div>
+
+  <div class="roles">
+    @for (r of roles; track r) {
+      <div class="role"><strong>{{ roleLabels[r] }}</strong><span class="muted small">{{ roleHints[r] }}</span></div>
+    }
+  </div>
+
+  <div class="card card--flush">
+    @if (loading()) {
+      <div style="padding: 1rem; display: grid; gap: 0.75rem">@for (i of [1, 2]; track i) { <div class="skeleton" style="height: 2.2rem"></div> }</div>
+    } @else {
+      <div class="table-wrap">
+        <table class="responsive">
+          <thead>
+            <tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Situação</th><th>Último acesso</th><th></th></tr>
+          </thead>
+          <tbody>
+            @for (u of users(); track u.id) {
+              <tr [class.inactive]="!u.isActive">
+                <td data-label="Nome"><strong>{{ u.name }}</strong>@if (u.isMe) { <span class="badge badge--info">você</span> }</td>
+                <td data-label="E-mail">{{ u.email }}</td>
+                <td data-label="Perfil"><span class="badge" [class.badge--primary]="u.role === 'Admin'">{{ roleLabels[u.role] }}</span></td>
+                <td data-label="Situação">
+                  @if (!u.isActive) { <span class="badge badge--danger">Desativado</span> }
+                  @else if (u.mustChangePassword) { <span class="badge badge--warning">Senha provisória</span> }
+                  @else { <span class="badge badge--success">Ativo</span> }
+                </td>
+                <td data-label="Último acesso" class="nowrap">{{ lastLogin(u) }}</td>
+                <td class="actions">
+                  <button class="btn btn--sm btn--ghost" type="button" (click)="openEdit(u)"><vt-icon name="edit" [size]="14" /> Editar</button>
+                  @if (!u.isMe) {
+                    <button class="btn btn--sm btn--ghost" type="button" (click)="openPassword(u)"><vt-icon name="key" [size]="14" /> Senha</button>
+                    <button class="btn btn--sm" type="button" (click)="toggleActive(u)">{{ u.isActive ? 'Desativar' : 'Reativar' }}</button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>
+
+@if (dialog(); as d) {
+  <div class="dialog-backdrop" (click)="close()">
+    <form class="dialog" (submit)="$event.preventDefault(); save()" (click)="$event.stopPropagation()" novalidate>
+      <div class="dialog__header">
+        <h2>
+          @switch (d.mode) {
+            @case ('create') { Novo usuário }
+            @case ('edit') { Editar {{ d.user.name }} }
+            @case ('password') { Nova senha para {{ d.user.name }} }
+          }
+        </h2>
+        <button class="btn btn--ghost btn--icon" type="button" (click)="close()" aria-label="Fechar"><vt-icon name="x" /></button>
+      </div>
+
+      @if (issued(); as i) {
+        <div class="alert alert--success">
+          <vt-icon name="check" [size]="18" />
+          <div>
+            <strong>Pronto! Repasse o acesso para {{ i.name }}:</strong>
+            <dl class="issued">
+              <div><dt>Endereço</dt><dd>{{ location }}</dd></div>
+              <div><dt>Login</dt><dd>{{ i.email }}</dd></div>
+              <div><dt>Senha provisória</dt><dd class="mono">{{ i.password }}</dd></div>
+            </dl>
+            <p class="small">A pessoa troca a senha no primeiro acesso. Esta senha não será mostrada de novo.</p>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn" type="button" (click)="copy(instructions(i))"><vt-icon name="clipboard" [size]="16" /> Copiar mensagem</button>
+          <button class="btn btn--primary" type="button" (click)="close()">Concluir</button>
+        </div>
+      } @else {
+        <div class="form-grid">
+          @if (d.mode !== 'password') {
+            <label class="field span-all">
+              Nome
+              <input [value]="name()" (input)="name.set($any($event.target).value)" maxlength="150" />
+            </label>
+          }
+          @if (d.mode === 'create') {
+            <label class="field span-all">
+              E-mail (login)
+              <input type="email" [value]="email()" (input)="email.set($any($event.target).value)" maxlength="200" />
+            </label>
+          }
+          @if (d.mode !== 'password') {
+            <label class="field span-all">
+              Perfil
+              <select [disabled]="d.mode === 'edit' && d.user.isMe" (change)="role.set($any($event.target).value)">
+                @for (r of roles; track r) { <option [value]="r" [selected]="role() === r">{{ roleLabels[r] }}</option> }
+              </select>
+              <span class="hint">
+                @if (d.mode === 'edit' && d.user.isMe) { Você não pode mudar o próprio perfil. } @else { {{ roleHints[role()] }} }
+              </span>
+            </label>
+          }
+          @if (d.mode === 'create' || d.mode === 'password') {
+            <label class="field span-all">
+              Senha provisória
+              <div class="pwd">
+                <input class="mono" [value]="password()" (input)="password.set($any($event.target).value)" />
+                <button class="btn btn--sm" type="button" (click)="regenerate()" title="Gerar outra"><vt-icon name="refresh" [size]="14" /></button>
+              </div>
+              <span class="hint">Gerada automaticamente (mín. {{ min }} caracteres). A pessoa troca no primeiro acesso.</span>
+            </label>
+          }
+        </div>
+
+        @if (dialogError(); as message) {
+          <div class="alert alert--danger" style="margin-top: 1rem"><vt-icon name="alert" [size]="18" /><span>{{ message }}</span></div>
+        }
+        <div class="form-actions">
+          <button class="btn" type="button" (click)="close()">Cancelar</button>
+          <button class="btn btn--primary" type="submit" [disabled]="busy()">
+            {{ busy() ? 'Salvando…' : d.mode === 'create' ? 'Criar usuário' : 'Salvar' }}
+          </button>
+        </div>
+      }
+    </form>
+  </div>
+}

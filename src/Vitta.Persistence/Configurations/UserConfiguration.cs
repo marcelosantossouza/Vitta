@@ -14,6 +14,8 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         b.Property(x => x.Email).HasMaxLength(200).IsRequired();
         b.HasIndex(x => x.Email).IsUnique();
         b.Property(x => x.PasswordHash).HasMaxLength(500).IsRequired();
+        // Na migration UserRoles, os usuarios que ja existiam (o administrador inicial) entram como Admin e ativos.
+        b.Property(x => x.Role).HasConversion<string>().HasMaxLength(20);
         b.Ignore(x => x.DomainEvents);
     }
 }

@@ -422,7 +422,19 @@ namespace Vitta.Persistence.Migrations.Sqlite
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("FailedLoginCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
                     b.Property<long?>("LastLoginAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long?>("LockedUntil")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("MustChangePassword")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")
@@ -433,6 +445,11 @@ namespace Vitta.Persistence.Migrations.Sqlite
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
                     b.Property<long?>("UpdatedAt")
