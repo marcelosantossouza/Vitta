@@ -21,6 +21,12 @@ export interface ProspectProfile {
   estimatedSalary: number | null;
   discounts: number | null;
   loans: number | null;
+  /** Empresa (lead B2B, ex.: vida em grupo). */
+  cnpj?: string | null;
+  legalName?: string | null;
+  activity?: string | null;
+  companySize?: string | null;
+  openedOn?: string | null;
 }
 
 export interface ProspectInput {
@@ -56,6 +62,22 @@ export interface ProspectDto {
   loans: number | null;
   /** Importação que criou o prospect (nulo = cadastro manual). */
   importId: string | null;
+  /** Preenchido = o lead é uma empresa. */
+  cnpj: string | null;
+  legalName: string | null;
+  /** Atividade principal (CNAE). */
+  activity: string | null;
+  /** ME, EPP ou Demais. */
+  companySize: string | null;
+  openedOn: string | null;
+}
+
+export type LeadKind = 'Any' | 'Person' | 'Company';
+
+/** "12345678000190" -> "12.345.678/0001-90" */
+export function formatCnpj(cnpj: string | null | undefined): string {
+  const d = (cnpj ?? '').replace(/\D/g, '');
+  return d.length === 14 ? `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}` : cnpj ?? '';
 }
 
 export type FollowUpFilter = 'Any' | 'Overdue' | 'Today' | 'Next7Days' | 'None';
@@ -68,11 +90,14 @@ export interface ProspectFilter {
   city?: string;
   state?: string;
   source?: string;
+  /** Id do lote, ou 'none' = sem lote (importações antigas e cadastros manuais). */
   importId?: string;
   salaryMin?: number | null;
   salaryMax?: number | null;
   followUp?: FollowUpFilter;
   hasPhone?: boolean | null;
+  kind?: LeadKind;
+  companySize?: string;
 }
 
 export interface LabelCount {

@@ -73,6 +73,11 @@ public static class ImportFields
         public const string EstimatedSalary = "estimatedSalary";
         public const string Discounts = "discounts";
         public const string Loans = "loans";
+        public const string Cnpj = "cnpj";
+        public const string LegalName = "legalName";
+        public const string Activity = "activity";
+        public const string CompanySize = "companySize";
+        public const string OpenedOn = "openedOn";
     }
 
     private static readonly IReadOnlyList<ImportField> PortfolioFields =
@@ -173,6 +178,21 @@ public static class ImportFields
         new(Prospects.Loans, "Empréstimos", false, false,
             "Valor mensal comprometido com empréstimos/consignados em reais.",
             ["emprestimos", "emprestimo", "consignado", "consignados", "parcela emprestimo", "valor emprestimo"], ImportValueKind.Money),
+        new(Prospects.Cnpj, "CNPJ", false, false,
+            "CNPJ da empresa (leads de empresas, ex.: seguro de vida em grupo). Não é CPF.",
+            ["cnpj", "cnpj da empresa", "numero cnpj"], ImportValueKind.Code),
+        new(Prospects.LegalName, "Razão social", false, false,
+            "Nome oficial da empresa (razão social). Use 'Nome' para o nome fantasia/como é conhecida.",
+            ["razao social", "nome empresarial", "razao"]),
+        new(Prospects.Activity, "Atividade (CNAE)", false, false,
+            "Atividade principal da empresa (código e/ou descrição do CNAE).",
+            ["atividade", "atividade principal", "cnae", "cnae principal", "atividade (cnae)", "ramo", "segmento"]),
+        new(Prospects.CompanySize, "Porte", false, false,
+            "Porte da empresa: ME, EPP ou Demais.",
+            ["porte", "porte da empresa", "tamanho"]),
+        new(Prospects.OpenedOn, "Data de abertura", false, false,
+            "Data de abertura/início de atividade da empresa.",
+            ["data de abertura", "abertura", "inicio atividade", "data inicio atividade", "fundacao"], ImportValueKind.Date),
         new(Prospects.Notes, "Outras informações", false, true,
             "Qualquer outra coluna útil sem campo próprio (matrícula, idade, filhos, interesse...). Pode receber várias colunas; fica visível no prospect mas não é filtrável.",
             ["observacoes", "observacao", "obs", "anotacoes", "comentarios", "notas"]),

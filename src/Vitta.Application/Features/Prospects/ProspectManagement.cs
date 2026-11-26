@@ -34,7 +34,18 @@ public sealed record ProspectFilter(
     decimal? SalaryMin = null,
     decimal? SalaryMax = null,
     FollowUpFilter FollowUp = FollowUpFilter.Any,
-    bool? HasPhone = null);
+    bool? HasPhone = null,
+    bool WithoutImport = false,
+    LeadKind Kind = LeadKind.Any,
+    string? CompanySize = null);
+
+/// <summary>Pessoa ou empresa (empresa = tem CNPJ).</summary>
+public enum LeadKind
+{
+    Any = 0,
+    Person = 1,
+    Company = 2,
+}
 
 public enum ProspectSort
 {
@@ -125,6 +136,44 @@ public sealed class BulkMoveProspectsHandler(IProspectRepository prospects, IUni
     }
 }
 
+// ---------- Todos os ids do filtro ("selecionar todos os N") ----------
+
+public sealed record GetProspectIdsQuery(ProspectFilter Filter) : IQuery<IReadOnlyList<Guid>>;
+
+public sealed class GetProspectIdsHandler(IProspectQueries queries, TimeProvider time) : IQueryHandler<GetProspectIdsQuery, IReadOnlyList<Guid>>
+{
+    public const int Max = 5000;
+
+    public async ValueTask<IReadOnlyList<Guid>> Handle(GetProspectIdsQuery q, CancellationToken ct) =>
+        (await queries.SearchAsync(q.Filter, ProspectSort.Newest, 1, Max, time.Today(), ct)).Items.Select(p => p.Id).ToList();
+}
+
+// ---------- Excluir em lote ----------
+
+public sealed record BulkDeleteProspectsCommand(IReadOnlyList<Guid> Ids) : ICommand<Result<int>>;
+
+internal sealed class BulkDeleteProspectsValidator : AbstractValidator<BulkDeleteProspectsCommand>
+{
+    public BulkDeleteProspectsValidator() =>
+        RuleFor(x => x.Ids).NotEmpty().Must(ids => ids.Count <= GetProspectIdsHandler.Max)
+            .WithMessage($"Selecione até {GetProspectIdsHandler.Max} prospects por vez.");
+}
+
+public sealed class BulkDeleteProspectsHandler(IProspectRepository prospects, IUnitOfWork uow) : ICommandHandler<BulkDeleteProspectsCommand, Result<int>>
+{
+    public async ValueTask<Result<int>> Handle(BulkDeleteProspectsCommand c, CancellationToken ct)
+    {
+        var list = await prospects.ListByIdsAsync(c.Ids.Distinct().ToList(), ct);
+        foreach (var p in list)
+        {
+            prospects.Remove(p);
+        }
+
+        await uow.SaveChangesAsync(ct);
+        return list.Count;
+    }
+}
+
 // ---------- Excluir importacao (desfazer) ----------
 
 /// <param name="Removed">Prospects que ainda estavam em "Novo" e sairam junto.</param>
@@ -186,6 +235,10 @@ public static class ProspectFiltering
             if (state is not null && Norm(p.State) != state) continue;
             if (sourceName is not null && Norm(p.Source) != sourceName) continue;
             if (f.ImportId is { } importId && p.ImportId != importId) continue;
+            if (f.WithoutImport && p.ImportId is not null) continue;
+            if (f.Kind == LeadKind.Person && p.IsCompany) continue;
+            if (f.Kind == LeadKind.Company && !p.IsCompany) continue;
+            if (Norm(f.CompanySize) is { } size && Norm(p.CompanySize) != size) continue;
             if (f.SalaryMin is { } min && !(p.EstimatedSalary >= min)) continue;
             if (f.SalaryMax is { } max && !(p.EstimatedSalary <= max)) continue;
             var anyPhone = !string.IsNullOrWhiteSpace(p.Phone) || !string.IsNullOrWhiteSpace(p.Phone2);
@@ -268,6 +321,9 @@ public static class ProspectFiltering
         || (p.Email ?? string.Empty).Contains(term, StringComparison.OrdinalIgnoreCase)
         || (p.Occupation is { } o && TextNormalizer.ForSearch(o).Contains(term))
         || (p.Address is { } a && TextNormalizer.ForSearch(a).Contains(term))
+        || (p.Activity is { } act && TextNormalizer.ForSearch(act).Contains(term))
+        || (p.LegalName is { } legal && TextNormalizer.ForSearch(legal).Contains(term))
+        || (digits.Length >= 8 && (p.Cnpj ?? string.Empty).Contains(digits))
         || (digits.Length >= 4 && (Digits(p.Phone).Contains(digits) || Digits(p.Phone2).Contains(digits)));
 
     private static string Digits(string? value) => new((value ?? string.Empty).Where(char.IsDigit).ToArray());

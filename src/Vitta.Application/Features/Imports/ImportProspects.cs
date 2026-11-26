@@ -149,7 +149,12 @@ public sealed class ImportProspectsHandler(
             Occupation: Limit(row.Get(F.Occupation), 150),
             EstimatedSalary: Amount(row.Get(F.EstimatedSalary)),
             Discounts: Amount(row.Get(F.Discounts)),
-            Loans: Amount(row.Get(F.Loans)));
+            Loans: Amount(row.Get(F.Loans)),
+            Cnpj: row.Get(F.Cnpj),
+            LegalName: Limit(row.Get(F.LegalName), 200),
+            Activity: Limit(row.Get(F.Activity), 250),
+            CompanySize: Limit(row.Get(F.CompanySize), 30),
+            OpenedOn: SpreadsheetMapper.ParseDate(row.Get(F.OpenedOn)));
     }
 
     private static string? Limit(string? value, int max) =>

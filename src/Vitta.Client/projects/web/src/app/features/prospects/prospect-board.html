@@ -43,6 +43,7 @@
           @for (p of col.items; track p.id) {
             <article class="prospect" cdkDrag [cdkDragData]="p" (click)="openEdit(p)" tabindex="0" (keydown.enter)="openEdit(p)">
               <strong>{{ p.name }}</strong>
+              @if (p.cnpj) { <span class="muted small"><span class="badge badge--info">Empresa{{ p.companySize ? ' · ' + p.companySize : '' }}</span></span> }
               @if (p.phone || p.source) {
                 <span class="muted small">{{ p.phone }}{{ p.phone && p.source ? ' · ' : '' }}{{ p.source }}</span>
               }
@@ -108,6 +109,17 @@
           <label class="field">Salário estimado (R$)<input type="number" min="0" step="0.01" inputmode="decimal" formControlName="estimatedSalary" /></label>
           <label class="field">Descontos (R$)<input type="number" min="0" step="0.01" inputmode="decimal" formControlName="discounts" /></label>
           <label class="field">Empréstimos (R$)<input type="number" min="0" step="0.01" inputmode="decimal" formControlName="loans" /></label>
+          <p class="span-all section-title">Empresa (preencha só se o lead for uma empresa)</p>
+          <label class="field">CNPJ<input formControlName="cnpj" inputmode="numeric" placeholder="00.000.000/0000-00" /></label>
+          <label class="field">Razão social<input formControlName="legalName" /></label>
+          <label class="field span-all">Atividade (CNAE)<input formControlName="activity" placeholder="Ex.: 8630-5/04 Atividade odontológica" /></label>
+          <label class="field">Porte
+            <select formControlName="companySize">
+              <option value="">—</option>
+              @for (s of ['ME', 'EPP', 'Demais']; track s) { <option [value]="s">{{ s }}</option> }
+            </select>
+          </label>
+          <label class="field">Data de abertura<input type="date" formControlName="openedOn" /></label>
         </div>
       }
       @if (dialogError(); as message) {

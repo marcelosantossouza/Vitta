@@ -2,9 +2,9 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
-  FOLLOW_UP_FILTER_LABELS, FollowUpFilter, LabelCount, PagedResult, problemMessage, PROSPECT_SORT_LABELS, PROSPECT_STAGE_LABELS,
+  AuthService, FOLLOW_UP_FILTER_LABELS, FollowUpFilter, LabelCount, PagedResult, problemMessage, PROSPECT_SORT_LABELS, PROSPECT_STAGE_LABELS,
   PROSPECT_STAGES, ProspectDto, ProspectFilter, ProspectFilterOptionsDto, ProspectInsightsDto, ProspectsApi, ProspectSort, ProspectStage,
-  todayIso,
+  formatCnpj, LeadKind, todayIso,
 } from '@vitta/core';
 import { debounceTime, Subject } from 'rxjs';
 import { Icon } from '../../shared/icon';
@@ -31,6 +31,8 @@ export class ProspectList {
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  /** Assistentes nao excluem (a API tambem bloqueia). */
+  protected readonly canDelete = inject(AuthService).canDelete;
 
   protected readonly stages = PROSPECT_STAGES;
   protected readonly stageLabels = PROSPECT_STAGE_LABELS;
@@ -51,6 +53,9 @@ export class ProspectList {
   protected readonly salaryMax = signal<number | null>(null);
   protected readonly followUp = signal<FollowUpFilter>('Any');
   protected readonly hasPhone = signal<'' | 'yes' | 'no'>('');
+  protected readonly kind = signal<LeadKind>('Any');
+  protected readonly companySize = signal('');
+  protected readonly formatCnpj = formatCnpj;
   protected readonly sort = signal<ProspectSort>('FollowUp');
   protected readonly page = signal(1);
 
@@ -65,6 +70,8 @@ export class ProspectList {
     salaryMax: this.salaryMax(),
     followUp: this.followUp(),
     hasPhone: this.hasPhone() === '' ? null : this.hasPhone() === 'yes',
+    kind: this.kind(),
+    companySize: this.companySize() || undefined,
   }));
 
   protected readonly activeFilters = computed(() => {
@@ -76,6 +83,8 @@ export class ProspectList {
     if (f.salaryMin != null || f.salaryMax != null) n++;
     if (f.followUp && f.followUp !== 'Any') n++;
     if (f.hasPhone != null) n++;
+    if (f.kind && f.kind !== 'Any') n++;
+    if (f.companySize) n++;
     return n;
   });
 
@@ -140,6 +149,8 @@ export class ProspectList {
     this.salaryMax.set(null);
     this.followUp.set('Any');
     this.hasPhone.set('');
+    this.kind.set('Any');
+    this.companySize.set('');
     this.page.set(1);
     this.load();
   }
@@ -198,6 +209,41 @@ export class ProspectList {
 
   protected clearSelection(): void {
     this.selected.set(new Set());
+  }
+
+  /** Seleciona todos os que batem com o filtro (nao so a pagina). */
+  protected selectAllFiltered(): void {
+    this.bulkBusy.set(true);
+    this.api.ids(this.filter()).subscribe({
+      next: ids => {
+        this.bulkBusy.set(false);
+        this.selected.set(new Set(ids));
+      },
+      error: err => {
+        this.bulkBusy.set(false);
+        this.toast.error(err, 'Não foi possível selecionar todos.');
+      },
+    });
+  }
+
+  protected deleteSelected(): void {
+    const ids = [...this.selected()];
+    if (!ids.length) return;
+    if (!confirm(`Excluir ${ids.length} prospect(s) da prospecção? Esta ação não pode ser desfeita.`)) return;
+    this.bulkBusy.set(true);
+    this.api.bulkDelete(ids).subscribe({
+      next: count => {
+        this.bulkBusy.set(false);
+        this.toast.success(`${count} prospect(s) excluído(s).`);
+        this.clearSelection();
+        this.api.filterOptions().subscribe({ next: o => this.options.set(o), error: () => undefined });
+        this.load();
+      },
+      error: err => {
+        this.bulkBusy.set(false);
+        this.toast.error(err, 'Não foi possível excluir.');
+      },
+    });
   }
 
   protected applyBulk(): void {

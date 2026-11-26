@@ -86,6 +86,7 @@ internal static class ProspectEndpoints
     public sealed record StageInput(ProspectStage Stage, DateOnly? NextFollowUpOn);
     public sealed record ConvertInput(string Cpf, DateOnly? BirthDate);
     public sealed record BulkStageInput(IReadOnlyList<Guid> Ids, ProspectStage Stage, DateOnly? NextFollowUpOn);
+    public sealed record BulkIdsInput(IReadOnlyList<Guid> Ids);
 
     /// <summary>Filtros pela URL (?city=...&amp;stage=New&amp;stage=Contacted...). Mesmos para a lista e o dashboard.</summary>
     public sealed class FilterQuery
@@ -95,14 +96,20 @@ internal static class ProspectEndpoints
         public string? City { get; init; }
         public string? State { get; init; }
         public string? Source { get; init; }
-        public Guid? ImportId { get; init; }
+
+        /// <summary>Id do lote, ou "none" = sem lote (importacoes antigas e cadastros manuais).</summary>
+        public string? ImportId { get; init; }
         public decimal? SalaryMin { get; init; }
         public decimal? SalaryMax { get; init; }
         public FollowUpFilter? FollowUp { get; init; }
         public bool? HasPhone { get; init; }
+        public LeadKind? Kind { get; init; }
+        public string? CompanySize { get; init; }
 
         public ProspectFilter ToFilter() =>
-            new(Search, Stage, City, State, Source, ImportId, SalaryMin, SalaryMax, FollowUp ?? FollowUpFilter.Any, HasPhone);
+            new(Search, Stage, City, State, Source, Guid.TryParse(ImportId, out var id) ? id : null, SalaryMin, SalaryMax,
+                FollowUp ?? FollowUpFilter.Any, HasPhone, WithoutImport: ImportId == "none", Kind: Kind ?? LeadKind.Any,
+                CompanySize: CompanySize);
     }
 
     public static void MapProspectEndpoints(this IEndpointRouteBuilder app)
@@ -115,6 +122,11 @@ internal static class ProspectEndpoints
         g.MapGet("/insights", async ([AsParameters] FilterQuery f, ISender s, CancellationToken ct) =>
             Results.Ok(await s.Send(new GetProspectInsightsQuery(f.ToFilter()), ct)));
         g.MapGet("/filter-options", async (ISender s, CancellationToken ct) => Results.Ok(await s.Send(new GetProspectFilterOptionsQuery(), ct)));
+        g.MapGet("/ids", async ([AsParameters] FilterQuery f, ISender s, CancellationToken ct) =>
+            Results.Ok(await s.Send(new GetProspectIdsQuery(f.ToFilter()), ct)));
+        g.MapPost("/bulk-delete", async (BulkIdsInput i, ISender s, CancellationToken ct) =>
+            (await s.Send(new BulkDeleteProspectsCommand(i.Ids), ct)).ToOk())
+            .RequireAuthorization(AuthPolicies.CanDelete);
         g.MapPost("/bulk-stage", async (BulkStageInput i, ISender s, CancellationToken ct) =>
             (await s.Send(new BulkMoveProspectsCommand(i.Ids, i.Stage, i.NextFollowUpOn), ct)).ToOk());
         g.MapPost("/", async (ProspectInput i, ISender s, CancellationToken ct) =>

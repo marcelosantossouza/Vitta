@@ -89,6 +89,26 @@ public class ProspectManagementTests
     }
 
     [Fact]
+    public async Task OldImportsWithoutBatch_CanBeFilteredAndBulkDeleted()
+    {
+        var old1 = Prospect.Create("Antigo 1", "11911110001", null, null).Value;   // importacao antiga: sem lote
+        var old2 = Prospect.Create("Antigo 2", "11911110002", null, null).Value;
+        var (handler, prospects, _, template) = Setup(Rows);
+        prospects.Add(old1);
+        prospects.Add(old2);
+        await handler.Handle(new ImportProspectsCommand(template.Id, "lista.xlsx", Stream.Null), default);
+
+        var withoutBatch = ProspectFiltering.Apply(prospects.Prospects, new ProspectFilter(WithoutImport: true), Today).Select(p => p.Id).ToList();
+        Assert.Equal([old1.Id, old2.Id], withoutBatch);
+
+        var removed = await new BulkDeleteProspectsHandler(prospects, new FakeUnitOfWork()).Handle(new BulkDeleteProspectsCommand(withoutBatch), default);
+
+        Assert.Equal(2, removed.Value);
+        Assert.Equal(3, prospects.Prospects.Count); // os 3 da importacao nova ficam
+        Assert.All(prospects.Prospects, p => Assert.NotNull(p.ImportId));
+    }
+
+    [Fact]
     public void Filter_BySalaryCityStateFollowUpAndPhone()
     {
         Prospect P(string name, string? city, string? uf, decimal? salary, DateOnly? followUp = null, string? phone = "11999990000")
@@ -116,6 +136,28 @@ public class ProspectManagementTests
         Assert.Equal(["Bruno", "Davi"], Names(new ProspectFilter(FollowUp: FollowUpFilter.Next7Days)));
         Assert.Equal(["Carla"], Names(new ProspectFilter(HasPhone: false)));
         Assert.Equal(["Carla"], Names(new ProspectFilter(State: "pe")));
+    }
+
+    [Fact]
+    public void Filter_ByKindAndCompanySize()
+    {
+        var person = Prospect.Create("Ana", null, null, null).Value;
+        var me = Prospect.Create("Clinica Sorriso", null, null, null).Value;
+        me.SetProfile(new ProspectProfile(Cnpj: "11.111.111/0001-00", CompanySize: "ME", Activity: "8630-5/04 Atividade odontológica"));
+        var big = Prospect.Create("Supermercado Bom", null, null, null).Value;
+        big.SetProfile(new ProspectProfile(Cnpj: "66666666000100", CompanySize: "Demais"));
+        var notCnpj = Prospect.Create("Sem CNPJ valido", null, null, null).Value;
+        notCnpj.SetProfile(new ProspectProfile(Cnpj: "123"));
+        var all = new[] { person, me, big, notCnpj };
+
+        string[] Names(ProspectFilter f) => ProspectFiltering.Apply(all, f, Today).Select(p => p.Name).ToArray();
+
+        Assert.Equal("11111111000100", me.Cnpj);                       // so digitos
+        Assert.Null(notCnpj.Cnpj);                                       // CNPJ invalido nao vira empresa
+        Assert.Equal(["Clinica Sorriso", "Supermercado Bom"], Names(new ProspectFilter(Kind: LeadKind.Company)));
+        Assert.Equal(["Ana", "Sem CNPJ valido"], Names(new ProspectFilter(Kind: LeadKind.Person)));
+        Assert.Equal(["Clinica Sorriso"], Names(new ProspectFilter(Kind: LeadKind.Company, CompanySize: "me")));
+        Assert.Equal(["Clinica Sorriso"], Names(new ProspectFilter(Search: "odontologica")));  // busca na atividade
     }
 
     [Fact]

@@ -14,6 +14,16 @@ filtros e ações em lote, dashboard com os mesmos filtros.
    visíveis mas não filtráveis).
 3. Exportar a lista filtrada (planilha) e filtros salvos ("minhas listas").
 
+### Leads de empresas (dados abertos do CNPJ)
+
+Feito: `scripts/cnpj-leads.py` (baixa a base da Receita, filtra por UF/cidade/CNAE/porte, exclui MEI e empresário
+individual, gera planilha que o Vitta importa sozinho) + campos de empresa e filtros Tipo/Porte na prospecção.
+
+1. Atalhos de segmentos para vida em grupo (setores com convenção coletiva que costuma exigir seguro: construção,
+   vigilância, limpeza, transporte...) em vez de digitar códigos CNAE.
+2. Consulta avulsa de CNPJ no formulário do prospect (completar os dados de uma empresa na hora).
+3. Rodar a busca pela tela do Vitta (hoje é um script no computador, por causa do tamanho da base: ~7,6 GB).
+
 ## Carteira
 
 1. **Campos personalizados** (catálogo de campos com nome, tipo e descrição + valores em JSONB), para que colunas

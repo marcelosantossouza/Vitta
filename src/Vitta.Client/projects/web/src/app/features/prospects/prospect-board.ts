@@ -5,7 +5,7 @@ import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angula
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   ImportTemplateDto, ImportTemplatesApi, maskCpf, problemMessage, ProspectDto, ProspectImportResultDto, ProspectsApi,
-  ProspectStage, PROSPECT_STAGES, PROSPECT_STAGE_LABELS, todayIso, AuthService } from '@vitta/core';
+  ProspectStage, PROSPECT_STAGES, PROSPECT_STAGE_LABELS, todayIso, AuthService, formatCnpj } from '@vitta/core';
 import { Observable } from 'rxjs';
 import { FileOrPaste } from '../../shared/file-or-paste';
 import { Icon } from '../../shared/icon';
@@ -101,6 +101,11 @@ export class ProspectBoard {
     estimatedSalary: [null as number | null, Validators.min(0)],
     discounts: [null as number | null, Validators.min(0)],
     loans: [null as number | null, Validators.min(0)],
+    cnpj: [''],
+    legalName: [''],
+    activity: [''],
+    companySize: [''],
+    openedOn: [''],
   });
 
   /** Painel "Perfil e renda" do formulario: aberto quando o prospect ja tem algum desses dados. */
@@ -184,6 +189,7 @@ export class ProspectBoard {
   private readonly emptyProfile = {
     phone2: '', occupation: '', address: '', city: '', state: '', zipCode: '', birthDate: '',
     estimatedSalary: null, discounts: null, loans: null,
+    cnpj: '', legalName: '', activity: '', companySize: '', openedOn: '',
   };
 
   protected openNew(): void {
@@ -213,9 +219,15 @@ export class ProspectBoard {
       estimatedSalary: p.estimatedSalary,
       discounts: p.discounts,
       loans: p.loans,
+      cnpj: formatCnpj(p.cnpj),
+      legalName: p.legalName ?? '',
+      activity: p.activity ?? '',
+      companySize: p.companySize ?? '',
+      openedOn: p.openedOn ?? '',
     });
     this.profileOpen.set(
-      [p.phone2, p.occupation, p.address, p.city, p.state, p.zipCode, p.birthDate, p.estimatedSalary, p.discounts, p.loans].some(v => v != null && v !== ''),
+      [p.phone2, p.occupation, p.address, p.city, p.state, p.zipCode, p.birthDate, p.estimatedSalary, p.discounts, p.loans, p.cnpj]
+        .some(v => v != null && v !== ''),
     );
     this.dialogError.set(null);
     this.dialog.set('edit');
@@ -245,6 +257,11 @@ export class ProspectBoard {
         estimatedSalary: this.amount(v.estimatedSalary),
         discounts: this.amount(v.discounts),
         loans: this.amount(v.loans),
+        cnpj: v.cnpj.trim() || null,
+        legalName: v.legalName.trim() || null,
+        activity: v.activity.trim() || null,
+        companySize: v.companySize || null,
+        openedOn: v.openedOn || null,
       },
     };
     const current = this.editing();

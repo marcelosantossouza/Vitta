@@ -13,7 +13,7 @@ import {
 function filterParams(filter: ProspectFilter): HttpParams {
   let params = new HttpParams();
   for (const [key, value] of Object.entries(filter)) {
-    if (value === undefined || value === null || value === '' || value === 'Any') continue;
+    if (value === undefined || value === null || value === '' || value === 'Any') continue; // 'Any' = sem filtro (contato e tipo)
     if (Array.isArray(value)) {
       for (const item of value) params = params.append(key, String(item));
     } else {
@@ -65,6 +65,16 @@ export class ProspectsApi {
   /** Cidades, UFs, origens e importações existentes (para montar os filtros e o histórico). */
   filterOptions(): Observable<ProspectFilterOptionsDto> {
     return this.http.get<ProspectFilterOptionsDto>(`${this.baseUrl}/filter-options`);
+  }
+
+  /** Todos os ids que batem com o filtro (para "selecionar todos"), até 5000. */
+  ids(filter: ProspectFilter): Observable<string[]> {
+    return this.http.get<string[]>(`${this.baseUrl}/ids`, { params: filterParams(filter) });
+  }
+
+  /** Exclui vários de uma vez (Administrador e Corretor). Devolve quantos saíram. */
+  bulkDelete(ids: string[]): Observable<number> {
+    return this.http.post<number>(`${this.baseUrl}/bulk-delete`, { ids });
   }
 
   /** Move vários de uma vez (e opcionalmente agenda o próximo contato). Devolve quantos mudaram. */

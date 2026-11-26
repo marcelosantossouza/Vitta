@@ -32,6 +32,14 @@
 
     <div class="filters__grid">
       <label class="field">
+        Tipo
+        <select (change)="set(kind, $any($event.target).value)">
+          <option value="Any" [selected]="kind() === 'Any'">Pessoas e empresas</option>
+          <option value="Person" [selected]="kind() === 'Person'">Pessoas</option>
+          <option value="Company" [selected]="kind() === 'Company'">Empresas</option>
+        </select>
+      </label>
+      <label class="field">
         Cidade
         <select (change)="set(city, $any($event.target).value)">
           <option value="" [selected]="!city()">Todas</option>
@@ -70,11 +78,21 @@
         Importação
         <select (change)="set(importId, $any($event.target).value)">
           <option value="" [selected]="!importId()">Todas</option>
+          <option value="none" [selected]="importId() === 'none'">Sem lote (antigas ou cadastro manual)</option>
           @for (i of options()?.imports ?? []; track i.id) {
             <option [value]="i.id" [selected]="importId() === i.id">{{ i.fileName }} · {{ i.createdAt | isoDate }}</option>
           }
         </select>
       </label>
+      @if (kind() === 'Company') {
+        <label class="field">
+          Porte
+          <select (change)="set(companySize, $any($event.target).value)">
+            <option value="" [selected]="!companySize()">Todos</option>
+            @for (s of ['ME', 'EPP', 'Demais']; track s) { <option [value]="s" [selected]="companySize() === s">{{ s }}</option> }
+          </select>
+        </label>
+      }
       <label class="field">
         Telefone
         <select (change)="set(hasPhone, $any($event.target).value)">
@@ -159,6 +177,12 @@
   @if (selected().size > 0) {
     <div class="bulk card">
       <strong>{{ selected().size }} selecionado(s)</strong>
+      @if (result(); as r) {
+        @if (selected().size < r.totalCount) {
+          <button class="btn btn--ghost btn--sm" type="button" (click)="selectAllFiltered()" [disabled]="bulkBusy()">
+            Selecionar todos os {{ r.totalCount }} do filtro</button>
+        }
+      }
       <label class="inline">Mover para
         <select (change)="bulkStage.set($any($event.target).value)">
           @for (s of stages; track s) { <option [value]="s" [selected]="bulkStage() === s">{{ stageLabels[s] }}</option> }
@@ -169,6 +193,10 @@
         <vt-icon name="check" [size]="14" /> {{ bulkBusy() ? 'Aplicando…' : 'Aplicar' }}
       </button>
       <button class="btn btn--ghost btn--sm" type="button" (click)="clearSelection()">Limpar seleção</button>
+      @if (canDelete()) {
+        <button class="btn btn--danger btn--sm push-right" type="button" (click)="deleteSelected()" [disabled]="bulkBusy()">
+          <vt-icon name="trash" [size]="14" /> Excluir selecionados</button>
+      }
     </div>
   }
 
@@ -206,7 +234,10 @@
                   </td>
                   <td data-label="Nome">
                     <strong>{{ p.name }}</strong>
-                    @if (p.occupation) { <span class="muted small block">{{ p.occupation }}</span> }
+                    @if (p.cnpj) {
+                      <span class="muted small block"><span class="badge badge--info">Empresa{{ p.companySize ? ' · ' + p.companySize : '' }}</span>
+                        {{ p.activity || formatCnpj(p.cnpj) }}</span>
+                    } @else if (p.occupation) { <span class="muted small block">{{ p.occupation }}</span> }
                   </td>
                   <td data-label="Telefone" class="nowrap">{{ p.phone || p.phone2 || '—' }}</td>
                   <td data-label="Cidade / UF">{{ p.city || '—' }}{{ p.state ? ' / ' + p.state : '' }}</td>

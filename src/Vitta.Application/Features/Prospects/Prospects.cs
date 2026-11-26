@@ -13,12 +13,13 @@ public sealed record ProspectDto(
     string? Notes, Guid? ConvertedClientId, DateTimeOffset CreatedAt,
     string? Phone2 = null, string? Address = null, string? City = null, string? State = null, string? ZipCode = null,
     DateOnly? BirthDate = null, string? Occupation = null, decimal? EstimatedSalary = null, decimal? Discounts = null,
-    decimal? Loans = null, Guid? ImportId = null)
+    decimal? Loans = null, Guid? ImportId = null, string? Cnpj = null, string? LegalName = null, string? Activity = null,
+    string? CompanySize = null, DateOnly? OpenedOn = null)
 {
     public static ProspectDto From(Prospect p) =>
         new(p.Id, p.Name, p.Phone, p.Email, p.Source, p.Stage, p.NextFollowUpOn, p.Notes, p.ConvertedClientId, p.CreatedAt,
             p.Phone2, p.Address, p.City, p.State, p.ZipCode, p.BirthDate, p.Occupation, p.EstimatedSalary, p.Discounts, p.Loans,
-            p.ImportId);
+            p.ImportId, p.Cnpj, p.LegalName, p.Activity, p.CompanySize, p.OpenedOn);
 }
 
 internal static class ProspectRules

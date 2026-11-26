@@ -301,6 +301,10 @@ namespace Vitta.Persistence.Migrations.Sqlite
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Activity")
+                        .HasMaxLength(250)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Address")
                         .HasMaxLength(300)
                         .HasColumnType("TEXT");
@@ -310,6 +314,14 @@ namespace Vitta.Persistence.Migrations.Sqlite
 
                     b.Property<string>("City")
                         .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Cnpj")
+                        .HasMaxLength(14)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CompanySize")
+                        .HasMaxLength(30)
                         .HasColumnType("TEXT");
 
                     b.Property<Guid?>("ConvertedClientId")
@@ -333,6 +345,10 @@ namespace Vitta.Persistence.Migrations.Sqlite
                     b.Property<Guid?>("ImportId")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("LegalName")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
                     b.Property<double?>("Loans")
                         .HasPrecision(12, 2)
                         .HasColumnType("REAL");
@@ -350,6 +366,9 @@ namespace Vitta.Persistence.Migrations.Sqlite
 
                     b.Property<string>("Occupation")
                         .HasMaxLength(150)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly?>("OpenedOn")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Phone")
@@ -383,6 +402,8 @@ namespace Vitta.Persistence.Migrations.Sqlite
                     b.HasKey("Id");
 
                     b.HasIndex("City");
+
+                    b.HasIndex("Cnpj");
 
                     b.HasIndex("ImportId");
 

@@ -25,6 +25,12 @@ internal sealed class ProspectConfiguration : IEntityTypeConfiguration<Prospect>
         b.Property(x => x.EstimatedSalary).HasPrecision(12, 2);
         b.Property(x => x.Discounts).HasPrecision(12, 2);
         b.Property(x => x.Loans).HasPrecision(12, 2);
+        b.Property(x => x.Cnpj).HasMaxLength(14);
+        b.Property(x => x.LegalName).HasMaxLength(200);
+        b.Property(x => x.Activity).HasMaxLength(250);
+        b.Property(x => x.CompanySize).HasMaxLength(30);
+        b.HasIndex(x => x.Cnpj);
+        b.Ignore(x => x.IsCompany);
         b.HasIndex(x => x.City);
         b.HasIndex(x => x.State);
         b.HasIndex(x => x.ImportId);

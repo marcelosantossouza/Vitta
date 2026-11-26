@@ -16,10 +16,14 @@ public enum ProspectStage
 /// Dados de perfil vindos das listas de prospeccao (endereco, renda...). Todos opcionais e filtraveis.
 /// Valores em reais; UF com 2 letras.
 /// </summary>
+/// <param name="Cnpj">Preenchido = lead e uma empresa (ex.: vida em grupo); so digitos.</param>
+/// <param name="Activity">Atividade principal (CNAE), ex.: "8630-5/04 Atividade odontologica".</param>
+/// <param name="CompanySize">Porte: ME, EPP ou Demais.</param>
 public sealed record ProspectProfile(
     string? Phone2 = null, string? Address = null, string? City = null, string? State = null, string? ZipCode = null,
     DateOnly? BirthDate = null, string? Occupation = null, decimal? EstimatedSalary = null, decimal? Discounts = null,
-    decimal? Loans = null)
+    decimal? Loans = null, string? Cnpj = null, string? LegalName = null, string? Activity = null, string? CompanySize = null,
+    DateOnly? OpenedOn = null)
 {
     public static readonly ProspectProfile Empty = new();
 }
@@ -54,11 +58,21 @@ public sealed class Prospect : AggregateRoot
     public decimal? Discounts { get; private set; }
     public decimal? Loans { get; private set; }
 
+    // ---- Empresa (leads B2B, ex.: vida em grupo) ----
+    /// <summary>So digitos (14). Preenchido = o lead e uma empresa.</summary>
+    public string? Cnpj { get; private set; }
+    public string? LegalName { get; private set; }
+    public string? Activity { get; private set; }
+    public string? CompanySize { get; private set; }
+    public DateOnly? OpenedOn { get; private set; }
+    public bool IsCompany => Cnpj is not null;
+
     /// <summary>Importacao de planilha que criou o prospect (nulo = cadastrado a mao ou importacao ja excluida).</summary>
     public Guid? ImportId { get; private set; }
 
     public ProspectProfile Profile =>
-        new(Phone2, Address, City, State, ZipCode, BirthDate, Occupation, EstimatedSalary, Discounts, Loans);
+        new(Phone2, Address, City, State, ZipCode, BirthDate, Occupation, EstimatedSalary, Discounts, Loans,
+            Cnpj, LegalName, Activity, CompanySize, OpenedOn);
 
     /// <summary>Ainda nao foi trabalhado: continua em "Novo" e nao virou cliente (pode sair junto com a importacao).</summary>
     public bool IsUntouchedLead => Stage == ProspectStage.New && ConvertedClientId is null;
@@ -112,6 +126,11 @@ public sealed class Prospect : AggregateRoot
         EstimatedSalary = profile.EstimatedSalary;
         Discounts = profile.Discounts;
         Loans = profile.Loans;
+        Cnpj = NormalizeCnpj(profile.Cnpj);
+        LegalName = Clip(profile.LegalName, 200);
+        Activity = Clip(profile.Activity, 250);
+        CompanySize = Clip(profile.CompanySize, 30);
+        OpenedOn = profile.OpenedOn;
         Touch();
         return Result.Success();
     }
@@ -136,6 +155,11 @@ public sealed class Prospect : AggregateRoot
         EstimatedSalary ??= p.EstimatedSalary is >= 0 ? p.EstimatedSalary : null;
         Discounts ??= p.Discounts is >= 0 ? p.Discounts : null;
         Loans ??= p.Loans is >= 0 ? p.Loans : null;
+        Cnpj ??= NormalizeCnpj(p.Cnpj);
+        LegalName ??= Clip(p.LegalName, 200);
+        Activity ??= Clip(p.Activity, 250);
+        CompanySize ??= Clip(p.CompanySize, 30);
+        OpenedOn ??= p.OpenedOn;
         var changed = before != (Phone, Email, Source, Profile);
         if (changed)
         {
@@ -152,6 +176,13 @@ public sealed class Prospect : AggregateRoot
 
     private static string? Clip(string? value, int max) =>
         Clean(value) is { } v ? (v.Length > max ? v[..max] : v) : null;
+
+    /// <summary>"12.345.678/0001-90" -> "12345678000190". Sem 14 digitos fica vazio (nao e CNPJ).</summary>
+    private static string? NormalizeCnpj(string? value)
+    {
+        var digits = new string((value ?? string.Empty).Where(char.IsDigit).ToArray());
+        return digits.Length == 14 ? digits : null;
+    }
 
     /// <summary>"sp", " SP " -> "SP". Texto maior que 2 letras (ex.: "Sao Paulo") fica como veio, limitado.</summary>
     private static string? NormalizeState(string? value) =>

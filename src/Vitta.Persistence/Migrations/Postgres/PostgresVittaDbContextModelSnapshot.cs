@@ -307,6 +307,10 @@ namespace Vitta.Persistence.Migrations.Postgres
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Activity")
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
                     b.Property<string>("Address")
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)");
@@ -317,6 +321,14 @@ namespace Vitta.Persistence.Migrations.Postgres
                     b.Property<string>("City")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Cnpj")
+                        .HasMaxLength(14)
+                        .HasColumnType("character varying(14)");
+
+                    b.Property<string>("CompanySize")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.Property<Guid?>("ConvertedClientId")
                         .HasColumnType("uuid");
@@ -339,6 +351,10 @@ namespace Vitta.Persistence.Migrations.Postgres
                     b.Property<Guid?>("ImportId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("LegalName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<decimal?>("Loans")
                         .HasPrecision(12, 2)
                         .HasColumnType("numeric(12,2)");
@@ -357,6 +373,9 @@ namespace Vitta.Persistence.Migrations.Postgres
                     b.Property<string>("Occupation")
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
+
+                    b.Property<DateOnly?>("OpenedOn")
+                        .HasColumnType("date");
 
                     b.Property<string>("Phone")
                         .HasMaxLength(30)
@@ -389,6 +408,8 @@ namespace Vitta.Persistence.Migrations.Postgres
                     b.HasKey("Id");
 
                     b.HasIndex("City");
+
+                    b.HasIndex("Cnpj");
 
                     b.HasIndex("ImportId");
 
