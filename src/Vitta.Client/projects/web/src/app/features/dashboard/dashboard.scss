@@ -30,3 +30,14 @@ h2 { display: flex; align-items: center; gap: 0.45rem; }
   &.stage-Lost { background: #b9c4c0; }
 }
 .bar__value { font-weight: 650; font-variant-numeric: tabular-nums; text-align: right; }
+
+/* Cards de lista com altura controlada: titulo fixo, conteudo rola por dentro (nao empurra o resto da tela). */
+.grid-2 > .card {
+  display: flex; flex-direction: column; min-height: 280px; max-height: 440px;
+  > .list, > .bars {
+    flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+    padding-right: 0.35rem; margin-right: -0.35rem;
+    scrollbar-width: thin; scrollbar-color: var(--vt-border) transparent;
+  }
+}
+@media (max-width: 900px) { .grid-2 > .card { max-height: 380px; } }
