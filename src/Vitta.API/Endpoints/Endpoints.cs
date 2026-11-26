@@ -373,6 +373,8 @@ internal static class PublicEndpoints
             return page.Enabled ? Results.Ok(page) : Results.NotFound();
         });
         g.MapGet("/site", async (ISender s, CancellationToken ct) => Results.Ok(await s.Send(new GetSiteQuery(), ct)));
+        g.MapGet("/site/domain-check", async (string? domain, ISender s, CancellationToken ct) =>
+            await s.Send(new IsSiteDomainQuery(domain), ct) ? Results.Ok() : Results.NotFound());
         g.MapGet("/site/images/{kind}", async (string kind, HttpContext http, ISender s, CancellationToken ct) =>
         {
             if (await s.Send(new GetSiteImageQuery(kind), ct) is not { } image)

@@ -85,8 +85,9 @@ function resize(file: File, maxSide: number): Promise<Blob> {
             <label class="field">CNPJ (opcional)<input formControlName="cnpj" /></label>
             <label class="field span-all">Endereço do site (domínio)
               <input formControlName="host" placeholder="ex.: argleidson.usevitta.duckdns.org" />
-              <span class="hint">Quem abrir esse endereço vê a home da corretora. O servidor precisa conhecer o domínio (variável
-                <code>VITTA_SITE_DOMAINS</code> no <code>.env</code>). Sem domínio, a home fica em <code>/corretora</code>.</span>
+              <span class="hint">Quem abrir esse endereço vê a home da corretora. Ele precisa apontar para o IP do servidor
+                (subdomínios de <code>usevitta.duckdns.org</code> já apontam). O HTTPS é criado sozinho no primeiro acesso.
+                Sem domínio, a home fica em <code>/corretora</code>.</span>
             </label>
           </div>
           <p class="muted small">A SUSEP pede o número de registro do corretor na publicidade. Ele aparece no rodapé do site.</p>

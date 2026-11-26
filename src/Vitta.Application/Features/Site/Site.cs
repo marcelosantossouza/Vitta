@@ -108,3 +108,18 @@ public sealed class SaveSiteImageHandler(ISiteImageRepository images, IUnitOfWor
         return Result.Success();
     }
 }
+
+/// <summary>
+/// O Caddy pergunta antes de emitir certificado para um endereco novo (TLS sob demanda):
+/// so os enderecos cadastrados em Configuracoes ganham certificado (evita abuso com dominios aleatorios).
+/// </summary>
+public sealed record IsSiteDomainQuery(string? Domain) : IQuery<bool>;
+
+public sealed class IsSiteDomainHandler(IBrokerSiteRepository sites) : IQueryHandler<IsSiteDomainQuery, bool>
+{
+    public async ValueTask<bool> Handle(IsSiteDomainQuery q, CancellationToken ct)
+    {
+        var domain = q.Domain?.Trim().TrimEnd('.').ToLowerInvariant();
+        return !string.IsNullOrEmpty(domain) && await sites.GetAsync(ct) is { Host: { } host } && host == domain;
+    }
+}

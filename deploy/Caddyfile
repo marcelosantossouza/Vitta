@@ -1,7 +1,16 @@
 # {$VITTA_DOMAIN} vem do .env (ex.: vitta.seudominio.com.br). O Caddy emite e renova o certificado HTTPS sozinho.
-# {$VITTA_SITE_DOMAINS} (opcional): enderecos das home pages das corretoras, separados por espaco
-# (ex.: argleidson.usevitta.duckdns.org). Cada um ganha certificado proprio.
-{$VITTA_DOMAIN} {$VITTA_SITE_DOMAINS} {
+#
+# Home pages das corretoras: o endereco e cadastrado na tela Configuracoes > Site da corretora.
+# Quando chega um acesso por um endereco novo, o Caddy pergunta para a API se ele esta cadastrado
+# (TLS sob demanda) e so entao emite o certificado. Nao precisa mexer no servidor para cada corretora;
+# basta o DNS do endereco apontar para o IP do servidor.
+{
+	on_demand_tls {
+		ask http://api:8080/api/public/site/domain-check
+	}
+}
+
+(vitta) {
 	encode gzip
 
 	# API e health check vao para o container da API; o resto e o site Angular.
@@ -23,4 +32,16 @@
 		Referrer-Policy "strict-origin-when-cross-origin"
 		-Server
 	}
+}
+
+{$VITTA_DOMAIN} {
+	import vitta
+}
+
+# Qualquer outro endereco: certificado sob demanda (so para os cadastrados).
+https:// {
+	tls {
+		on_demand
+	}
+	import vitta
 }

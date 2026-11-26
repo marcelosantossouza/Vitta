@@ -46,7 +46,7 @@ percentual de nome livre e PDF.
 ### Site da corretora
 
 Feito: home page pública (Configurações → Site da corretora) com logo, capa, sobre, produtos, contato, redes e SUSEP;
-abre na raiz do domínio configurado (`VITTA_SITE_DOMAINS`) ou em `/corretora`.
+abre na raiz do domínio configurado na tela (HTTPS sob demanda pelo Caddy) ou em `/corretora`.
 
 ## Carteira
 
